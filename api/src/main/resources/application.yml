@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: fast-attendance-api
+
+server:
+  port: ${API_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
