@@ -1,7 +1,7 @@
 # Infraestrutura
 
-Sobe todo o ambiente com um comando: MongoDB em replica set (3 nós), API, servidor de sessão e
-Nginx como balanceador com suporte a WebSocket.
+Sobe todo o ambiente com um comando: MongoDB em replica set (3 nós), API, servidor de sessão,
+aplicações do professor e do aluno e Nginx como balanceador com suporte a WebSocket.
 
 ## Subir
 
@@ -18,6 +18,8 @@ O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 |---|---|
 | `/api/...` | API REST (Spring Boot, porta 8080) |
 | `/ws` | Servidor de sessão (WebSocket, porta 8081) |
+| `/professor` | Aplicação do professor (Next.js, porta 3000) |
+| `/aluno` | Aplicação do aluno (Next.js, porta 3001); `/` redireciona para cá |
 | `/nginx-health` | Verificação do próprio Nginx |
 
 ## MongoDB
