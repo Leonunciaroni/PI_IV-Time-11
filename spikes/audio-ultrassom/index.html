@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spike — áudio 18–20 kHz</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header>
+    <h1>Spike: áudio ultrassônico 18–20 kHz</h1>
+    <p>Fast Attendance · Frente E · Semana 2. Roteiro em <code>docs/spikes/audio-ultrassom.md</code>.</p>
+    <p id="ambiente" class="info"></p>
+  </header>
+
+  <main>
+    <section aria-labelledby="t-emissor">
+      <h2 id="t-emissor">Emissor (notebook do professor)</h2>
+      <label>Frequência
+        <select id="frequencia"></select>
+      </label>
+      <label><input type="checkbox" id="varredura"> Varredura (troca de frequência a cada 1 s)</label>
+      <label>Volume <input type="range" id="volume" min="0" max="1" step="0.01" value="0.3">
+        <output id="volume-valor">30%</output></label>
+      <div class="botoes">
+        <button id="emitir">Emitir</button>
+        <button id="parar" disabled>Parar</button>
+      </div>
+      <p id="estado-emissor" class="info">Parado.</p>
+    </section>
+
+    <section aria-labelledby="t-receptor">
+      <h2 id="t-receptor">Receptor (celular do aluno)</h2>
+      <label>Limiar de detecção (SNR, dB)
+        <input type="number" id="limiar" value="15" min="3" max="40" step="1"></label>
+      <div class="botoes">
+        <button id="ouvir">Ouvir microfone</button>
+        <button id="autoteste" title="Tom de 19 kHz + ruído direto no analisador, sem microfone">Autoteste</button>
+        <button id="parar-ouvir" disabled>Parar</button>
+      </div>
+      <canvas id="espectro" width="720" height="180" aria-label="Espectro de 15 a 22 kHz"></canvas>
+      <table>
+        <thead><tr><th>Frequência</th><th>Nível (dB)</th><th>SNR (dB)</th><th>Detectado</th></tr></thead>
+        <tbody id="leituras"></tbody>
+      </table>
+    </section>
+
+    <section aria-labelledby="t-registro">
+      <h2 id="t-registro">Registro de medições</h2>
+      <div class="grade">
+        <label>Dispositivo receptor <input id="dispositivo" placeholder="ex.: iPhone 13 / Safari"></label>
+        <label>Distância (m) <input id="distancia" type="number" min="0" step="0.5"></label>
+        <label>Cenário
+          <select id="cenario">
+            <option>Sala silenciosa</option>
+            <option>Sala com conversa</option>
+            <option>Sala vizinha (porta fechada)</option>
+            <option>Corredor</option>
+          </select>
+        </label>
+        <label>Ouvido por alguém? <select id="audivel"><option>Não</option><option>Sim</option></select></label>
+      </div>
+      <div class="botoes">
+        <button id="registrar" disabled>Registrar leitura atual</button>
+        <button id="exportar" disabled>Exportar CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Hora</th><th>Dispositivo</th><th>Dist.</th><th>Cenário</th><th>Melhor freq.</th><th>SNR</th><th>Detectou</th><th>Audível</th></tr></thead>
+        <tbody id="registros"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module" src="spike.js"></script>
+</body>
+</html>
