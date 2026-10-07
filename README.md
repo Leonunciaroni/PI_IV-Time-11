@@ -25,6 +25,40 @@ usado para entregar o token ao aluno.
 | `spikes/` | Experimentos técnicos (ex.: áudio ultrassônico) | E |
 | `docs/` | Protocolo, arquitetura, stack e wireframes | Todos |
 
+## Como rodar
+
+Pré-requisitos: Docker, JDK 21+ e Node.js 24+ (o Maven vem pelo wrapper `./mvnw`).
+
+```bash
+cd infra
+cp .env.example .env          # defina JWT_SECRET
+docker compose up -d --build
+```
+
+| Endereço | O quê |
+|---|---|
+| http://localhost:8088/professor | Aplicação do professor |
+| http://localhost:8088/aluno | Aplicação do aluno |
+| http://localhost:8088/api | API REST ([docs/api-rest.md](docs/api-rest.md)) |
+| ws://localhost:8088/ws | Servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
+
+Para desenvolver um app com recarga automática, deixe o Compose rodando e use `npm run dev` em
+`apps/professor` (porta 3000) ou `apps/aluno` (porta 3001); as chamadas a `/api` são encaminhadas
+ao Compose. Para a API ou o servidor de sessão fora do Docker, veja [infra/README.md](infra/README.md).
+
+Testes: `./mvnw verify` na raiz (os testes da API sobem um MongoDB com Testcontainers).
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [docs/protocolo-v1.md](docs/protocolo-v1.md) | Mensagens WebSocket entre os apps e o servidor de sessão |
+| [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
+| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções e índices do MongoDB |
+| [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
+| [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
+| [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
+
 ## Fluxo de trabalho
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md) para o modelo de branches, convenção de commits e
