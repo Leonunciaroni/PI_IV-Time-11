@@ -15,6 +15,12 @@
     <description>Modelos, protocolo de mensagens e JWT compartilhados entre a API e o servidor de sessão</description>
 
     <dependencies>
+        <!-- Apenas anotações: cada módulo escolhe sua própria implementação de Jackson -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
