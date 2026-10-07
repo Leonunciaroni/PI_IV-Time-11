@@ -29,8 +29,9 @@ Usamos [Conventional Commits](https://www.conventionalcommits.org/pt-br/), com a
 <tipo>(<escopo>): <descrição no imperativo>
 ```
 
-Tipos: `feat`, `fix`, `docs`, `chore`, `build`, `test`, `refactor`.
-Escopos: `api`, `sessao`, `common`, `professor`, `aluno`, `infra`, `audio`, `docs`.
+Tipos: `feat`, `fix`, `docs`, `chore`, `build`, `test`, `refactor` e `spike` (experimentos).
+Escopos de código: `api`, `sessao`, `common`, `professor`, `aluno`, `infra`, `audio`.
+Escopos de documentação: `protocolo`, `dados`, `api`, `apps`, `wireframes`.
 
 Exemplos:
 
@@ -38,6 +39,14 @@ Exemplos:
 feat(api): adicionar login com BCrypt e JWT
 build(infra): subir MongoDB em replica set no Docker Compose
 docs(protocolo): definir mensagens da versão 1
+```
+
+## Antes de abrir o pull request
+
+```bash
+./mvnw verify                        # common, api e sessao (os testes da api usam Docker)
+cd apps/professor && npm run lint && npm run build
+cd apps/aluno && npm run lint && npm run build
 ```
 
 ## Reuniões e acompanhamento

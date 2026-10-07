@@ -32,6 +32,25 @@ O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 - Ambiente de desenvolvimento: o MongoDB roda **sem autenticação** e fica acessível apenas pela
   rede interna do Compose e pelo loopback do host.
 
+## Rodar a API ou o servidor de sessão fora do Docker
+
+Com o Compose rodando (para o MongoDB), pare o serviço correspondente e rode localmente:
+
+```bash
+docker compose stop api
+./mvnw -pl api -am package -DskipTests                               # na raiz do repositório
+JWT_SECRET=<mesmo do .env> java -jar api/target/api.jar
+```
+
+```bash
+docker compose stop sessao
+./mvnw -pl sessao -am package -DskipTests
+JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar
+```
+
+O Nginx continua apontando para os nomes dos serviços no Docker; para testar pelo Nginx com o
+processo local, acesse a API direto em `http://localhost:8080` e o WebSocket em `ws://localhost:8081`.
+
 ## Tolerância a falha
 
 ```bash
