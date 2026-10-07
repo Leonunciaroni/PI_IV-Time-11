@@ -1,0 +1,86 @@
+# Ambiente completo do Fast Attendance.
+#   cd infra && cp .env.example .env && docker compose up -d --build
+# Tolerância a falha: docker compose up -d --scale api=2 e depois docker compose stop <container>
+
+name: fast-attendance
+
+x-mongo: &mongo
+  image: mongo:8.0
+  command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+  restart: unless-stopped
+  networks: [interna]
+  healthcheck:
+    test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+    interval: 5s
+    timeout: 5s
+    retries: 20
+
+services:
+  mongo1:
+    <<: *mongo
+    ports:
+      # Exposto só para ferramentas locais (Compass, mongosh, api rodando fora do Docker).
+      # Use: mongodb://localhost:27017/?directConnection=true
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo1-dados:/data/db
+
+  mongo2:
+    <<: *mongo
+    volumes:
+      - mongo2-dados:/data/db
+
+  mongo3:
+    <<: *mongo
+    volumes:
+      - mongo3-dados:/data/db
+
+  mongo-setup:
+    image: mongo:8.0
+    depends_on:
+      mongo1: { condition: service_healthy }
+      mongo2: { condition: service_healthy }
+      mongo3: { condition: service_healthy }
+    volumes:
+      - ./mongo/init-replica-set.js:/scripts/init-replica-set.js:ro
+    entrypoint: ["mongosh", "--host", "mongo1:27017", "--quiet", "/scripts/init-replica-set.js"]
+    networks: [interna]
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    environment:
+      MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET em infra/.env}
+      JWT_EXPIRACAO_HORAS: ${JWT_EXPIRACAO_HORAS:-12}
+    depends_on:
+      mongo-setup: { condition: service_completed_successfully }
+    restart: unless-stopped
+    networks: [interna]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  nginx:
+    image: nginx:1.30-alpine
+    ports:
+      - "${NGINX_PORTA:-8088}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks: [interna]
+
+volumes:
+  mongo1-dados:
+  mongo2-dados:
+  mongo3-dados:
+
+networks:
+  interna:
