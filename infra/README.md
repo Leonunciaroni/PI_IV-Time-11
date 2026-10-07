@@ -35,7 +35,7 @@ O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 ## Tolerância a falha
 
 ```bash
-docker compose up -d --scale api=2          # duas réplicas da API atrás do Nginx
+docker compose up -d --scale api=2 --scale sessao=2   # duas réplicas de cada atrás do Nginx
 docker compose stop mongo1                  # força nova eleição; mongo2 ou mongo3 assume
 docker compose start mongo1
 ```
