@@ -14,6 +14,12 @@ docker compose ps
 
 O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 
+Contas de demonstração (um professor e dois alunos, senha `demo12345`):
+
+```bash
+./usuarios-demo.sh
+```
+
 | Rota no Nginx | Destino |
 |---|---|
 | `/api/...` | API REST (Spring Boot, porta 8080) |
