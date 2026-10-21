@@ -51,7 +51,7 @@ JWT_SECRET=<mesmo do .env> java -jar api/target/api.jar
 ```bash
 docker compose stop sessao
 ./mvnw -pl sessao -am package -DskipTests
-JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar
+JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar   # usa o MongoDB em localhost:27017
 ```
 
 O Nginx continua apontando para os nomes dos serviços no Docker; para testar pelo Nginx com o

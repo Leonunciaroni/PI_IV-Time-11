@@ -100,11 +100,33 @@ Antes de `auth.ok`, qualquer mensagem diferente de `auth` e `ping` é respondida
 | `modo` | `CLASSICA`, `QRCODE` ou `SOM`. |
 | `salaId` | Obrigatório no modo `QRCODE` (validação de raio); opcional nos demais. |
 
+Regras:
+
+- Só o professor dono da turma abre a sessão. Turma de outro professor e turma inexistente
+  respondem igual, `PERMISSAO_NEGADA`, para não revelar quais turmas existem.
+- `turmaId` ou `modo` ausentes, `modo` desconhecido, modo `QRCODE` sem `salaId` ou `salaId` de
+  sala inexistente: `MENSAGEM_INVALIDA`.
+- Já existe sessão aberta para a turma: `SESSAO_JA_ABERTA`. A regra é garantida pelo índice único
+  parcial `turma_sessao_aberta_unica`, e vale mesmo com pedidos simultâneos em réplicas diferentes.
+- Cada sessão recebe um segredo TOTP novo (seção 5.3), enviado só na resposta `sessao.aberta`.
+- **Tempo limite:** a sessão aberta há mais de `SESSAO_DURACAO_MAXIMA_MIN` minutos (padrão 240,
+  ou 4 horas) é encerrada com motivo `TEMPO_LIMITE`. O servidor varre as sessões vencidas
+  periodicamente e também verifica o prazo a cada uso da sessão; uma sessão vencida não impede a
+  abertura de outra na mesma turma.
+
 ### 4.4 `sessao.encerrar`
 
 ```json
 { "sessaoId": "66f1c2..." }
 ```
+
+Só o professor dono encerra (`PERMISSAO_NEGADA` para os demais). Sessão inexistente:
+`SESSAO_NAO_ENCONTRADA`; já encerrada, pelo professor ou por tempo limite: `SESSAO_ENCERRADA`. A
+resposta traz `totalPresentes`, que conta só as presenças com `presente: true`.
+
+Depois do encerramento, **nenhum registro é aceito**: toda mensagem com `sessaoId` (`checkin`,
+`presenca.marcar`, `presenca.marcar_lote`, `sessao.acompanhar`) verifica primeiro se a sessão está
+aberta e responde `SESSAO_ENCERRADA` caso contrário.
 
 ### 4.5 `sessao.acompanhar`
 
@@ -263,3 +285,4 @@ Ao receber `1001` ou uma queda de rede, o cliente reconecta com backoff exponenc
 | Versão | Data | Alteração |
 |---|---|---|
 | 1 | 04/10/2026 | Versão inicial. |
+| 1 | 20/10/2026 | Regras de `sessao.abrir` e `sessao.encerrar` e tempo limite da sessão (seções 4.3 e 4.4). Sem mudança de formato. |

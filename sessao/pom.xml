@@ -32,6 +32,11 @@
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
+        <!-- Driver nativo, sem Spring Data: menos camadas no caminho crítico -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+        </dependency>
         <!-- Encaminha os logs SLF4J do Java-WebSocket para o java.util.logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -42,6 +47,11 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mongodb</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

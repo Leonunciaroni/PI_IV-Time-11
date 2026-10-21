@@ -31,7 +31,8 @@ class ServidorSessaoTest {
     void iniciar() throws Exception {
         // Prazo de autenticação curto para o teste de timeout não demorar
         servidor = SessaoApplication.iniciar(
-                new Configuracao(0, SEGREDO, Duration.ofMillis(500), Duration.ofSeconds(60)));
+                new Configuracao(0, SEGREDO, MongoDeTeste.uri(), Duration.ofMillis(500), Duration.ofSeconds(60),
+                        Duration.ofHours(4)));
         porta = servidor.getPort();
     }
 
