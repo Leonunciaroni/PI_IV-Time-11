@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotBlank;
 public record TurmaRequest(
         @NotBlank String nome,
         @NotBlank String disciplina,
-        @NotBlank String horarioPadrao) {
+        @NotBlank @HorarioValido String horarioPadrao) {
 }

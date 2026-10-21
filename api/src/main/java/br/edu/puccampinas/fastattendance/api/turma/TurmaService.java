@@ -48,8 +48,10 @@ public class TurmaService {
     }
 
     public TurmaResponse criar(String professorId, TurmaRequest requisicao) {
+        String horario = HorarioPadrao.normalizar(requisicao.horarioPadrao())
+                .orElseThrow(() -> new RequisicaoInvalidaException("Horário padrão inválido."));
         Turma nova = new Turma(null, requisicao.nome().strip(), requisicao.disciplina().strip(),
-                requisicao.horarioPadrao().strip(), professorId, null);
+                horario, professorId, null);
         return TurmaResponse.de(turmas.insert(nova), 0);
     }
 

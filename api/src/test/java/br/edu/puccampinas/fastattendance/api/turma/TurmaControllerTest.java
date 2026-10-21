@@ -86,6 +86,30 @@ class TurmaControllerTest {
     }
 
     @Test
+    void normalizaOHorarioParaDiaAbreviadoEHoraComDoisDigitos() throws Exception {
+        criarTurma(professor, "Turma A", "Engenharia de Software I", "segunda 19:00")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.horarioPadrao").value("Seg 19:00"));
+        criarTurma(professor, "Turma B", "Estrutura de Dados", "SABADO 08:30")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.horarioPadrao").value("Sáb 08:30"));
+
+        assertEquals(java.util.Set.of("Seg 19:00", "Sáb 08:30"),
+                turmas.findAll().stream().map(t -> t.horarioPadrao()).collect(Collectors.toSet()));
+    }
+
+    @Test
+    void rejeitaHorarioForaDoPadraoSemCriarATurma() throws Exception {
+        for (String invalido : new String[]{"à noite", "Seg 24:00", "Seg 19:60", "Xyz 19:00", "19:00", "Seg 9:00"}) {
+            criarTurma(professor, "Turma A", "Engenharia de Software I", invalido)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.campos.horarioPadrao").value(
+                            "Use o formato Dia HH:MM, como Seg 19:00 (de segunda a domingo, hora de 00 a 23)."));
+        }
+        assertEquals(0, turmas.count());
+    }
+
+    @Test
     void validaCamposDaTurma() throws Exception {
         criarTurma(professor, "", "   ", "")
                 .andExpect(status().isBadRequest())

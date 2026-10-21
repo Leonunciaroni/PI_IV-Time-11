@@ -78,10 +78,22 @@ revelar quais turmas existem.
 |---|---|
 | `nome` | Obrigatório. |
 | `disciplina` | Obrigatório. |
-| `horarioPadrao` | Obrigatório. |
+| `horarioPadrao` | Obrigatório, no formato `Dia HH:MM` (ver abaixo). |
 
 Espaços nas pontas são removidos. Resposta `201` com `TurmaResponse`; `400` traz `campos` com a
 mensagem de cada campo inválido.
+
+**Formato do `horarioPadrao`:** o dia da semana, um espaço e o horário, como em `Seg 19:00`.
+
+| Parte | Regra |
+|---|---|
+| Dia | De segunda a domingo, abreviado (`Seg`, `Ter`, `Qua`, `Qui`, `Sex`, `Sáb`, `Dom`) ou por extenso (`Segunda`, `Terça`, `Quarta`, `Quinta`, `Sexta`, `Sábado`, `Domingo`). Maiúsculas e acentos não importam: `terca` e `SABADO` valem. |
+| Hora | Dois dígitos, de `00` a `23`. |
+| Minuto | Dois dígitos, de `00` a `59`. |
+
+O valor é sempre guardado e devolvido no formato abreviado: `segunda 19:00` vira `Seg 19:00` e
+`sabado 08:30` vira `Sáb 08:30`. Textos fora do padrão (`à noite`, `Seg 24:00`, `Seg 9:00`,
+`19:00`) respondem `400`, com a orientação de formato em `campos.horarioPadrao`.
 
 ### `GET /api/turmas`
 
