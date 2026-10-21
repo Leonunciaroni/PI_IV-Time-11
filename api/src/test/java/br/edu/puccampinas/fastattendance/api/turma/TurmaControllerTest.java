@@ -114,6 +114,60 @@ class TurmaControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    // ---- Detalhes e alunos ----
+
+    @Test
+    void detalhaTurmaComTotalDeAlunos() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        matriculas.insert(new Matricula(null, id, aluno.id(), null));
+
+        mvc.perform(get("/api/turmas/" + id).header("Authorization", bearer(professor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.nome").value("Turma A"))
+                .andExpect(jsonPath("$.totalAlunos").value(1));
+    }
+
+    @Test
+    void turmaDeOutroProfessorOuInexistenteResponde404() throws Exception {
+        String idDeOutro = idDe(criarTurma(outroProfessor, "Turma X", "Redes", "Sex 08:00"));
+
+        mvc.perform(get("/api/turmas/" + idDeOutro).header("Authorization", bearer(professor)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Turma não encontrada"));
+        mvc.perform(get("/api/turmas/" + idDeOutro + "/alunos").header("Authorization", bearer(professor)))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/api/turmas/nao-existe").header("Authorization", bearer(professor)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listaAlunosMatriculadosEmOrdemAlfabeticaSemExporEmail() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        Usuario bruno = usuario("bruno Lima", "bruno@puc.br", Papel.ALUNO, "24001777");
+        Usuario fora = usuario("Carla Dias", "carla@puc.br", Papel.ALUNO, "24002001");
+        matriculas.insert(new Matricula(null, id, bruno.id(), null));
+        matriculas.insert(new Matricula(null, id, aluno.id(), null));
+
+        mvc.perform(get("/api/turmas/" + id + "/alunos").header("Authorization", bearer(professor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].nome").value("Ana Souza"))
+                .andExpect(jsonPath("$[0].matricula").value("24001234"))
+                .andExpect(jsonPath("$[0].email").doesNotExist())
+                .andExpect(jsonPath("$[1].nome").value("bruno Lima"))
+                .andExpect(jsonPath("$[?(@.id == '" + fora.id() + "')]").isEmpty());
+    }
+
+    @Test
+    void turmaSemAlunosTemListaVazia() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+
+        mvc.perform(get("/api/turmas/" + id + "/alunos").header("Authorization", bearer(professor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
     // ---- Acesso ----
 
     @Test

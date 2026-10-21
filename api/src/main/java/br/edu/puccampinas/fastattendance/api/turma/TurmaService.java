@@ -1,7 +1,12 @@
 package br.edu.puccampinas.fastattendance.api.turma;
 
+import br.edu.puccampinas.fastattendance.api.dominio.Matricula;
 import br.edu.puccampinas.fastattendance.api.dominio.Turma;
+import br.edu.puccampinas.fastattendance.api.dominio.Usuario;
+import br.edu.puccampinas.fastattendance.api.erro.RecursoNaoEncontradoException;
+import br.edu.puccampinas.fastattendance.api.repositorio.MatriculaRepository;
 import br.edu.puccampinas.fastattendance.api.repositorio.TurmaRepository;
+import br.edu.puccampinas.fastattendance.api.repositorio.UsuarioRepository;
 import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,10 +27,15 @@ public class TurmaService {
             .thenComparing(Turma::nome, String.CASE_INSENSITIVE_ORDER);
 
     private final TurmaRepository turmas;
+    private final MatriculaRepository matriculas;
+    private final UsuarioRepository usuarios;
     private final MongoTemplate mongo;
 
-    public TurmaService(TurmaRepository turmas, MongoTemplate mongo) {
+    public TurmaService(TurmaRepository turmas, MatriculaRepository matriculas, UsuarioRepository usuarios,
+                        MongoTemplate mongo) {
         this.turmas = turmas;
+        this.matriculas = matriculas;
+        this.usuarios = usuarios;
         this.mongo = mongo;
     }
 
@@ -42,6 +52,27 @@ public class TurmaService {
         return doProfessor.stream()
                 .map(turma -> TurmaResponse.de(turma, totais.getOrDefault(turma.id(), 0L)))
                 .toList();
+    }
+
+    public TurmaResponse detalhar(String professorId, String turmaId) {
+        Turma turma = daProfessor(professorId, turmaId);
+        return TurmaResponse.de(turma, matriculas.countByTurmaId(turma.id()));
+    }
+
+    /** Alunos matriculados na turma, em ordem alfabética. */
+    public List<AlunoResponse> alunos(String professorId, String turmaId) {
+        Turma turma = daProfessor(professorId, turmaId);
+        List<String> alunoIds = matriculas.findByTurmaId(turma.id()).stream().map(Matricula::alunoId).toList();
+        return usuarios.findAllById(alunoIds).stream()
+                .sorted(Comparator.comparing(Usuario::nome, String.CASE_INSENSITIVE_ORDER))
+                .map(AlunoResponse::de)
+                .toList();
+    }
+
+    /** A turma de outro professor responde como inexistente, para não revelar que ela existe. */
+    private Turma daProfessor(String professorId, String turmaId) {
+        return turmas.findByIdAndProfessorId(turmaId, professorId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Turma não encontrada"));
     }
 
     /** Conta as matrículas de todas as turmas em uma única consulta, em vez de uma por turma. */

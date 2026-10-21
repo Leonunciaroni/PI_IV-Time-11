@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,5 +35,16 @@ public class TurmaController {
     @GetMapping
     public List<TurmaResponse> listar(@AuthenticationPrincipal UsuarioAutenticado professor) {
         return turmas.listar(professor.id());
+    }
+
+    @GetMapping("/{id}")
+    public TurmaResponse detalhar(@AuthenticationPrincipal UsuarioAutenticado professor, @PathVariable String id) {
+        return turmas.detalhar(professor.id(), id);
+    }
+
+    @GetMapping("/{id}/alunos")
+    public List<AlunoResponse> alunos(@AuthenticationPrincipal UsuarioAutenticado professor,
+                                      @PathVariable String id) {
+        return turmas.alunos(professor.id(), id);
     }
 }
