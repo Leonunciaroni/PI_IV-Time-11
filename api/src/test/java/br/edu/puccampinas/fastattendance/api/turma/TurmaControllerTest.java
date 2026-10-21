@@ -19,6 +19,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -168,6 +171,107 @@ class TurmaControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    // ---- Candidatos e matrícula ----
+
+    @Test
+    void candidatosSaoAlunosForaDaTurmaFiltradosPorNomeOuMatricula() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        Usuario carla = usuario("Carla Dias", "carla@puc.br", Papel.ALUNO, "24002001");
+        Usuario diego = usuario("Diego Alves", "diego@puc.br", Papel.ALUNO, "24002002");
+        matriculas.insert(new Matricula(null, id, aluno.id(), null));
+
+        // Sem busca: todos os alunos de fora da turma; professores nunca aparecem
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").header("Authorization", bearer(professor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].nome").value("Carla Dias"))
+                .andExpect(jsonPath("$[1].nome").value("Diego Alves"));
+
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").param("busca", "DIEGO")
+                        .header("Authorization", bearer(professor)))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(diego.id()));
+
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").param("busca", "2001")
+                        .header("Authorization", bearer(professor)))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(carla.id()));
+    }
+
+    @Test
+    void buscaTrataOTextoComoLiteralENaoComoExpressaoRegular() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").param("busca", ".*")
+                        .header("Authorization", bearer(professor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").param("busca", "(")
+                        .header("Authorization", bearer(professor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void candidatosVemLimitadosA20() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        for (int i = 0; i < 25; i++) {
+            usuario("Aluno %02d".formatted(i), "aluno%d@puc.br".formatted(i), Papel.ALUNO, "2400%04d".formatted(i));
+        }
+
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").header("Authorization", bearer(professor)))
+                .andExpect(jsonPath("$.length()").value(20));
+    }
+
+    @Test
+    void matriculaAlunosEIgnoraOsQueJaEstaoNaTurma() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        Usuario carla = usuario("Carla Dias", "carla@puc.br", Papel.ALUNO, "24002001");
+        matriculas.insert(new Matricula(null, id, aluno.id(), null));
+
+        matricular(professor, id, aluno.id(), carla.id(), carla.id())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matriculados").value(1))
+                .andExpect(jsonPath("$.jaMatriculados").value(1))
+                .andExpect(jsonPath("$.totalAlunos").value(2));
+
+        assertEquals(2, matriculas.countByTurmaId(id));
+    }
+
+    @Test
+    void rejeitaMatriculaDeIdInexistenteOuQueNaoSejaAluno() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+
+        matricular(professor, id, aluno.id(), "nao-existe")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("A lista tem alunos que não existem."));
+        matricular(professor, id, outroProfessor.id())
+                .andExpect(status().isBadRequest());
+
+        // Nada é gravado quando a lista tem algum id inválido
+        assertEquals(0, matriculas.countByTurmaId(id));
+    }
+
+    @Test
+    void validaListaDeAlunosDaMatricula() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+
+        mvc.perform(post("/api/turmas/" + id + "/matriculas").header("Authorization", bearer(professor))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"alunoIds\":[]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.alunoIds").exists());
+    }
+
+    @Test
+    void naoMatriculaNemBuscaCandidatosEmTurmaDeOutroProfessor() throws Exception {
+        String idDeOutro = idDe(criarTurma(outroProfessor, "Turma X", "Redes", "Sex 08:00"));
+
+        matricular(professor, idDeOutro, aluno.id()).andExpect(status().isNotFound());
+        mvc.perform(get("/api/turmas/" + idDeOutro + "/candidatos").header("Authorization", bearer(professor)))
+                .andExpect(status().isNotFound());
+        assertEquals(0, matriculas.countByTurmaId(idDeOutro));
+    }
+
     // ---- Acesso ----
 
     @Test
@@ -202,6 +306,12 @@ class TurmaControllerTest {
                 """.formatted(nome, disciplina, horario);
         return mvc.perform(post("/api/turmas").header("Authorization", bearer(dono))
                 .contentType(MediaType.APPLICATION_JSON).content(json));
+    }
+
+    ResultActions matricular(Usuario dono, String turmaId, String... alunoIds) throws Exception {
+        String lista = Arrays.stream(alunoIds).map(id -> "\"" + id + "\"").collect(Collectors.joining(","));
+        return mvc.perform(post("/api/turmas/" + turmaId + "/matriculas").header("Authorization", bearer(dono))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"alunoIds\":[" + lista + "]}"));
     }
 
     String idDe(ResultActions resposta) throws Exception {

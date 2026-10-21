@@ -30,6 +30,11 @@ public class TratadorDeErros {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    @ExceptionHandler(RequisicaoInvalidaException.class)
+    ProblemDetail requisicaoInvalida(RequisicaoInvalidaException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail validacao(MethodArgumentNotValidException e) {
         ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,

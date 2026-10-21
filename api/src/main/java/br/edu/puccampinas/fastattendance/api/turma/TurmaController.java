@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,5 +47,20 @@ public class TurmaController {
     public List<AlunoResponse> alunos(@AuthenticationPrincipal UsuarioAutenticado professor,
                                       @PathVariable String id) {
         return turmas.alunos(professor.id(), id);
+    }
+
+    /** Alunos que ainda não estão na turma; {@code busca} filtra por nome ou matrícula. */
+    @GetMapping("/{id}/candidatos")
+    public List<AlunoResponse> candidatos(@AuthenticationPrincipal UsuarioAutenticado professor,
+                                          @PathVariable String id,
+                                          @RequestParam(required = false) String busca) {
+        return turmas.candidatos(professor.id(), id, busca);
+    }
+
+    @PostMapping("/{id}/matriculas")
+    public MatriculaResponse matricular(@AuthenticationPrincipal UsuarioAutenticado professor,
+                                        @PathVariable String id,
+                                        @Valid @RequestBody MatriculaRequest requisicao) {
+        return turmas.matricular(professor.id(), id, requisicao);
     }
 }

@@ -4,23 +4,33 @@ import br.edu.puccampinas.fastattendance.api.dominio.Matricula;
 import br.edu.puccampinas.fastattendance.api.dominio.Turma;
 import br.edu.puccampinas.fastattendance.api.dominio.Usuario;
 import br.edu.puccampinas.fastattendance.api.erro.RecursoNaoEncontradoException;
+import br.edu.puccampinas.fastattendance.api.erro.RequisicaoInvalidaException;
 import br.edu.puccampinas.fastattendance.api.repositorio.MatriculaRepository;
 import br.edu.puccampinas.fastattendance.api.repositorio.TurmaRepository;
 import br.edu.puccampinas.fastattendance.api.repositorio.UsuarioRepository;
 import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
+import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import org.bson.Document;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class TurmaService {
+
+    static final int LIMITE_CANDIDATOS = 20;
 
     private static final Comparator<Turma> ORDEM = Comparator
             .comparing(Turma::disciplina, String.CASE_INSENSITIVE_ORDER)
@@ -67,6 +77,55 @@ public class TurmaService {
                 .sorted(Comparator.comparing(Usuario::nome, String.CASE_INSENSITIVE_ORDER))
                 .map(AlunoResponse::de)
                 .toList();
+    }
+
+    /**
+     * Alunos que ainda não estão na turma, para o professor escolher quem matricular. A busca casa
+     * com parte do nome ou da matrícula, sem diferenciar maiúsculas, e devolve no máximo
+     * {@value #LIMITE_CANDIDATOS} resultados.
+     */
+    public List<AlunoResponse> candidatos(String professorId, String turmaId, String busca) {
+        Turma turma = daProfessor(professorId, turmaId);
+
+        Criteria criterio = Criteria.where("papel").is(Papel.ALUNO);
+        List<String> jaMatriculados = matriculas.findByTurmaId(turma.id()).stream().map(Matricula::alunoId).toList();
+        if (!jaMatriculados.isEmpty()) {
+            criterio = criterio.and("id").nin(jaMatriculados);
+        }
+        if (busca != null && !busca.isBlank()) {
+            // Pattern.quote trata o texto digitado como literal, não como expressão regular
+            String texto = Pattern.quote(busca.strip());
+            criterio = criterio.orOperator(
+                    Criteria.where("nome").regex(texto, "i"),
+                    Criteria.where("matricula").regex(texto, "i"));
+        }
+        Query consulta = Query.query(criterio).with(Sort.by("nome")).limit(LIMITE_CANDIDATOS);
+        return mongo.find(consulta, Usuario.class).stream().map(AlunoResponse::de).toList();
+    }
+
+    /** Matricula vários alunos de uma vez; quem já está na turma é ignorado. */
+    public MatriculaResponse matricular(String professorId, String turmaId, MatriculaRequest requisicao) {
+        Turma turma = daProfessor(professorId, turmaId);
+
+        Set<String> alunoIds = new LinkedHashSet<>(requisicao.alunoIds());
+        long alunosEncontrados = usuarios.findAllById(alunoIds).stream()
+                .filter(usuario -> usuario.papel() == Papel.ALUNO)
+                .count();
+        if (alunosEncontrados != alunoIds.size()) {
+            throw new RequisicaoInvalidaException("A lista tem alunos que não existem.");
+        }
+
+        int matriculados = 0;
+        for (String alunoId : alunoIds) {
+            try {
+                matriculas.insert(new Matricula(null, turma.id(), alunoId, null));
+                matriculados++;
+            } catch (DuplicateKeyException e) {
+                // Já matriculado: o índice único turma_aluno_unico decide, mesmo com chamadas concorrentes
+            }
+        }
+        return new MatriculaResponse(matriculados, alunoIds.size() - matriculados,
+                matriculas.countByTurmaId(turma.id()));
     }
 
     /** A turma de outro professor responde como inexistente, para não revelar que ela existe. */
