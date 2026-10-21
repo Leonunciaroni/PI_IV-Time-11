@@ -221,6 +221,39 @@ O e-mail do aluno não é exposto ao professor.
 
 O hash da senha nunca é exposto.
 
+## Salas
+
+Salas físicas do campus, usadas na validação de distância do modo QR Code. As salas são
+compartilhadas: qualquer professor vê e cadastra salas. As rotas de `/api/salas` exigem o papel
+`PROFESSOR`: sem token a resposta é `401`, e com o token de um aluno é `403`.
+
+### `POST /api/salas`
+
+```json
+{ "nome": "H15 - Sala 203", "latitude": -22.8337, "longitude": -47.0525, "raioMetros": 30 }
+```
+
+| Campo | Regra |
+|---|---|
+| `nome` | Obrigatório; espaços nas pontas são removidos. |
+| `latitude` | Obrigatório, de `-90` a `90` (graus decimais). |
+| `longitude` | Obrigatório, de `-180` a `180` (graus decimais). |
+| `raioMetros` | Obrigatório, maior que zero. Distância máxima aceita entre o aluno e a sala. |
+
+Resposta `201` com `SalaResponse`; `400` traz `campos` com a mensagem de cada campo inválido.
+
+### `GET /api/salas`
+
+Todas as salas, em ordem alfabética do nome (lista vazia se não houver nenhuma). Resposta `200`
+com uma lista de `SalaResponse`.
+
+## `SalaResponse`
+
+```json
+{ "id": "66f1c3bb...", "nome": "H15 - Sala 203", "latitude": -22.8337, "longitude": -47.0525,
+  "raioMetros": 30.0 }
+```
+
 ## Saúde
 
 `GET /actuator/health` (direto na porta 8080 do contêiner; não é exposto pelo Nginx).
