@@ -27,7 +27,10 @@ async function postar<T>(caminho: string, corpo: unknown): Promise<T> {
 
   if (!resposta.ok) {
     const problema = (await resposta.json().catch(() => null)) as Problema | null;
-    throw new ErroApi(problema?.detail ?? "Erro inesperado. Tente novamente.", resposta.status, problema?.campos);
+    const mensagem = resposta.status >= 500
+      ? "O serviço está temporariamente indisponível. Tente novamente em alguns instantes."
+      : "Não foi possível concluir a solicitação. Tente novamente.";
+    throw new ErroApi(problema?.detail ?? mensagem, resposta.status, problema?.campos);
   }
   return (await resposta.json()) as T;
 }
