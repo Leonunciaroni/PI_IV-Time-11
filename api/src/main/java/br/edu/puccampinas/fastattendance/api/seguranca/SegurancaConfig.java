@@ -44,6 +44,8 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/error").permitAll()
+                        // O aluno consulta o próprio histórico; o serviço confere quem pode ver o quê
+                        .requestMatchers(HttpMethod.GET, "/api/turmas/*/frequencia/*").hasAnyRole("PROFESSOR", "ALUNO")
                         .requestMatchers("/api/turmas/**").hasRole("PROFESSOR")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e

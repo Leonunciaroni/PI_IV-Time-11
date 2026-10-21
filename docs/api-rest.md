@@ -148,6 +148,22 @@ Números do dashboard de frequência da turma (tela P9). Só entram no cálculo 
 
 Os percentuais têm uma casa decimal. Turma sem aulas ou sem alunos devolve zeros e listas vazias.
 
+### `GET /api/turmas/{id}/frequencia/{alunoId}`
+
+Histórico de um aluno na turma: todas as aulas encerradas e se ele esteve presente em cada uma,
+mais o percentual acumulado. Usado na tela de histórico do aluno. Aceita professor e aluno.
+
+| Quem consulta | Regra | Resposta |
+|---|---|---|
+| Professor dono da turma | Vê qualquer aluno matriculado. | `200` |
+| Professor de outra turma | A turma responde como inexistente. | `404` |
+| Aluno | Só o próprio histórico (`alunoId` igual ao do token). | `200` |
+| Aluno pedindo outro aluno | `"Você só pode ver o seu próprio histórico."` | `403` |
+| Aluno não matriculado na turma | Responde como inexistente. | `404` |
+
+Usa as mesmas regras do cálculo de estatísticas: só aulas encerradas, e quem não tem registro ou foi
+desmarcado conta como ausente. Menos de 75% marca `abaixoDoMinimo`; turma sem aulas devolve zeros.
+
 ## `TurmaResponse`
 
 ```json
@@ -177,6 +193,20 @@ O e-mail do aluno não é exposto ao professor.
       "presencas": 8, "aulas": 12, "percentual": 66.7 }
   ],
   "usoPorModo": { "CLASSICA": 2, "QRCODE": 7, "SOM": 3 }
+}
+```
+
+`aulas` vem em ordem cronológica e `data` é a abertura da aula.
+
+## `HistoricoResponse`
+
+```json
+{
+  "turmaId": "66f1c0aa...", "alunoId": "66f1b9ff...", "nome": "Bruno Lima", "matricula": "24005678",
+  "aulasDadas": 12, "presencas": 8, "percentual": 66.7, "minimo": 75, "abaixoDoMinimo": true,
+  "aulas": [
+    { "sessaoId": "66f1d0aa...", "data": "2026-10-19T22:00:00Z", "modo": "QRCODE", "presente": true }
+  ]
 }
 ```
 

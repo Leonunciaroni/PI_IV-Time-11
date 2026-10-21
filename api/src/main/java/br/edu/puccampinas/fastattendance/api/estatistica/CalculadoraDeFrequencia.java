@@ -80,7 +80,7 @@ public final class CalculadoraDeFrequencia {
         return uso;
     }
 
-    private static double percentual(long parte, long total) {
+    static double percentual(long parte, long total) {
         return total == 0 ? 0 : arredondar(parte * 100.0 / total);
     }
 

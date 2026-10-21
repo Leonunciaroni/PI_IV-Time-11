@@ -8,4 +8,6 @@ import java.util.List;
 public interface PresencaRepository extends MongoRepository<Presenca, String> {
 
     List<Presenca> findByTurmaId(String turmaId);
+
+    List<Presenca> findByTurmaIdAndAlunoId(String turmaId, String alunoId);
 }
