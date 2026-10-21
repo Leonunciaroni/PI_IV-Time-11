@@ -14,7 +14,8 @@ docker compose ps
 
 O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 
-Contas de demonstração (um professor e dois alunos, senha `demo12345`):
+Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-mail do professor,
+`professor@demo.br`, precisa estar em `PROFESSORES_PERMITIDOS` (já está no `.env.example`):
 
 ```bash
 ./usuarios-demo.sh

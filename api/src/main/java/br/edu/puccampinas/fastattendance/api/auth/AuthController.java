@@ -27,7 +27,7 @@ public class AuthController {
         return auth.login(requisicao);
     }
 
-    /** Cria uma conta de professor ou aluno. */
+    /** Cria uma conta de aluno, ou de professor se o e-mail estiver em {@link CadastroProperties}. */
     @PostMapping("/registro")
     @ResponseStatus(HttpStatus.CREATED)
     public UsuarioResponse registrar(@Valid @RequestBody RegistroRequest requisicao) {
