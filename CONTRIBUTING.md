@@ -49,6 +49,29 @@ cd apps/professor && npm run lint && npm run build
 cd apps/aluno && npm run lint && npm run build
 ```
 
+## Rodando os testes da API
+
+Os testes de integração da API sobem um MongoDB descartável (`mongo:8.0`) em contêiner, com o
+Testcontainers. Por isso o **Docker precisa estar rodando** (no Windows e no Mac, abra o Docker
+Desktop antes). Na primeira execução as imagens são baixadas, o que demora um pouco.
+
+```bash
+./mvnw -pl api -am test                                 # todos os testes da api (e do common)
+./mvnw -pl api -am test -Dtest=TurmaControllerTest \
+  -Dsurefire.failIfNoSpecifiedTests=false               # uma classe só
+```
+
+Se algo falhar:
+
+- **Testes não encontram o Docker:** confirme que `docker version` funciona no mesmo terminal. No
+  Windows, adicione ao `Path` a pasta do Docker Desktop
+  (`%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin`) e abra um terminal novo.
+- **`./mvnw` falha ao baixar plugins com `PKIX path building failed`** (comum no Windows, em redes
+  com antivírus ou proxy que trocam o certificado): faça o Java confiar nos certificados do sistema
+  com a variável de ambiente `MAVEN_OPTS=-Djavax.net.ssl.trustStoreType=Windows-ROOT`. Ela vale só
+  nessa máquina e não deve ser colocada no repositório, porque `Windows-ROOT` não existe em Linux
+  e Mac.
+
 ## Reuniões e acompanhamento
 
 - Alinhamento toda quarta-feira, 30 minutos: o que foi feito, o que vem a seguir e o que está bloqueado.
