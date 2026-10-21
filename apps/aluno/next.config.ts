@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
   basePath: "/aluno",
   // Gera .next/standalone com server.js para a imagem Docker.
   output: "standalone",
+  async redirects() {
+    // No dev, aceita os endereços sem prefixo abertos pelo terminal ou digitados à mão.
+    if (process.env.NODE_ENV !== "development") return [];
+    return ["/", "/login", "/cadastro"].map((caminho) => ({
+      source: caminho,
+      destination: `/aluno${caminho}`,
+      basePath: false,
+      permanent: false,
+    }));
+  },
   async rewrites() {
     // Em produção o Nginx atende /api na mesma origem. Em desenvolvimento (npm run dev),
     // encaminha /api para o ambiente do Docker Compose.
