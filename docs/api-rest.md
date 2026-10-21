@@ -133,6 +133,21 @@ Quem já está na turma não gera erro: conta em `jaMatriculados`. Se algum id n
 de um aluno, a resposta é `400` (`"A lista tem alunos que não existem."`) e **nenhum** aluno da
 lista é matriculado. Se a lista for vazia, `400` com `campos`.
 
+### `GET /api/turmas/{id}/estatisticas`
+
+Números do dashboard de frequência da turma (tela P9). Só entram no cálculo as aulas já
+**encerradas**. Responde `404` se a turma não existe ou é de outro professor.
+
+| Cálculo | Regra |
+|---|---|
+| Frequência da aula | Presentes ÷ alunos matriculados hoje. Quem não tem registro conta como ausente, e a presença desmarcada (`presente: false`) não conta. |
+| Frequência do aluno | Aulas com presença ÷ aulas dadas. |
+| Frequência média | Média dos percentuais das aulas. |
+| Abaixo do mínimo | Aluno com menos de 75% (exatamente 75% não entra), do menor para o maior percentual. |
+| Uso por modo | Número de aulas dadas em cada modo; os três modos sempre aparecem, mesmo com zero. |
+
+Os percentuais têm uma casa decimal. Turma sem aulas ou sem alunos devolve zeros e listas vazias.
+
 ## `TurmaResponse`
 
 ```json
@@ -147,6 +162,25 @@ lista é matriculado. Se a lista for vazia, `400` com `campos`.
 ```
 
 O e-mail do aluno não é exposto ao professor.
+
+## `EstatisticasResponse`
+
+```json
+{
+  "aulasDadas": 12, "totalAlunos": 30, "frequenciaMedia": 87.5, "minimo": 75,
+  "aulas": [
+    { "sessaoId": "66f1d0aa...", "data": "2026-10-19T22:00:00Z", "modo": "QRCODE",
+      "presentes": 27, "matriculados": 30, "percentual": 90.0 }
+  ],
+  "abaixoDoMinimo": [
+    { "alunoId": "66f1b9ff...", "nome": "Bruno Lima", "matricula": "24005678",
+      "presencas": 8, "aulas": 12, "percentual": 66.7 }
+  ],
+  "usoPorModo": { "CLASSICA": 2, "QRCODE": 7, "SOM": 3 }
+}
+```
+
+`aulas` vem em ordem cronológica e `data` é a abertura da aula.
 
 ## `UsuarioResponse`
 
