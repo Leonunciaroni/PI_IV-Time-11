@@ -175,7 +175,7 @@ public final class ServicoDeSessoes {
         return sessao;
     }
 
-    private int totalPresentes(String sessaoId) {
+    int totalPresentes(String sessaoId) {
         return (int) presencas.countDocuments(and(eq("sessaoId", sessaoId), eq("presente", true)));
     }
 

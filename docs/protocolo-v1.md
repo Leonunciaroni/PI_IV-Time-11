@@ -143,6 +143,16 @@ recarregar a página do painel.
 { "sessaoId": "66f1c2...", "alunoId": "66f1b9...", "presente": true }
 ```
 
+Resposta `presenca.atualizada` (mesmo formato do evento da seção 5.2), com `ref`. Regras, que valem
+também para `presenca.marcar_lote`:
+
+- Sessão aberta e no modo `CLASSICA`; nos demais modos: `MODO_INCOMPATIVEL`.
+- Só o professor dono da sessão marca (`PERMISSAO_NEGADA` para outro professor ou aluno).
+- `presente` é obrigatório (`true` ou `false`); ausente: `MENSAGEM_INVALIDA`.
+- Aluno fora da turma: `ALUNO_NAO_MATRICULADO`.
+- Cada aluno tem um único registro por sessão: desmarcar grava `presente: false` no mesmo
+  documento, com `origem: MANUAL` e `registradoEm` atualizado.
+
 ### 4.7 `presenca.marcar_lote` (modo clássico)
 
 Marca todos os matriculados com `presente` e, em seguida, aplica o valor oposto às exceções.
@@ -150,6 +160,10 @@ Marca todos os matriculados com `presente` e, em seguida, aplica o valor oposto 
 ```json
 { "sessaoId": "66f1c2...", "presente": true, "excecoes": ["66f1b9...", "66f1ba..."] }
 ```
+
+`excecoes` é opcional. Se alguma exceção não for aluno da turma, a resposta é
+`ALUNO_NAO_MATRICULADO` e **nada** é gravado. O lote sobrescreve marcações anteriores e responde
+`presenca.lote_ok` com os totais.
 
 ### 4.8 `checkin` (modos QR Code e som)
 
