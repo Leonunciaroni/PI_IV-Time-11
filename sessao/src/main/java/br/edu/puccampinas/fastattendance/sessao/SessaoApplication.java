@@ -1,6 +1,7 @@
 package br.edu.puccampinas.fastattendance.sessao;
 
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
+import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeChamadaClassica;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeSessoes;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.Json;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.RoteadorDeMensagens;
@@ -8,6 +9,7 @@ import br.edu.puccampinas.fastattendance.sessao.servidor.ServidorSessao;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoDatabase;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -60,9 +62,11 @@ public final class SessaoApplication {
 
         ConnectionString uri = new ConnectionString(configuracao.mongoUri());
         MongoClient mongo = MongoClients.create(uri);
-        ServicoDeSessoes sessoes = new ServicoDeSessoes(mongo.getDatabase(uri.getDatabase()), relogio,
-                configuracao.duracaoMaxima());
-        RoteadorDeMensagens roteador = new RoteadorDeMensagens(json, jwt, agendador, relogio, sessoes);
+        MongoDatabase banco = mongo.getDatabase(uri.getDatabase());
+        ServicoDeSessoes sessoes = new ServicoDeSessoes(banco, relogio, configuracao.duracaoMaxima());
+        ServicoDeChamadaClassica chamadaClassica = new ServicoDeChamadaClassica(banco, sessoes, relogio);
+        RoteadorDeMensagens roteador = new RoteadorDeMensagens(json, jwt, agendador, relogio, sessoes,
+                chamadaClassica);
 
         ServidorSessao servidor = new ServidorSessao(configuracao, roteador, agendador, json);
         servidor.aoEncerrar(mongo::close);

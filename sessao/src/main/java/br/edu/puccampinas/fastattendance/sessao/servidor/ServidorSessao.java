@@ -55,7 +55,9 @@ public final class ServidorSessao extends WebSocketServer {
         this.processador = processador;
         this.agendador = agendador;
         this.json = json;
-        setReuseAddr(true);
+        // Só com porta fixa (reinício rápido sem esperar o TIME_WAIT). Com a porta 0 dos testes, o
+        // SO_REUSEADDR deixa o macOS escolher uma porta já ocupada em 127.0.0.1 por outro processo
+        setReuseAddr(configuracao.porta() != 0);
         setTcpNoDelay(true);
         setConnectionLostTimeout(TIMEOUT_CONEXAO_PERDIDA_SEGUNDOS);
     }
