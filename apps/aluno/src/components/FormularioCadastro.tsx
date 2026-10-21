@@ -107,7 +107,7 @@ export function FormularioCadastro() {
           <p id="ajuda-senha" className="text-xs font-normal text-[#64748b]">Use de 8 a 72 caracteres.</p>
           <p id="erro-senha" className="text-sm text-red-700">{camposInvalidos.senha}</p>
         </div>
-        
+
         <p role="alert" aria-live="polite" className="text-sm text-red-700">{erro}</p>
         <button type="submit"
           className="min-h-11 rounded-lg bg-[#5040e8] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4332cd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5040e8] disabled:cursor-wait disabled:opacity-60">
@@ -117,4 +117,3 @@ export function FormularioCadastro() {
     </form>
   );
 }
-
