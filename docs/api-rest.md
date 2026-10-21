@@ -61,6 +61,81 @@ errada, com o mesmo tempo de resposta, para não revelar quais e-mails estão ca
 
 Devolve o `UsuarioResponse` do dono do token. `401` sem token ou com token inválido/expirado.
 
+## Turmas
+
+Todas as rotas de `/api/turmas` exigem o papel `PROFESSOR`: sem token a resposta é `401`, e com o
+token de um aluno é `403`. O professor só enxerga as próprias turmas; o id de uma turma de outro
+professor, ou que não existe, responde `404` com `"detail": "Turma não encontrada"`, para não
+revelar quais turmas existem.
+
+### `POST /api/turmas`
+
+```json
+{ "nome": "Turma A", "disciplina": "Engenharia de Software I", "horarioPadrao": "Seg 19:00" }
+```
+
+| Campo | Regra |
+|---|---|
+| `nome` | Obrigatório, até 120 caracteres. |
+| `disciplina` | Obrigatório, até 120 caracteres. |
+| `horarioPadrao` | Obrigatório, até 60 caracteres. |
+
+Espaços nas pontas são removidos. Resposta `201` com `TurmaResponse`; `400` traz `campos` com a
+mensagem de cada campo inválido.
+
+### `GET /api/turmas`
+
+Turmas do professor autenticado, ordenadas por disciplina e nome (lista vazia se não houver
+nenhuma). Resposta `200` com uma lista de `TurmaResponse`.
+
+### `GET /api/turmas/{id}`
+
+Resposta `200` com `TurmaResponse`; `404` se a turma não for do professor ou não existir.
+
+### `GET /api/turmas/{id}/alunos`
+
+Alunos matriculados na turma, em ordem alfabética. Resposta `200` com uma lista de `AlunoResponse`.
+
+### `GET /api/turmas/{id}/candidatos?busca=`
+
+Alunos que **ainda não estão** na turma, para a tela de matrícula. `busca` é opcional e casa com
+qualquer parte do nome ou da matrícula, sem diferenciar maiúsculas; o texto é tratado como literal,
+não como expressão regular. Devolve no máximo 20 alunos, em ordem alfabética. Professores nunca
+aparecem na lista.
+
+### `POST /api/turmas/{id}/matriculas`
+
+Matricula vários alunos de uma vez.
+
+```json
+{ "alunoIds": ["66f1b9ff...", "66f1ba01..."] }
+```
+
+`alunoIds` é obrigatório, tem de 1 a 200 ids e repetições são ignoradas. Resposta `200`:
+
+```json
+{ "matriculados": 1, "jaMatriculados": 1, "totalAlunos": 2 }
+```
+
+Quem já está na turma não gera erro: conta em `jaMatriculados`. Se algum id não existir ou não for
+de um aluno, a resposta é `400` (`"A lista tem alunos que não existem."`) e **nenhum** aluno da
+lista é matriculado. Se a lista for vazia ou passar de 200 ids, `400` com `campos`.
+
+## `TurmaResponse`
+
+```json
+{ "id": "66f1c0aa...", "nome": "Turma A", "disciplina": "Engenharia de Software I",
+  "horarioPadrao": "Seg 19:00", "totalAlunos": 58, "criadaEm": "2026-10-20T22:10:00Z" }
+```
+
+## `AlunoResponse`
+
+```json
+{ "id": "66f1b9ff...", "nome": "Ana Souza", "matricula": "24001234" }
+```
+
+O e-mail do aluno não é exposto ao professor.
+
 ## `UsuarioResponse`
 
 ```json
