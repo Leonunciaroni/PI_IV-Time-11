@@ -2,6 +2,7 @@
 
 import { useState, type SubmitEvent } from "react";
 import { ErroApi } from "@/lib/api";
+import { MENSAGEM_HORARIO, horarioValido } from "@/lib/horario";
 import { Botao } from "./ui/Botao";
 import { Campo } from "./ui/Campo";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
@@ -20,6 +21,7 @@ export function validarTurma(dados: DadosTurma): Erros {
   if (!dados.nome.trim()) erros.nome = "Informe o nome da turma.";
   if (!dados.disciplina.trim()) erros.disciplina = "Informe a disciplina.";
   if (!dados.horarioPadrao.trim()) erros.horarioPadrao = "Informe o horário padrão.";
+  else if (!horarioValido(dados.horarioPadrao)) erros.horarioPadrao = MENSAGEM_HORARIO;
   return erros;
 }
 
