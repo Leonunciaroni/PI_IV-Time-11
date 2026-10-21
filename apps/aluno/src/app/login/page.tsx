@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { FormularioLogin } from "@/components/FormularioLogin";
 
@@ -18,6 +19,13 @@ export default function PaginaLogin() {
         <Suspense fallback={<div className="h-64" aria-busy="true" />}>
           <FormularioLogin />
         </Suspense>
+
+        <p className="text-center text-sm">
+          Não tem uma conta?{" "}
+          <Link href="/cadastro" className="font-semibold text-blue-600 underline dark:text-blue-400">
+            Cadastre-se como aluno
+          </Link>
+        </p>
 
         <p className="text-center text-sm opacity-70">
           É professor?{" "}
