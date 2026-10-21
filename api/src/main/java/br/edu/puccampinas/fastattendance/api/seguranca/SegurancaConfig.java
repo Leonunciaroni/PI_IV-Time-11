@@ -16,7 +16,8 @@ import java.time.Duration;
 
 /**
  * API sem estado: cada requisição se autentica pelo JWT no header {@code Authorization}.
- * Apenas login, cadastro e health check são públicos; as rotas de salas são só do professor.
+ * Apenas login, cadastro e health check são públicos; as rotas de turmas e salas são só do professor,
+ * exceto o histórico de frequência, que o aluno também consulta.
  */
 @Configuration
 public class SegurancaConfig {
@@ -33,7 +34,8 @@ public class SegurancaConfig {
 
     @Bean
     SecurityFilterChain filtros(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
-                                RespostaNaoAutenticado naoAutenticado) throws Exception {
+                                RespostaNaoAutenticado naoAutenticado,
+                                RespostaAcessoNegado acessoNegado) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -43,9 +45,14 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/error").permitAll()
+                        // O aluno consulta o próprio histórico; o serviço confere quem pode ver o quê
+                        .requestMatchers(HttpMethod.GET, "/api/turmas/*/frequencia/*").hasAnyRole("PROFESSOR", "ALUNO")
+                        .requestMatchers("/api/turmas/**").hasRole("PROFESSOR")
                         .requestMatchers("/api/salas/**").hasRole("PROFESSOR")
                         .anyRequest().authenticated())
-                .exceptionHandling(e -> e.authenticationEntryPoint(naoAutenticado))
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(naoAutenticado)
+                        .accessDeniedHandler(acessoNegado))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
