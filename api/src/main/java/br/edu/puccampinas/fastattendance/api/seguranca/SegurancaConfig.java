@@ -16,7 +16,7 @@ import java.time.Duration;
 
 /**
  * API sem estado: cada requisição se autentica pelo JWT no header {@code Authorization}.
- * Apenas login, cadastro e health check são públicos.
+ * Apenas login, cadastro e health check são públicos; as rotas de salas são só do professor.
  */
 @Configuration
 public class SegurancaConfig {
@@ -43,6 +43,7 @@ public class SegurancaConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/error").permitAll()
+                        .requestMatchers("/api/salas/**").hasRole("PROFESSOR")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e.authenticationEntryPoint(naoAutenticado))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
