@@ -1,10 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { enviar } from "@/lib/api";
+import type { Turma } from "@/lib/tipos";
 import { AreaAutenticada } from "./AreaAutenticada";
-import { FormularioTurma } from "./FormularioTurma";
+import { FormularioTurma, type DadosTurma } from "./FormularioTurma";
 
 export function NovaTurma() {
+  const router = useRouter();
+
+  async function criar(dados: DadosTurma) {
+    await enviar<Turma>("/api/turmas", dados);
+    router.push("/");
+  }
+
   return (
     <AreaAutenticada>
       {() => (
@@ -15,7 +25,7 @@ export function NovaTurma() {
             </Link>
             <h1 className="mt-2 text-xl font-semibold">Nova turma</h1>
           </div>
-          <FormularioTurma />
+          <FormularioTurma aoEnviar={criar} />
         </main>
       )}
     </AreaAutenticada>

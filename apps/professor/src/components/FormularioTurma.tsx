@@ -24,8 +24,8 @@ export function validarTurma(dados: DadosTurma): Erros {
 }
 
 interface FormularioTurmaProps {
-  /** Envia a turma. Enquanto não for informado (API pendente), o formulário só valida. */
-  aoEnviar?: (dados: DadosTurma) => Promise<void>;
+  /** Envia a turma depois de validada; um erro lançado é exibido abaixo do botão. */
+  aoEnviar: (dados: DadosTurma) => Promise<void>;
 }
 
 export function FormularioTurma({ aoEnviar }: FormularioTurmaProps) {
@@ -52,10 +52,6 @@ export function FormularioTurma({ aoEnviar }: FormularioTurmaProps) {
     const encontrados = validarTurma(limpos);
     setErros(encontrados);
     if (Object.keys(encontrados).length > 0) return;
-    if (!aoEnviar) {
-      setErroGeral("O cadastro será liberado quando a API de turmas estiver disponível.");
-      return;
-    }
 
     setEnviando(true);
     try {
