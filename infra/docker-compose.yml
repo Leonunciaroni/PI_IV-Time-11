@@ -72,7 +72,12 @@ services:
       context: ..
       dockerfile: sessao/Dockerfile
     environment:
+      MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET em infra/.env}
+      SESSAO_DURACAO_MAXIMA_MIN: ${SESSAO_DURACAO_MAXIMA_MIN:-240}
+    # A API cria os índices (inclusive o que impede duas sessões abertas na mesma turma)
+    depends_on:
+      api: { condition: service_healthy }
     restart: unless-stopped
     # Tempo para fechar as conexões com 1001 e os clientes reconectarem em outra réplica
     stop_grace_period: 5s
