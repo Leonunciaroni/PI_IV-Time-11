@@ -30,8 +30,6 @@ import java.util.regex.Pattern;
 @Service
 public class TurmaService {
 
-    static final int LIMITE_CANDIDATOS = 20;
-
     private static final Comparator<Turma> ORDEM = Comparator
             .comparing(Turma::disciplina, String.CASE_INSENSITIVE_ORDER)
             .thenComparing(Turma::nome, String.CASE_INSENSITIVE_ORDER);
@@ -81,8 +79,7 @@ public class TurmaService {
 
     /**
      * Alunos que ainda não estão na turma, para o professor escolher quem matricular. A busca casa
-     * com parte do nome ou da matrícula, sem diferenciar maiúsculas, e devolve no máximo
-     * {@value #LIMITE_CANDIDATOS} resultados.
+     * com parte do nome ou da matrícula, sem diferenciar maiúsculas.
      */
     public List<AlunoResponse> candidatos(String professorId, String turmaId, String busca) {
         Turma turma = daProfessor(professorId, turmaId);
@@ -99,7 +96,7 @@ public class TurmaService {
                     Criteria.where("nome").regex(texto, "i"),
                     Criteria.where("matricula").regex(texto, "i"));
         }
-        Query consulta = Query.query(criterio).with(Sort.by("nome")).limit(LIMITE_CANDIDATOS);
+        Query consulta = Query.query(criterio).with(Sort.by("nome"));
         return mongo.find(consulta, Usuario.class).stream().map(AlunoResponse::de).toList();
     }
 

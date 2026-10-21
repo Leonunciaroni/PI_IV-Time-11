@@ -213,17 +213,6 @@ class TurmaControllerTest {
     }
 
     @Test
-    void candidatosVemLimitadosA20() throws Exception {
-        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
-        for (int i = 0; i < 25; i++) {
-            usuario("Aluno %02d".formatted(i), "aluno%d@puc.br".formatted(i), Papel.ALUNO, "2400%04d".formatted(i));
-        }
-
-        mvc.perform(get("/api/turmas/" + id + "/candidatos").header("Authorization", bearer(professor)))
-                .andExpect(jsonPath("$.length()").value(20));
-    }
-
-    @Test
     void matriculaAlunosEIgnoraOsQueJaEstaoNaTurma() throws Exception {
         String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
         Usuario carla = usuario("Carla Dias", "carla@puc.br", Papel.ALUNO, "24002001");

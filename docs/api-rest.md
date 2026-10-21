@@ -76,9 +76,9 @@ revelar quais turmas existem.
 
 | Campo | Regra |
 |---|---|
-| `nome` | Obrigatório, até 120 caracteres. |
-| `disciplina` | Obrigatório, até 120 caracteres. |
-| `horarioPadrao` | Obrigatório, até 60 caracteres. |
+| `nome` | Obrigatório. |
+| `disciplina` | Obrigatório. |
+| `horarioPadrao` | Obrigatório. |
 
 Espaços nas pontas são removidos. Resposta `201` com `TurmaResponse`; `400` traz `campos` com a
 mensagem de cada campo inválido.
@@ -100,8 +100,8 @@ Alunos matriculados na turma, em ordem alfabética. Resposta `200` com uma lista
 
 Alunos que **ainda não estão** na turma, para a tela de matrícula. `busca` é opcional e casa com
 qualquer parte do nome ou da matrícula, sem diferenciar maiúsculas; o texto é tratado como literal,
-não como expressão regular. Devolve no máximo 20 alunos, em ordem alfabética. Professores nunca
-aparecem na lista.
+não como expressão regular. Devolve os alunos em ordem alfabética; professores nunca aparecem na
+lista.
 
 ### `POST /api/turmas/{id}/matriculas`
 
@@ -111,7 +111,7 @@ Matricula vários alunos de uma vez.
 { "alunoIds": ["66f1b9ff...", "66f1ba01..."] }
 ```
 
-`alunoIds` é obrigatório, tem de 1 a 200 ids e repetições são ignoradas. Resposta `200`:
+`alunoIds` é obrigatório, deve ter ao menos um id, e repetições são ignoradas. Resposta `200`:
 
 ```json
 { "matriculados": 1, "jaMatriculados": 1, "totalAlunos": 2 }
@@ -119,7 +119,7 @@ Matricula vários alunos de uma vez.
 
 Quem já está na turma não gera erro: conta em `jaMatriculados`. Se algum id não existir ou não for
 de um aluno, a resposta é `400` (`"A lista tem alunos que não existem."`) e **nenhum** aluno da
-lista é matriculado. Se a lista for vazia ou passar de 200 ids, `400` com `campos`.
+lista é matriculado. Se a lista for vazia, `400` com `campos`.
 
 ## `TurmaResponse`
 
