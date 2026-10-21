@@ -25,6 +25,11 @@ public class TratadorDeErros {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     }
 
+    @ExceptionHandler(CadastroNaoPermitidoException.class)
+    ProblemDetail cadastroNaoPermitido(CadastroNaoPermitidoException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+    }
+
     @ExceptionHandler(AcessoNegadoException.class)
     ProblemDetail acessoNegado(AcessoNegadoException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());

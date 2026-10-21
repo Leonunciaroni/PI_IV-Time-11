@@ -11,6 +11,8 @@ fastattendance:
   jwt:
     segredo: ${JWT_SECRET}
     validade-horas: ${JWT_EXPIRACAO_HORAS:12}
+  cadastro:
+    professores-permitidos: ${PROFESSORES_PERMITIDOS:}
 
 server:
   port: ${API_PORT:8080}

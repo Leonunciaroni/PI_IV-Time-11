@@ -55,6 +55,7 @@ services:
       MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET em infra/.env}
       JWT_EXPIRACAO_HORAS: ${JWT_EXPIRACAO_HORAS:-12}
+      PROFESSORES_PERMITIDOS: ${PROFESSORES_PERMITIDOS:-professor@demo.br}
     depends_on:
       mongo-setup: { condition: service_completed_successfully }
     restart: unless-stopped

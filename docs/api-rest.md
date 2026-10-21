@@ -15,7 +15,11 @@ servidor de sessão (mensagem `auth`, ver [protocolo-v1.md](protocolo-v1.md)).
 
 ### `POST /api/auth/registro` — público
 
-Cria uma conta de professor ou aluno.
+Cria uma conta de aluno ou de professor. O cadastro de alunos é aberto; o de professores só é aceito
+para e-mails autorizados na variável de ambiente `PROFESSORES_PERMITIDOS`, uma lista separada por
+vírgulas de e-mails completos (`matheus@puc.br`) ou domínios iniciados por `@`
+(`@puc-campinas.edu.br`), sem diferenciar maiúsculas. Com a lista vazia, nenhum professor se
+cadastra pela API.
 
 ```json
 { "nome": "Ana Souza", "email": "ana@puc.br", "senha": "senha-segura",
@@ -34,6 +38,7 @@ Cria uma conta de professor ou aluno.
 |---|---|
 | `201` | Conta criada. Corpo: `UsuarioResponse`. |
 | `400` | Campos inválidos; o corpo traz `campos` com a mensagem de cada campo. |
+| `403` | Papel `PROFESSOR` com e-mail fora de `PROFESSORES_PERMITIDOS`. Verificado antes do `409`. |
 | `409` | E-mail já cadastrado. |
 
 ### `POST /api/auth/login` — público
