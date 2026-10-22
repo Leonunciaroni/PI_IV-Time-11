@@ -1,4 +1,4 @@
-import type { Problema, TokenResponse, Usuario } from "./tipos";
+import type { Problema, TokenResponse } from "./tipos";
 
 /** Erro da API com a mensagem já pronta para exibir ao usuário. */
 export class ErroApi extends Error {
@@ -37,16 +37,4 @@ async function postar<T>(caminho: string, corpo: unknown): Promise<T> {
 
 export function login(email: string, senha: string): Promise<TokenResponse> {
   return postar<TokenResponse>("/api/auth/login", { email, senha });
-}
-
-export interface DadosCadastro {
-  nome: string;
-  email: string;
-  matricula: string;
-  senha: string;
-}
-
-/** O papel pertence ao app; a autorização do professor continua sendo feita pela API. */
-export function registrar(dados: DadosCadastro): Promise<Usuario> {
-  return postar<Usuario>("/api/auth/registro", { ...dados, papel: "ALUNO" });
 }

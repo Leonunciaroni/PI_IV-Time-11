@@ -47,8 +47,8 @@ export default function PaginaCadastro() {
         </p>
         <p className="mt-4 text-sm text-[#64748b]">É aluno?{" "}
           {/* Outra aplicação: link comum para não receber o basePath deste app. */}
-          <a href="/aluno/cadastro" className="font-medium text-[#5040e8] underline-offset-4 hover:underline">
-            Cadastre-se como aluno
+          <a href="/aluno/login" className="font-medium text-[#5040e8] underline-offset-4 hover:underline">
+            Acesse a área do aluno
           </a>
         </p>
       </section>

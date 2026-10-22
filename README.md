@@ -57,7 +57,7 @@ Testes: `./mvnw verify` na raiz (os testes da API sobem um MongoDB com Testconta
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções e índices do MongoDB |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
-| [docs/cadastro.md](docs/cadastro.md) | Cadastros separados, regras de autorização e validação |
+| [docs/cadastro.md](docs/cadastro.md) | Cadastro do professor, regras de autorização e validação |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
 
 ## Fluxo de trabalho

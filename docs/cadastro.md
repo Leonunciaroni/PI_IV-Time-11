@@ -1,22 +1,23 @@
-# Cadastro de alunos e professores
+# Cadastro do professor
 
-Implementação da issue #67 nos dois apps Next.js, com TypeScript e Tailwind CSS.
+Cadastro docente no app Next.js, com TypeScript e Tailwind CSS. O escopo inicial da issue #67
+foi ajustado: a área do aluno oferece somente login para contas existentes.
 
 ## Acesso e separação
 
-- Aluno: `/aluno/cadastro`, a partir do link na tela de login.
+- Aluno: `/aluno/login`, sem tela ou link de cadastro.
 - Professor: `/professor/cadastro`, a partir do link na tela de login.
-- Cada app envia seu papel fixo (`ALUNO` ou `PROFESSOR`) para `POST /api/auth/registro`.
-- O cadastro do aluno é aberto. O do professor depende da lista `PROFESSORES_PERMITIDOS`,
+- O app do professor envia o papel fixo `PROFESSOR` para `POST /api/auth/registro`.
+- O cadastro do professor depende da lista `PROFESSORES_PERMITIDOS`,
   validada pela API. Ela aceita e-mails completos ou domínios iniciados por `@`; vazia,
   bloqueia todos os novos professores. A tela não recebe nem tenta reproduzir essa lista.
 - O link entre apps usa `<a>`; os links internos usam `next/link`, respeitando o `basePath`.
 
 ## Campos e referência visual
 
-As telas seguem a composição em duas colunas do protótipo fornecido: formulário em fundo branco,
+A tela segue a composição em duas colunas do protótipo fornecido: formulário em fundo branco,
 botão roxo e painel azul escuro com benefícios. No celular as colunas ficam empilhadas, com o
-formulário primeiro. A área escolhida fica explícita no título e permite acessar o outro cadastro.
+formulário primeiro. A área docente fica explícita no título; o link para alunos leva ao login.
 
 Os campos seguem o contrato de [API REST](api-rest.md): nome (até 120 caracteres), e-mail (até
 254), matrícula/registro funcional (até 30) e senha (8 a 72). Nome, e-mail e matrícula têm espaços
@@ -35,7 +36,7 @@ e usam textos em português definidos no app, inclusive quando a validação Jav
 em inglês. O formulário mantém os dados para permitir correção e nova tentativa.
 
 Após `201`, o formulário é limpo e a navegação segue para `/login?cadastro=sucesso`, dentro do
-app correspondente. O login exibe uma confirmação. O cadastro não cria sessão nem armazena JWT.
+app do professor. O login exibe uma confirmação. O cadastro não cria sessão nem armazena JWT.
 
 ## Verificação
 
@@ -46,7 +47,7 @@ infraestrutura conforme o README e use `npm run dev` nos apps, que encaminham `/
 |---|---|
 | Campos vazios ou apenas espaços | Não envia; aponta os campos a corrigir. |
 | Senha com menos de 8 ou mais de 72 caracteres | Impede envio fora dos limites. |
-| Aluno válido | Envia `ALUNO`; redireciona ao login com confirmação. |
+| Área do aluno | Exibe somente login; a antiga rota `/aluno/cadastro` retorna 404. |
 | Professor com e-mail autorizado | Envia `PROFESSOR`; redireciona ao login com confirmação. |
 | Professor sem autorização | Exibe o erro `403` retornado pela API. |
 | E-mail já cadastrado | Exibe o erro `409` retornado pela API. |

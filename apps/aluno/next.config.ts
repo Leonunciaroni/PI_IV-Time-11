@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     // No dev, aceita os endereços sem prefixo abertos pelo terminal ou digitados à mão.
     if (process.env.NODE_ENV !== "development") return [];
-    return ["/", "/login", "/cadastro"].map((caminho) => ({
+    return ["/", "/login"].map((caminho) => ({
       source: caminho,
       destination: `/aluno${caminho}`,
       basePath: false,
