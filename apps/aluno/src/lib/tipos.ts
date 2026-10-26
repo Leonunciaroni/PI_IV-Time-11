@@ -2,6 +2,38 @@
 
 export type Papel = "PROFESSOR" | "ALUNO";
 
+export type ModoChamada = "CLASSICA" | "QRCODE" | "SOM";
+
+export interface ChamadaAberta {
+  id: string;
+  modo: ModoChamada;
+  abertaEm: string;
+}
+
+export interface TurmaDoAluno {
+  id: string;
+  nome: string;
+  disciplina: string;
+  horarioPadrao: string;
+  aulasDadas: number;
+  presencas: number;
+  percentual: number;
+  minimo: number;
+  abaixoDoMinimo: boolean;
+  chamadaAberta: ChamadaAberta | null;
+}
+
+export interface HistoricoAluno {
+  aulasDadas: number;
+  percentual: number;
+  aulas: {
+    sessaoId: string;
+    data: string;
+    modo: ModoChamada;
+    presente: boolean;
+  }[];
+}
+
 export interface Usuario {
   id: string;
   nome: string;
