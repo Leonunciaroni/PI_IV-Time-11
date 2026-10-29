@@ -96,6 +96,8 @@ class PerfilControllerTest {
         }
         atualizar(aluno, "{\"novaSenha\":\"" + "á".repeat(40) + "\",\"senhaAtual\":\"senha-original\"}")
                 .andExpect(status().isBadRequest());
+        atualizar(aluno, "{\"novaSenha\":\"nova-segura\",\"senhaAtual\":\"" + "á".repeat(40) + "\"}")
+                .andExpect(status().isBadRequest());
         assertEquals(aluno, usuarios.findById(aluno.id()).orElseThrow());
     }
 

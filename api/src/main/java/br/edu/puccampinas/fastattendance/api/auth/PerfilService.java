@@ -54,7 +54,9 @@ public class PerfilService {
             if (dados.novaSenha().getBytes(StandardCharsets.UTF_8).length > 72) {
                 throw new RequisicaoInvalidaException("A nova senha excede o limite de 72 bytes. Use uma senha mais curta.");
             }
-            if (dados.senhaAtual() == null || !encoder.matches(dados.senhaAtual(), usuario.senhaHash())) {
+            if (dados.senhaAtual() == null
+                    || dados.senhaAtual().getBytes(StandardCharsets.UTF_8).length > 72
+                    || !encoder.matches(dados.senhaAtual(), usuario.senhaHash())) {
                 throw new RequisicaoInvalidaException("A senha atual está incorreta.");
             }
             criterio.and("senhaHash").is(usuario.senhaHash());
