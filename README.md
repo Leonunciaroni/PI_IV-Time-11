@@ -58,6 +58,7 @@ Testes: `./mvnw verify` na raiz (os testes da API sobem um MongoDB com Testconta
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
+| [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
 
 ## Fluxo de trabalho

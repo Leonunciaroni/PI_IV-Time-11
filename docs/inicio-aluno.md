@@ -14,7 +14,7 @@ arredondados. Em celular, os cartões ficam em uma coluna; no desktop, em duas.
 - Chamada clássica informa que a presença é registrada pelo professor, sem botão de autoconfirmação.
 - A entrada de check-in verifica novamente a matrícula, o id da chamada e o modo. Se a aula
   encerrou ou mudou de canal, orienta voltar ao início e atualizar.
-- “Ver histórico” consulta o endpoint existente e expande as aulas encerradas no cartão.
+- “Ver histórico” abre `/aluno/historico?turmaId=...`, com o percentual e todas as aulas encerradas.
 - Atualiza a cada 20 segundos enquanto a aba está visível, ao retornar à aba ou pelo botão Atualizar.
 - Cancela pedidos pendentes ao sair da rota; não mostra dados de outra sessão após novo login.
 - Erros permitem tentar novamente. Em atualização malsucedida, identifica os dados antigos e
