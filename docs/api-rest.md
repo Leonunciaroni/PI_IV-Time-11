@@ -66,6 +66,26 @@ errada, com o mesmo tempo de resposta, para não revelar quais e-mails estão ca
 
 Devolve o `UsuarioResponse` do dono do token. `401` sem token ou com token inválido/expirado.
 
+### `PATCH /api/auth/me`
+
+Aluno ou professor autenticado edita somente o próprio perfil. Campos opcionais:
+`nome` (não vazio, até 120), `email` (válido, único, até 254), `novaSenha` (8–72 caracteres,
+até 72 bytes UTF-8) e `senhaAtual`. Trocar a senha exige `senhaAtual` correta.
+Campos omitidos são preservados; papel e matrícula não são editáveis.
+
+```json
+{ "nome": "Ana Souza", "email": "ana.nova@instituicao.edu.br" }
+```
+
+```json
+{ "senhaAtual": "senha-anterior", "novaSenha": "nova-senha-segura" }
+```
+
+Resposta `200` com `UsuarioResponse`, sem senha ou hash. O cliente pode usar a resposta
+para atualizar a sessão exibida. `400` para campos inválidos, pedido vazio ou senha atual
+incorreta; `401` sem autenticação; `409` para e-mail em uso. A atualização é atômica:
+uma recusa não altera os demais campos. O JWT atual mantém sua validade original.
+
 ## Turmas
 
 Todas as rotas de `/api/turmas` exigem o papel `PROFESSOR`: sem token a resposta é `401`, e com o
