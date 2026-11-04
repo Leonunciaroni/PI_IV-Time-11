@@ -34,7 +34,8 @@ export function AreaAutenticada({ children }: { children: (sessao: Sessao) => Re
           <Link href="/salas" className="underline-offset-4 hover:underline">
             Salas
           </Link>
-          <span>{sessao.usuario.nome}</span>
+          {/* Em telas estreitas o nome sai, para o cabeçalho caber numa linha */}
+          <span className="hidden sm:inline">{sessao.usuario.nome}</span>
           <button onClick={sair} className={`${botaoSecundario} px-3 py-1`}>
             Sair
           </button>
