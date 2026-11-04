@@ -18,6 +18,7 @@ registrar() {
   case "$status" in
     201) echo "criada    $papel  $email" ;;
     409) echo "já existe $papel  $email" ;;
+    403) echo "erro: $email não está em PROFESSORES_PERMITIDOS (infra/.env)" >&2; exit 1 ;;
     *)   echo "erro $status ao criar $email" >&2; exit 1 ;;
   esac
 }

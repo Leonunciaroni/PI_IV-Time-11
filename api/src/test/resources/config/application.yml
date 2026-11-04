@@ -2,3 +2,5 @@
 fastattendance:
   jwt:
     segredo: segredo-dos-testes-com-mais-de-32-bytes-0123456789
+  cadastro:
+    professores-permitidos: matheus@puc.br, @professores.puc.br

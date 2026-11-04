@@ -72,6 +72,37 @@ class AuthControllerTest {
     }
 
     @Test
+    void recusaProfessorComEmailForaDaListaSemCriarAConta() throws Exception {
+        registrar("Intruso", "intruso@gmail.com", "senha-segura", "PROFESSOR")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("Este e-mail não está autorizado a criar conta de professor."));
+        // Domínio parecido, mas não igual ao autorizado (@professores.puc.br)
+        registrar("Intruso", "x@falsoprofessores.puc.br", "senha-segura", "PROFESSOR")
+                .andExpect(status().isForbidden());
+
+        assertEquals(0, usuarios.count());
+    }
+
+    @Test
+    void aceitaProfessorDeDominioAutorizado() throws Exception {
+        registrar("Profa. Clara", "Clara@Professores.PUC.br", "senha-segura", "PROFESSOR")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.papel").value("PROFESSOR"));
+    }
+
+    @Test
+    void alunoSeCadastraComQualquerEmail() throws Exception {
+        registrar("Ana", "ana@gmail.com", "senha-segura", "ALUNO").andExpect(status().isCreated());
+    }
+
+    @Test
+    void recusaDeProfessorNaoRevelaSeOEmailJaExiste() throws Exception {
+        registrar("Ana", "ana@gmail.com", "senha-segura", "ALUNO").andExpect(status().isCreated());
+
+        registrar("Ana", "ana@gmail.com", "senha-segura", "PROFESSOR").andExpect(status().isForbidden());
+    }
+
+    @Test
     void loginDevolveJwtValidoComPapelDoUsuario() throws Exception {
         registrar("Ana Souza", "ana@puc.br", "senha-segura", "ALUNO");
 

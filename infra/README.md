@@ -14,7 +14,8 @@ docker compose ps
 
 O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 
-Contas de demonstração (um professor e dois alunos, senha `demo12345`):
+Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-mail do professor,
+`professor@demo.br`, precisa estar em `PROFESSORES_PERMITIDOS` (já está no `.env.example`):
 
 ```bash
 ./usuarios-demo.sh
@@ -51,7 +52,7 @@ JWT_SECRET=<mesmo do .env> java -jar api/target/api.jar
 ```bash
 docker compose stop sessao
 ./mvnw -pl sessao -am package -DskipTests
-JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar
+JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar   # usa o MongoDB em localhost:27017
 ```
 
 O Nginx continua apontando para os nomes dos serviços no Docker; para testar pelo Nginx com o

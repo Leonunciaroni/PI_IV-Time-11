@@ -1,10 +1,12 @@
 package br.edu.puccampinas.fastattendance.api.auth;
 
 import br.edu.puccampinas.fastattendance.api.dominio.Usuario;
+import br.edu.puccampinas.fastattendance.api.erro.CadastroNaoPermitidoException;
 import br.edu.puccampinas.fastattendance.api.erro.CredenciaisInvalidasException;
 import br.edu.puccampinas.fastattendance.api.erro.EmailJaCadastradoException;
 import br.edu.puccampinas.fastattendance.api.erro.RecursoNaoEncontradoException;
 import br.edu.puccampinas.fastattendance.api.repositorio.UsuarioRepository;
+import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
 import br.edu.puccampinas.fastattendance.common.seguranca.TokenEmitido;
 import org.springframework.dao.DuplicateKeyException;
@@ -20,16 +22,19 @@ public class AuthService {
     private final UsuarioRepository usuarios;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final CadastroProperties cadastro;
     /**
      * Hash usado quando o e-mail não existe, para que o tempo de resposta seja o mesmo de uma
      * senha errada e não revele quais e-mails estão cadastrados.
      */
     private final String hashFicticio;
 
-    public AuthService(UsuarioRepository usuarios, PasswordEncoder encoder, JwtService jwt) {
+    public AuthService(UsuarioRepository usuarios, PasswordEncoder encoder, JwtService jwt,
+                       CadastroProperties cadastro) {
         this.usuarios = usuarios;
         this.encoder = encoder;
         this.jwt = jwt;
+        this.cadastro = cadastro;
         this.hashFicticio = encoder.encode("senha-ficticia-para-equalizar-tempo");
     }
 
@@ -47,6 +52,10 @@ public class AuthService {
 
     public UsuarioResponse registrar(RegistroRequest requisicao) {
         String email = normalizar(requisicao.email());
+        // Verificado antes do e-mail duplicado, para a recusa não revelar quais e-mails existem
+        if (requisicao.papel() == Papel.PROFESSOR && !cadastro.permiteProfessor(email)) {
+            throw new CadastroNaoPermitidoException();
+        }
         if (usuarios.findByEmail(email).isPresent()) {
             throw new EmailJaCadastradoException(email);
         }

@@ -15,6 +15,7 @@ import org.java_websocket.server.WebSocketServer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +45,7 @@ public final class ServidorSessao extends WebSocketServer {
     private final ScheduledExecutorService agendador;
     private final Json json;
     private final CompletableFuture<Integer> iniciado = new CompletableFuture<>();
+    private final List<AutoCloseable> recursos = new CopyOnWriteArrayList<>();
 
     public ServidorSessao(Configuracao configuracao, ProcessadorDeMensagens processador,
                           ScheduledExecutorService agendador, Json json) {
@@ -53,7 +55,9 @@ public final class ServidorSessao extends WebSocketServer {
         this.processador = processador;
         this.agendador = agendador;
         this.json = json;
-        setReuseAddr(true);
+        // Só com porta fixa (reinício rápido sem esperar o TIME_WAIT). Com a porta 0 dos testes, o
+        // SO_REUSEADDR deixa o macOS escolher uma porta já ocupada em 127.0.0.1 por outro processo
+        setReuseAddr(configuracao.porta() != 0);
         setTcpNoDelay(true);
         setConnectionLostTimeout(TIMEOUT_CONEXAO_PERDIDA_SEGUNDOS);
     }
@@ -122,7 +126,19 @@ public final class ServidorSessao extends WebSocketServer {
             stop(timeoutMs, "Servidor reiniciando");
         } finally {
             agendador.shutdownNow();
+            for (AutoCloseable recurso : recursos) {
+                try {
+                    recurso.close();
+                } catch (Exception e) {
+                    LOG.log(ERROR, "Falha ao liberar recurso no encerramento", e);
+                }
+            }
         }
+    }
+
+    /** Recurso liberado em {@link #encerrar(int)}, depois das conexões (ex.: o cliente do MongoDB). */
+    public void aoEncerrar(AutoCloseable recurso) {
+        recursos.add(recurso);
     }
 
     /** Aguarda o servidor começar a aceitar conexões e devolve a porta em uso. */

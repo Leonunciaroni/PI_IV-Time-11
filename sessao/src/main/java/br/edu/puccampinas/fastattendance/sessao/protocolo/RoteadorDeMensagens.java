@@ -9,10 +9,16 @@ import br.edu.puccampinas.fastattendance.common.protocolo.TipoMensagem;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.Auth;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.AuthOk;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.Erro;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaMarcar;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaMarcarLote;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoAbrir;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoRef;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.Vazio;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
 import br.edu.puccampinas.fastattendance.common.seguranca.TokenInvalidoException;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
+import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeChamadaClassica;
+import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeSessoes;
 import br.edu.puccampinas.fastattendance.sessao.servidor.Conexao;
 import br.edu.puccampinas.fastattendance.sessao.servidor.ProcessadorDeMensagens;
 import tools.jackson.core.JacksonException;
@@ -27,9 +33,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Valida o envelope (docs/protocolo-v1.md, seção 2) e despacha cada tipo de mensagem.
  * <p>
- * Nesta versão são tratados {@code auth} e {@code ping}. Os demais tipos do protocolo são
- * reconhecidos, exigem autenticação e respondem que ainda não estão disponíveis; serão
- * implementados nas próximas semanas do cronograma.
+ * Nesta versão são tratados {@code auth}, {@code ping}, {@code sessao.abrir},
+ * {@code sessao.encerrar}, {@code presenca.marcar} e {@code presenca.marcar_lote}. Os demais tipos do protocolo são reconhecidos, exigem autenticação e
+ * recusam sessões encerradas, mas ainda respondem que não estão disponíveis; serão implementados
+ * nas próximas semanas do cronograma.
  */
 public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
 
@@ -39,12 +46,17 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
     private final JwtService jwt;
     private final ScheduledExecutorService agendador;
     private final Clock relogio;
+    private final ServicoDeSessoes sessoes;
+    private final ServicoDeChamadaClassica chamadaClassica;
 
-    public RoteadorDeMensagens(Json json, JwtService jwt, ScheduledExecutorService agendador, Clock relogio) {
+    public RoteadorDeMensagens(Json json, JwtService jwt, ScheduledExecutorService agendador, Clock relogio,
+                               ServicoDeSessoes sessoes, ServicoDeChamadaClassica chamadaClassica) {
         this.json = json;
         this.jwt = jwt;
         this.agendador = agendador;
         this.relogio = relogio;
+        this.sessoes = sessoes;
+        this.chamadaClassica = chamadaClassica;
     }
 
     @Override
@@ -101,10 +113,42 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
             default -> {
                 if (!conexao.autenticada()) {
                     erro(conexao, id, CodigoErro.AUTH_REQUERIDA, "Envie auth antes de " + nomeTipo);
-                } else {
-                    erro(conexao, id, CodigoErro.MENSAGEM_INVALIDA,
-                            "Tipo " + nomeTipo + " ainda não disponível nesta versão do servidor");
+                    return;
                 }
+                try {
+                    despachar(conexao, tipo.get(), id, dados);
+                } catch (ErroDeProtocolo e) {
+                    erro(conexao, id, e.codigo(), e.getMessage());
+                } catch (JacksonException e) {
+                    erro(conexao, id, CodigoErro.MENSAGEM_INVALIDA, "Campos inválidos em dados");
+                }
+            }
+        }
+    }
+
+    /** Mensagens que exigem autenticação. */
+    private void despachar(Conexao conexao, TipoMensagem tipo, String id, JsonNode dados) {
+        UsuarioAutenticado usuario = conexao.usuario();
+        switch (tipo) {
+            case SESSAO_ABRIR -> conexao.enviar(Envelope.resposta(TipoMensagem.SESSAO_ABERTA, id,
+                    sessoes.abrir(usuario, json.converter(dados, SessaoAbrir.class))));
+            case SESSAO_ENCERRAR -> conexao.enviar(Envelope.resposta(TipoMensagem.SESSAO_ENCERRADA, id,
+                    sessoes.encerrar(usuario, json.converter(dados, SessaoRef.class).sessaoId())));
+            case PRESENCA_MARCAR -> {
+                exigirBooleano(dados, "presente");
+                conexao.enviar(Envelope.resposta(TipoMensagem.PRESENCA_ATUALIZADA, id,
+                        chamadaClassica.marcar(usuario, json.converter(dados, PresencaMarcar.class))));
+            }
+            case PRESENCA_MARCAR_LOTE -> {
+                exigirBooleano(dados, "presente");
+                conexao.enviar(Envelope.resposta(TipoMensagem.PRESENCA_LOTE_OK, id,
+                        chamadaClassica.marcarLote(usuario, json.converter(dados, PresencaMarcarLote.class))));
+            }
+            default -> {
+                // Todo registro passa por aqui primeiro: sessão encerrada não aceita mais nada
+                sessoes.aberta(texto(dados, "sessaoId"));
+                erro(conexao, id, CodigoErro.MENSAGEM_INVALIDA,
+                        "Tipo " + tipo.valor() + " ainda não disponível nesta versão do servidor");
             }
         }
     }
@@ -131,6 +175,14 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
 
         conexao.enviar(Envelope.resposta(TipoMensagem.AUTH_OK, id,
                 new AuthOk(usuario.id(), usuario.nome(), usuario.papel(), usuario.expiraEm().toEpochMilli())));
+    }
+
+    /** Campos booleanos são obrigatórios: ausentes, seriam lidos como {@code false} sem aviso. */
+    private static void exigirBooleano(JsonNode dados, String campo) {
+        JsonNode valor = dados.get(campo);
+        if (valor == null || !valor.isBoolean()) {
+            throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Campo " + campo + " deve ser true ou false");
+        }
     }
 
     private static void erro(Conexao conexao, String ref, CodigoErro codigo, String mensagem) {

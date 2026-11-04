@@ -29,9 +29,14 @@ class ServidorSessaoTest {
 
     @BeforeEach
     void iniciar() throws Exception {
-        // Prazo de autenticação curto para o teste de timeout não demorar
+        // Prazo folgado: conectar uma sala cheia leva centenas de milissegundos em máquinas lentas
+        iniciar(Duration.ofSeconds(10));
+    }
+
+    private void iniciar(Duration prazoAutenticacao) throws Exception {
         servidor = SessaoApplication.iniciar(
-                new Configuracao(0, SEGREDO, Duration.ofMillis(500), Duration.ofSeconds(60)));
+                new Configuracao(0, SEGREDO, MongoDeTeste.uri(), prazoAutenticacao, Duration.ofSeconds(60),
+                        Duration.ofHours(4)));
         porta = servidor.getPort();
     }
 
@@ -82,6 +87,9 @@ class ServidorSessaoTest {
 
     @Test
     void fechaCom4001QuandoAuthNaoChegaNoPrazo() throws Exception {
+        // Prazo curto só aqui, para o teste não demorar
+        servidor.encerrar(1_000);
+        iniciar(Duration.ofMillis(500));
         ClienteTeste cliente = conectar();
 
         assertEquals(CodigoFechamento.AUTENTICACAO_FALHOU, cliente.codigoFechamento(2_000));
