@@ -14,6 +14,25 @@ docker compose ps
 
 O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 
+## HTTPS para celulares
+
+Com o `.env` configurado, habilite o túnel opcional para testar câmera, microfone
+e localização no celular:
+
+```bash
+docker compose --profile https up -d --build
+docker compose logs -f tunel
+```
+
+Abra no celular o endereço `https://...trycloudflare.com` dos logs, acrescentando
+`/professor`, `/aluno` ou `/teste-celular/` para verificar as permissões. O túnel
+requer Internet e só é iniciado ao solicitar o perfil `https` ou o serviço `tunel`.
+Para encerrá-lo, use `docker compose stop tunel`.
+
+Veja o [roteiro completo e o registro de validação](../docs/https-celulares.md).
+
+## Contas de demonstração
+
 Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-mail do professor,
 `professor@demo.br`, precisa estar em `PROFESSORES_PERMITIDOS` (já está no `.env.example`):
 

@@ -107,12 +107,24 @@ services:
       - "${NGINX_PORTA:-8088}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./teste-celular:/usr/share/nginx/teste-celular:ro
     depends_on:
       - api
       - sessao
       - professor
       - aluno
     restart: unless-stopped
+    networks: [interna]
+
+  # Opcional: docker compose --profile https up -d --build
+  # O endereço HTTPS temporário aparece em: docker compose logs -f tunel
+  tunel:
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [https]
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--url", "http://nginx:80"]
+    depends_on:
+      - nginx
+    restart: "no"
     networks: [interna]
 
 volumes:
