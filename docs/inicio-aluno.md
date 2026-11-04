@@ -24,10 +24,10 @@ arredondados. Em celular, os cartões ficam em uma coluna; no desktop, em duas.
 
 ## Limite da entrega
 
-Esta é a tela A2 e a passagem para o canal da A3. A `develop` não contém o leitor de QR Code,
-o decodificador de áudio nem o envio de `checkin` por WebSocket. A rota de entrada identifica
-o canal e informa essa pendência; não pede permissões, simula captura ou registra presença.
-Esses recursos pertencem à implementação da etapa de check-in.
+O canal QR Code da A3 agora usa a câmera, obtém a localização e envia `checkin` pelo WebSocket,
+conforme [checkin-qr.md](checkin-qr.md). O sucesso só aparece após a confirmação do servidor.
+O canal de áudio ainda depende da implementação da captura/decodificação do microfone; acessar
+sua página não registra presença. A presença da chamada clássica continua sendo marcada pelo professor.
 
 ## Validação
 
