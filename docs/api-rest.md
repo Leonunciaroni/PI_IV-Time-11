@@ -279,6 +279,35 @@ com uma lista de `SalaResponse`.
   "raioMetros": 30.0 }
 ```
 
+## Início do aluno
+
+### `GET /api/aluno/turmas`
+
+Exige JWT com papel `ALUNO`. Sem autenticação responde `401`; professor recebe `403`.
+A identidade vem do token, sem aceitar outro `alunoId` informado pelo cliente.
+
+Lista somente turmas nas quais o aluno autenticado está matriculado, ordenadas por disciplina
+e nome. Sem matrículas, retorna `[]`. Consulta turmas, aulas e presenças em lote.
+
+```json
+[
+  {
+    "id": "turma-id", "nome": "Turma A", "disciplina": "Engenharia de Software I",
+    "horarioPadrao": "Seg 19:00", "aulasDadas": 20, "presencas": 19,
+    "percentual": 95.0, "minimo": 75, "abaixoDoMinimo": false,
+    "chamadaAberta": { "id": "sessao-id", "modo": "QRCODE", "abertaEm": "2026-10-26T22:00:00Z" }
+  }
+]
+```
+
+Frequência segue o histórico existente: só aulas encerradas, sem presença ou `presente: false`
+conta como ausência. Sem aulas encerradas, `percentual` vale `0` e `abaixoDoMinimo` é `false`;
+a interface apresenta “—” para distinguir falta de dados de frequência zero.
+
+`chamadaAberta` é `null` quando não existe aula aberta. O modo pode ser `CLASSICA`, `QRCODE`
+ou `SOM`. A resposta nunca inclui o segredo TOTP. O histórico detalhado continua disponível
+em `GET /api/turmas/{id}/frequencia/{alunoId}` com as autorizações já documentadas.
+
 ## Saúde
 
 `GET /actuator/health` (direto na porta 8080 do contêiner; não é exposto pelo Nginx).

@@ -8,5 +8,7 @@ import java.util.List;
 
 public interface SessaoRepository extends MongoRepository<Sessao, String> {
 
+    List<Sessao> findByTurmaIdIn(List<String> turmaIds);
+
     List<Sessao> findByTurmaIdAndStatus(String turmaId, StatusSessao status);
 }
