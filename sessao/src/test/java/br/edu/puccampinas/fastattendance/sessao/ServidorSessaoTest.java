@@ -1,63 +1,61 @@
 package br.edu.puccampinas.fastattendance.sessao;
 
+import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
+import br.edu.puccampinas.fastattendance.common.comunicado.ComunicadoDeDesligamento;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAcompanharSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeCheckin;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDePing;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDePong;
+import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
-import br.edu.puccampinas.fastattendance.common.protocolo.CodigoFechamento;
+import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
 import br.edu.puccampinas.fastattendance.sessao.servidor.LimitadorDeMensagens;
-import br.edu.puccampinas.fastattendance.sessao.servidor.ServidorSessao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Transporte e regras da supervisora: autenticação, prazos, limite de mensagens, inatividade,
+ * desligamento e a allowlist de desserialização. Cada teste usa a conexão de um {@link ClienteTeste}.
+ */
 class ServidorSessaoTest {
 
-    private static final String SEGREDO = "segredo-dos-testes-com-mais-de-32-bytes-0123456789";
-    private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final String SEGREDO = ServidorDeTeste.SEGREDO;
 
     private final JwtService jwt = new JwtService(SEGREDO, Duration.ofHours(1));
     private final List<ClienteTeste> clientes = new ArrayList<>();
-    private ServidorSessao servidor;
+    private ServidorDeTeste servidor;
     private int porta;
 
     @BeforeEach
     void iniciar() throws Exception {
         // Prazo folgado: conectar uma sala cheia leva centenas de milissegundos em máquinas lentas
-        iniciar(Duration.ofSeconds(10));
-    }
-
-    private void iniciar(Duration prazoAutenticacao) throws Exception {
-        servidor = SessaoApplication.iniciar(
-                new Configuracao(0, SEGREDO, MongoDeTeste.uri(), prazoAutenticacao, Duration.ofSeconds(60),
-                        Duration.ofHours(4)));
-        porta = servidor.getPort();
+        servidor = new ServidorDeTeste(Duration.ofSeconds(10), Duration.ofSeconds(60));
+        porta = servidor.porta();
     }
 
     @AfterEach
     void parar() throws Exception {
         clientes.forEach(ClienteTeste::close);
-        servidor.encerrar(1_000);
+        servidor.close();
     }
 
     @Test
-    void respondePingAntesDaAutenticacaoComRefDaRequisicao() throws Exception {
+    void respondePingAntesDaAutenticacao() throws Exception {
         ClienteTeste cliente = conectar();
 
-        cliente.enviar(mensagem("ping", "p1", "{}"));
+        cliente.enviar(new PedidoDePing());
 
-        JsonNode resposta = ler(cliente.proxima());
-        assertEquals(1, resposta.get("v").intValue());
-        assertEquals("pong", resposta.get("tipo").stringValue());
-        assertEquals("p1", resposta.get("ref").stringValue());
-        assertTrue(resposta.get("ts").longValue() > 0);
+        cliente.proximo(RespostaDePong.class);
     }
 
     @Test
@@ -65,120 +63,112 @@ class ServidorSessaoTest {
         ClienteTeste cliente = conectar();
         String token = jwt.emitir("66f1b9ff", "Prof. Matheus", Papel.PROFESSOR).token();
 
-        cliente.enviar(mensagem("auth", "a1", "{\"token\":\"" + token + "\"}"));
+        cliente.enviar(new PedidoDeAutenticacao(token));
 
-        JsonNode resposta = ler(cliente.proxima());
-        assertEquals("auth.ok", resposta.get("tipo").stringValue());
-        assertEquals("a1", resposta.get("ref").stringValue());
-        assertEquals("66f1b9ff", resposta.get("dados").get("usuarioId").stringValue());
-        assertEquals("PROFESSOR", resposta.get("dados").get("papel").stringValue());
+        RespostaDeAutenticacao resposta = cliente.proximo(RespostaDeAutenticacao.class);
+        assertEquals("66f1b9ff", resposta.getUsuarioId());
+        assertEquals(Papel.PROFESSOR, resposta.getPapel());
+        assertTrue(resposta.getExpiraEm() > System.currentTimeMillis());
     }
 
     @Test
-    void tokenInvalidoRecebeErroEFechamento4001() throws Exception {
+    void tokenInvalidoRecebeErroEFechaAConexao() throws Exception {
         ClienteTeste cliente = conectar();
         String deOutroSegredo = new JwtService("outro-segredo-tambem-com-mais-de-32-bytes!!", Duration.ofHours(1))
                 .emitir("1", "Intruso", Papel.PROFESSOR).token();
 
-        cliente.enviar(mensagem("auth", "a1", "{\"token\":\"" + deOutroSegredo + "\"}"));
+        cliente.enviar(new PedidoDeAutenticacao(deOutroSegredo));
 
-        assertErro(cliente.proxima(), "AUTH_INVALIDA");
-        assertEquals(CodigoFechamento.AUTENTICACAO_FALHOU, cliente.codigoFechamento(2_000));
+        cliente.proximoErro(CodigoErro.AUTH_INVALIDA);
+        cliente.aguardarFechamento(2_000);
     }
 
     @Test
-    void fechaCom4001QuandoAuthNaoChegaNoPrazo() throws Exception {
+    void fechaAConexaoQuandoAuthNaoChegaNoPrazo() throws Exception {
         // Prazo curto só aqui, para o teste não demorar
-        servidor.encerrar(1_000);
-        iniciar(Duration.ofMillis(500));
+        servidor.close();
+        servidor = new ServidorDeTeste(Duration.ofMillis(500), Duration.ofSeconds(60));
+        porta = servidor.porta();
         ClienteTeste cliente = conectar();
 
-        assertEquals(CodigoFechamento.AUTENTICACAO_FALHOU, cliente.codigoFechamento(2_000));
+        cliente.aguardarFechamento(3_000);
     }
 
     @Test
     void exigeAutenticacaoParaOutrasMensagens() throws Exception {
         ClienteTeste cliente = conectar();
 
-        cliente.enviar(mensagem("checkin", "c1", "{\"sessaoId\":\"x\",\"token\":\"123456\"}"));
+        cliente.enviar(new PedidoDeCheckin("66f1c2a1b2c3d4e5f6a7b8c9", "123456", OrigemPresenca.QRCODE,
+                "disp", -22.8, -47.0, 5.0));
 
-        JsonNode resposta = assertErro(cliente.proxima(), "AUTH_REQUERIDA");
-        assertEquals("c1", resposta.get("ref").stringValue());
+        cliente.proximoErro(CodigoErro.AUTH_REQUERIDA);
     }
 
     @Test
-    void versaoDiferenteRecebeErroEFechamento4002() throws Exception {
+    void comunicadoQueOClienteNaoEnviaRecebeMensagemInvalida() throws Exception {
         ClienteTeste cliente = conectar();
 
-        cliente.enviar("{\"v\":2,\"tipo\":\"ping\",\"id\":\"p1\",\"ts\":1,\"dados\":{}}");
+        // Respostas e desligamento são só do servidor
+        cliente.enviar(new RespostaDePong());
+        cliente.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
 
-        assertErro(cliente.proxima(), "VERSAO_NAO_SUPORTADA");
-        assertEquals(CodigoFechamento.VERSAO_NAO_SUPORTADA, cliente.codigoFechamento(2_000));
+        cliente.enviar(new ComunicadoDeDesligamento());
+        cliente.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
+
+        cliente.enviar(new PedidoDePing());
+        cliente.proximo(RespostaDePong.class);
+        assertNull(cliente.aguardar(200));
     }
 
     @Test
-    void mensagensInvalidasRecebemErroSemDerrubarAConexao() throws Exception {
-        ClienteTeste cliente = conectar();
-
-        cliente.enviar("isto não é json");
-        assertErro(cliente.proxima(), "MENSAGEM_INVALIDA");
-
-        cliente.enviar(mensagem("tipo.inexistente", "x1", "{}"));
-        assertErro(cliente.proxima(), "MENSAGEM_INVALIDA");
-
-        // Tipos servidor → cliente não podem ser enviados pelo cliente
-        cliente.enviar(mensagem("auth.ok", "x2", "{}"));
-        assertErro(cliente.proxima(), "MENSAGEM_INVALIDA");
-
-        cliente.enviar(mensagem("ping", "p1", "{}"));
-        assertEquals("pong", ler(cliente.proxima()).get("tipo").stringValue());
-        assertFalse(cliente.fechada());
-    }
-
-    @Test
-    void fechaCom4003QuandoOTokenExpiraDuranteAConexao() throws Exception {
+    void fechaAConexaoQuandoOTokenExpira() throws Exception {
         ClienteTeste cliente = conectar();
         String token = new JwtService(SEGREDO, Duration.ofSeconds(1)).emitir("1", "Ana", Papel.ALUNO).token();
 
-        cliente.enviar(mensagem("auth", "a1", "{\"token\":\"" + token + "\"}"));
-        assertEquals("auth.ok", ler(cliente.proxima()).get("tipo").stringValue());
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
 
-        assertEquals(CodigoFechamento.TOKEN_EXPIROU, cliente.codigoFechamento(3_000));
+        cliente.aguardarFechamento(3_000);
     }
 
     @Test
-    void processaMensagensDeUmaConexaoNaOrdemDeChegada() throws Exception {
+    void umaRespostaPorPedidoNaOrdemDeChegada() throws Exception {
         ClienteTeste cliente = conectar();
+        String token = jwt.emitir("66f1b9ff", "Prof. Matheus", Papel.PROFESSOR).token();
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
 
-        for (int i = 0; i < 50; i++) {
-            cliente.enviar(mensagem("ping", "p" + i, "{}"));
+        for (int i = 0; i < 25; i++) {
+            cliente.enviar(new PedidoDePing());
+            cliente.enviar(new PedidoDeAcompanharSessao(null));
         }
 
-        for (int i = 0; i < 50; i++) {
-            assertEquals("p" + i, ler(cliente.proxima()).get("ref").stringValue());
+        for (int i = 0; i < 25; i++) {
+            cliente.proximo(RespostaDePong.class);
+            cliente.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
         }
+        assertNull(cliente.aguardar(200));
     }
 
     @Test
-    void recusaMensagensAcimaDoLimitePorConexaoEFechaCom4008QuandoInsiste() throws Exception {
+    void recusaMensagensAcimaDoLimitePorConexaoEFechaQuandoInsiste() throws Exception {
         ClienteTeste cliente = conectar();
         for (int i = 0; i < LimitadorDeMensagens.MAXIMO; i++) {
-            cliente.enviar(mensagem("ping", "p" + i, "{}"));
+            cliente.enviar(new PedidoDePing());
         }
         for (int i = 0; i < LimitadorDeMensagens.MAXIMO; i++) {
-            assertEquals("pong", ler(cliente.proxima()).get("tipo").stringValue());
+            cliente.proximo(RespostaDePong.class);
         }
 
-        cliente.enviar(mensagem("ping", "extra", "{}"));
-        JsonNode primeiraRecusa = assertErro(cliente.proxima(), "LIMITE_EXCEDIDO");
-        assertEquals("extra", primeiraRecusa.get("ref").stringValue());
+        cliente.enviar(new PedidoDePing());
+        cliente.proximoErro(CodigoErro.LIMITE_EXCEDIDO);
 
         // Recusas seguidas até o limite de insistência: a última fecha a conexão
         for (int i = 1; i < LimitadorDeMensagens.REJEICOES_ATE_FECHAR; i++) {
-            cliente.enviar(mensagem("ping", "extra" + i, "{}"));
-            assertErro(cliente.proxima(), "LIMITE_EXCEDIDO");
+            cliente.enviar(new PedidoDePing());
+            cliente.proximoErro(CodigoErro.LIMITE_EXCEDIDO);
         }
-        assertEquals(CodigoFechamento.VIOLACAO_POLITICA, cliente.codigoFechamento(2_000));
+        cliente.aguardarFechamento(2_000);
     }
 
     @Test
@@ -191,35 +181,62 @@ class ServidorSessaoTest {
 
         for (int i = 0; i < alunos; i++) {
             String token = jwt.emitir("aluno-" + i, "Aluno " + i, Papel.ALUNO).token();
-            sala.get(i).enviar(mensagem("auth", "a" + i, "{\"token\":\"" + token + "\"}"));
+            sala.get(i).enviar(new PedidoDeAutenticacao(token));
         }
 
         for (int i = 0; i < alunos; i++) {
-            JsonNode resposta = ler(sala.get(i).proxima());
-            assertEquals("auth.ok", resposta.get("tipo").stringValue());
-            assertEquals("aluno-" + i, resposta.get("dados").get("usuarioId").stringValue());
+            RespostaDeAutenticacao resposta = sala.get(i).proximo(RespostaDeAutenticacao.class);
+            assertEquals("aluno-" + i, resposta.getUsuarioId());
         }
     }
 
-    private ClienteTeste conectar() {
+    @Test
+    void fechaAConexaoSemTraficoPelaInatividade() throws Exception {
+        servidor.close();
+        servidor = new ServidorDeTeste(Duration.ofSeconds(5), Duration.ofMillis(300));
+        porta = servidor.porta();
+        ClienteTeste cliente = conectar();
+        String token = jwt.emitir("aluno-1", "Ana", Papel.ALUNO).token();
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
+
+        cliente.aguardarFechamento(2_000);
+    }
+
+    @Test
+    void desativarEnviaComunicadoDeDesligamentoEFechaAsConexoes() throws Exception {
+        ClienteTeste cliente = conectar();
+        String token = jwt.emitir("aluno-1", "Ana", Papel.ALUNO).token();
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
+
+        servidor.desativar();
+
+        cliente.proximo(ComunicadoDeDesligamento.class);
+        cliente.aguardarFechamento(2_000);
+    }
+
+    @Test
+    void recusaClasseForaDaAllowlistEFechaSemAfetarOutrasConexoes() throws Exception {
+        ClienteTeste intruso = conectar();
+
+        // Comunicado de classe que não é do pacote common.comunicado: a desserialização a recusa
+        intruso.enviar(new ComunicadoEstranho());
+
+        intruso.aguardarFechamento(2_000);
+        ClienteTeste outro = conectar();
+        outro.enviar(new PedidoDePing());
+        outro.proximo(RespostaDePong.class);
+    }
+
+    /** Comunicado fora do pacote do protocolo: a allowlist de {@code FiltroDeComunicados} não o aceita. */
+    static final class ComunicadoEstranho extends Comunicado {
+        private static final long serialVersionUID = 1L;
+    }
+
+    private ClienteTeste conectar() throws Exception {
         ClienteTeste cliente = new ClienteTeste(porta);
         clientes.add(cliente);
         return cliente;
-    }
-
-    private static String mensagem(String tipo, String id, String dados) {
-        return "{\"v\":1,\"tipo\":\"%s\",\"id\":\"%s\",\"ts\":%d,\"dados\":%s}"
-                .formatted(tipo, id, System.currentTimeMillis(), dados);
-    }
-
-    private static JsonNode ler(String texto) {
-        return JSON.readTree(texto);
-    }
-
-    private static JsonNode assertErro(String texto, String codigoEsperado) {
-        JsonNode resposta = ler(texto);
-        assertEquals("erro", resposta.get("tipo").stringValue(), texto);
-        assertEquals(codigoEsperado, resposta.get("dados").get("codigo").stringValue(), texto);
-        return resposta;
     }
 }
