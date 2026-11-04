@@ -15,10 +15,8 @@ python3 -m http.server 8765 --directory spikes/audio-ultrassom
 
 ## Rodar no celular
 
-O microfone exige HTTPS fora de `localhost`. Opções:
-
-- Túnel HTTPS temporário apontando para a porta 8765 (ex.: `cloudflared tunnel --url http://localhost:8765`).
-- Hospedar a pasta em qualquer serviço de páginas estáticas com HTTPS.
+O microfone exige HTTPS fora de `localhost`. Para testar no celular, hospede a pasta
+em um serviço de páginas estáticas com HTTPS.
 
 ## Funções
 
