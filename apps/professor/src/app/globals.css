@@ -11,6 +11,7 @@
   --primaria: var(--color-blue-600);
   --primaria-forte: var(--color-blue-700);
   --perigo: var(--color-red-600);
+  --sucesso: var(--color-green-700);
   --borda-suave: color-mix(in oklab, var(--color-black) 10%, transparent);
   --borda: color-mix(in oklab, var(--color-black) 15%, transparent);
   --borda-forte: color-mix(in oklab, var(--color-black) 20%, transparent);
@@ -25,6 +26,7 @@
   --color-primaria: var(--primaria);
   --color-primaria-forte: var(--primaria-forte);
   --color-perigo: var(--perigo);
+  --color-sucesso: var(--sucesso);
   --color-borda-suave: var(--borda-suave);
   --color-borda: var(--borda);
   --color-borda-forte: var(--borda-forte);
@@ -40,6 +42,7 @@
     --background: #0a0a0a;
     --foreground: #ededed;
     --perigo: var(--color-red-400);
+    --sucesso: var(--color-green-400);
     --borda-suave: color-mix(in oklab, var(--color-white) 15%, transparent);
     --borda: color-mix(in oklab, var(--color-white) 20%, transparent);
     --borda-forte: color-mix(in oklab, var(--color-white) 25%, transparent);
