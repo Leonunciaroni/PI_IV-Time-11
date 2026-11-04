@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface MatriculaRepository extends MongoRepository<Matricula, String> {
 
+    List<Matricula> findByAlunoId(String alunoId);
+
     List<Matricula> findByTurmaId(String turmaId);
 
     long countByTurmaId(String turmaId);
