@@ -85,7 +85,7 @@ export function MatriculaAlunos() {
               <ul className="flex flex-col gap-1">
                 {candidatos.dados.map((aluno) => (
                   <li key={aluno.id}>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-controle px-2 py-1 hover:bg-realce">
                       <input
                         type="checkbox"
                         checked={selecionados.has(aluno.id)}

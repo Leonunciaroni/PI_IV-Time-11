@@ -7,6 +7,7 @@ import type { Aluno, Turma } from "@/lib/tipos";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { Carregando } from "./ui/Carregando";
 import { ErroDeCarga } from "./ui/ErroDeCarga";
+import { botaoPrincipal, botaoSecundario } from "./ui/estilos";
 
 export function DetalhesTurma() {
   const { id } = useParams<{ id: string }>();
@@ -37,17 +38,10 @@ export function DetalhesTurma() {
             <>
               <div className="flex gap-2 text-sm">
                 {/* A abertura de chamada depende do servidor de sessão (P5) */}
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-md border border-black/20 px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/25"
-                >
+                <button type="button" disabled className={`${botaoSecundario} px-3 py-2`}>
                   Abrir chamada
                 </button>
-                <Link
-                  href={`/turmas/${id}/matricula`}
-                  className="rounded-md bg-blue-600 px-3 py-2 font-semibold text-white"
-                >
+                <Link href={`/turmas/${id}/matricula`} className={`${botaoPrincipal} px-3 py-2`}>
                   Matricular alunos
                 </Link>
               </div>
@@ -62,14 +56,14 @@ export function DetalhesTurma() {
                 ) : (
                   <table className="w-full text-left text-sm">
                     <thead>
-                      <tr className="border-b border-black/20 dark:border-white/25">
+                      <tr className="border-b border-borda-forte">
                         <th className="py-2 font-semibold">Aluno</th>
                         <th className="py-2 font-semibold">Matrícula</th>
                       </tr>
                     </thead>
                     <tbody>
                       {alunos.dados.map((aluno) => (
-                        <tr key={aluno.id} className="border-b border-black/10 dark:border-white/15">
+                        <tr key={aluno.id} className="border-b border-borda-suave">
                           <td className="py-2">{aluno.nome}</td>
                           <td className="py-2">{aluno.matricula}</td>
                         </tr>

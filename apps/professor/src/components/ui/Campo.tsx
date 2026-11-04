@@ -14,12 +14,12 @@ export function Campo({ rotulo, erro, ...entrada }: CampoProps) {
       <input
         {...entrada}
         aria-invalid={erro !== undefined}
-        className={`rounded-md border bg-transparent px-3 py-2 text-base outline-none focus:border-blue-600 ${
-          erro ? "border-red-600 dark:border-red-400" : "border-black/20 dark:border-white/25"
+        className={`rounded-controle border bg-transparent px-3 py-2 text-base outline-none focus:border-primaria ${
+          erro ? "border-perigo" : "border-borda-forte"
         }`}
       />
       {erro && (
-        <span role="alert" className="text-sm font-normal text-red-600 dark:text-red-400">
+        <span role="alert" className="text-sm font-normal text-perigo">
           {erro}
         </span>
       )}
