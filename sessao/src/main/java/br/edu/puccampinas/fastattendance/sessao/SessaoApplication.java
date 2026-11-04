@@ -1,6 +1,7 @@
 package br.edu.puccampinas.fastattendance.sessao;
 
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
+import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeCheckin;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeChamadaClassica;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeSessoes;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.Json;
@@ -65,8 +66,9 @@ public final class SessaoApplication {
         MongoDatabase banco = mongo.getDatabase(uri.getDatabase());
         ServicoDeSessoes sessoes = new ServicoDeSessoes(banco, relogio, configuracao.duracaoMaxima());
         ServicoDeChamadaClassica chamadaClassica = new ServicoDeChamadaClassica(banco, sessoes, relogio);
+        ServicoDeCheckin checkin = new ServicoDeCheckin(banco, sessoes, relogio);
         RoteadorDeMensagens roteador = new RoteadorDeMensagens(json, jwt, agendador, relogio, sessoes,
-                chamadaClassica);
+                chamadaClassica, checkin);
 
         ServidorSessao servidor = new ServidorSessao(configuracao, roteador, agendador, json);
         servidor.aoEncerrar(mongo::close);
