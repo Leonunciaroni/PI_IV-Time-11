@@ -56,6 +56,7 @@ Testes: `./mvnw verify` na raiz (os testes da API sobem um MongoDB com Testconta
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções e índices do MongoDB |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
+| [docs/plano-teste-carga.md](docs/plano-teste-carga.md) | Cenário JMeter para 15 salas × 70 alunos e critérios de aprovação |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |

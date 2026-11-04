@@ -137,6 +137,16 @@ com `kill -9` não foi testado. As execuções usaram um único professor e uma 
 caminho do check-in por QR Code não foi exercitado sob falha. O script cria usuários de teste no
 banco de desenvolvimento (`tol<sufixo>N@demo.br`).
 
+## Plano de teste de carga
+
+O cenário `carga/carga.jmx` simula autenticação e check-in via WebSocket com
+15 salas × 70 alunos. Usa JMeter 5.6.3 e Java 21, sem plugins adicionais.
+Os scripts `carga/preparar.mjs` e `carga/analisar.mjs` preparam os dados e comparam
+o JTL com as presenças persistidas. Dados e credenciais gerados ficam fora do Git.
+
+Veja [plano, comandos e critérios de aprovação](../docs/plano-teste-carga.md).
+O plano é a entrega da #50; a execução da carga completa e seus resultados são a #52.
+
 ## Limpar
 
 ```bash
