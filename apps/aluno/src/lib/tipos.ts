@@ -24,8 +24,13 @@ export interface TurmaDoAluno {
 }
 
 export interface HistoricoAluno {
+  turmaId: string;
+  alunoId: string;
   aulasDadas: number;
+  presencas: number;
   percentual: number;
+  minimo: number;
+  abaixoDoMinimo: boolean;
   aulas: {
     sessaoId: string;
     data: string;
