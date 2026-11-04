@@ -1,6 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Envelope } from "./protocolo";
-import { ClienteSessao, ErroSessao, type EstadoConexao, type SocketSessao } from "./ws";
+import { ClienteSessao, ErroSessao, urlDaSessao, type EstadoConexao, type SocketSessao } from "./ws";
+
+describe("urlDaSessao", () => {
+  it("usa a mesma origem da página em produção, com wss em HTTPS", () => {
+    expect(urlDaSessao({ protocol: "http:", host: "localhost:8088" }, { desenvolvimento: false })).toBe(
+      "ws://localhost:8088/ws",
+    );
+    expect(urlDaSessao({ protocol: "https:", host: "chamada.puc.br" }, { desenvolvimento: false })).toBe(
+      "wss://chamada.puc.br/ws",
+    );
+  });
+
+  it("em npm run dev aponta para o Docker Compose, porque o Next não repassa o /ws", () => {
+    expect(urlDaSessao({ protocol: "http:", host: "localhost:3000" }, { desenvolvimento: true })).toBe(
+      "ws://localhost:8088/ws",
+    );
+  });
+
+  it("aceita um endereço configurado em NEXT_PUBLIC_WS_URL", () => {
+    expect(
+      urlDaSessao({ protocol: "http:", host: "localhost:3000" }, { desenvolvimento: true, configurada: "ws://10.0.0.5:8088/ws" }),
+    ).toBe("ws://10.0.0.5:8088/ws");
+  });
+});
 
 /** WebSocket falso: guarda o que o cliente envia e deixa o teste abrir, responder e derrubar. */
 class SocketFalso implements SocketSessao {

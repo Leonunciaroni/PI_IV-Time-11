@@ -49,6 +49,19 @@ export interface OpcoesCliente {
   tempoLimiteMs?: number;
 }
 
+/**
+ * Endereço do servidor de sessão. Em produção o Nginx atende /ws na mesma origem da página; em
+ * `npm run dev` o Next não repassa o WebSocket, então o padrão é o Docker Compose na porta 8088.
+ */
+export function urlDaSessao(
+  local: { protocol: string; host: string } = globalThis.location,
+  { desenvolvimento = process.env.NODE_ENV === "development", configurada = process.env.NEXT_PUBLIC_WS_URL } = {},
+): string {
+  if (configurada) return configurada;
+  if (desenvolvimento) return "ws://localhost:8088/ws";
+  return `${local.protocol === "https:" ? "wss" : "ws"}://${local.host}/ws`;
+}
+
 const ABERTO = 1;
 const ESPERA_INICIAL_MS = 1_000;
 const ESPERA_MAXIMA_MS = 30_000;
