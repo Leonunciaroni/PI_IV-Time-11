@@ -9,8 +9,10 @@ import { useRecurso } from "@/lib/recurso";
 import type { Turma } from "@/lib/tipos";
 import { useChamadaClassica } from "@/lib/useChamadaClassica";
 import { descreverConexao, useClienteSessao } from "@/lib/useClienteSessao";
+import { usePresencasAoVivo } from "@/lib/usePresencasAoVivo";
 import { ErroSessao } from "@/lib/ws";
 import { AreaAutenticada } from "./AreaAutenticada";
+import { ChamadaQrCode } from "./ChamadaQrCode";
 import { ListaDeChamada } from "./ListaDeChamada";
 import { Botao } from "./ui/Botao";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
@@ -34,6 +36,7 @@ export function ChamadaEmAndamento() {
     esquecerChamada(sessaoId);
     setEncerradaSemResumo(mensagem);
   });
+  const aoVivo = usePresencasAoVivo(cliente, sessaoId);
 
   // O servidor avisa todos os conectados quando a sessão termina (inclusive por tempo limite)
   useEffect(
@@ -109,9 +112,14 @@ export function ChamadaEmAndamento() {
         }
 
         const eClassica = chamada.modo === "CLASSICA";
+        const eQr = chamada.modo === "QRCODE";
+        const contagem =
+          classica.alunos.situacao !== "pronto"
+            ? null
+            : { presentes: eClassica ? classica.presentes : aoVivo.length, total: classica.total };
 
         return (
-          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 pb-6">
+          <main className={`mx-auto flex w-full flex-1 flex-col gap-4 px-6 pb-6 ${eQr ? "max-w-5xl" : "max-w-3xl"}`}>
             <div className="sticky top-0 z-10 -mx-6 flex flex-col gap-3 border-b border-borda-suave bg-background px-6 pt-6 pb-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -121,9 +129,9 @@ export function ChamadaEmAndamento() {
                   <h1 className="text-xl font-semibold">{titulo}</h1>
                 </div>
                 <div className="flex items-center gap-4">
-                  {eClassica && classica.alunos.situacao === "pronto" && (
+                  {contagem && (
                     <p aria-live="polite" className="opacity-80">
-                      <span className="text-2xl font-bold tabular-nums">{classica.presentes}</span>/{classica.total}{" "}
+                      <span className="text-2xl font-bold tabular-nums">{contagem.presentes}</span>/{contagem.total}{" "}
                       presentes
                     </p>
                   )}
@@ -146,9 +154,7 @@ export function ChamadaEmAndamento() {
                     Encerrar a chamada?
                   </h2>
                   <p className="text-sm opacity-70">
-                    {eClassica && classica.alunos.situacao === "pronto"
-                      ? `${classica.presentes} de ${classica.total} alunos estão presentes. `
-                      : ""}
+                    {contagem ? `${contagem.presentes} de ${contagem.total} alunos estão presentes. ` : ""}
                     Depois de encerrar, nenhuma presença é registrada.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -175,6 +181,7 @@ export function ChamadaEmAndamento() {
                 marcarLote={classica.marcarLote}
               />
             )}
+            {eQr && <ChamadaQrCode chamada={chamada} cliente={cliente} presentes={aoVivo} />}
           </main>
         );
       }}
