@@ -42,7 +42,8 @@ export class ErroSessao extends Error {
 }
 
 export interface OpcoesCliente {
-  url: string;
+  /** Endereço do /ws, ou uma função lida a cada conexão (para não depender de `location` no servidor). */
+  url: string | (() => string);
   /** Lido a cada conexão, para usar o JWT mais recente. */
   token: () => string | null;
   criarSocket?: (url: string) => SocketSessao;
@@ -148,7 +149,7 @@ export class ClienteSessao {
     if (this.estadoAtual !== "reconectando") this.mudarEstado("conectando");
 
     const criar = this.opcoes.criarSocket ?? ((url: string) => new WebSocket(url) as unknown as SocketSessao);
-    const socket = criar(this.opcoes.url);
+    const socket = criar(typeof this.opcoes.url === "function" ? this.opcoes.url() : this.opcoes.url);
     this.socket = socket;
     socket.onopen = () => {
       // O token não vai na URL, para não aparecer em logs (seção 1)
