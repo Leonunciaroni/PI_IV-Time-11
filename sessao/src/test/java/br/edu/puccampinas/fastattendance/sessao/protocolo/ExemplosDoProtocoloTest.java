@@ -4,6 +4,8 @@ import br.edu.puccampinas.fastattendance.common.protocolo.Protocolo;
 import br.edu.puccampinas.fastattendance.common.protocolo.TipoMensagem;
 import br.edu.puccampinas.fastattendance.common.protocolo.Direcao;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.ConfiguracaoTotp;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresenteResumo;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoEstado;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -45,7 +47,7 @@ class ExemplosDoProtocoloTest {
     private static final Pattern TITULO_COM_TIPO = Pattern.compile("^### [^`]*`([a-z_.]+)`");
 
     /** Quantidade mínima de exemplos JSON no documento; abaixo disso, o leitor de blocos quebrou. */
-    private static final int EXEMPLOS_ESPERADOS = 10;
+    private static final int EXEMPLOS_ESPERADOS = 14;
 
     private static final JsonMapper ESTRITO = JsonMapper.builder()
             .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -111,8 +113,25 @@ class ExemplosDoProtocoloTest {
             assertNotNull(no.get("id"), "Requisição sem id em: " + secao);
             // "ref": null é aceito: o exemplo genérico da seção 2 mostra o campo vazio
             assertTrue(no.get("ref") == null || no.get("ref").isNull(), "Requisição com ref em: " + secao);
+        } else {
+            conferirCorrelacaoDoServidor(no, secao);
         }
         conferirCampos(no.get("dados"), tipo.classeDados(), secao);
+    }
+
+    /**
+     * Na seção 5.1 (respostas), o servidor manda {@code ref} e nenhum {@code id}. Na seção 5.2
+     * (eventos), não manda nem {@code ref} nem {@code id}. Nas demais seções não há essa distinção.
+     */
+    private static void conferirCorrelacaoDoServidor(JsonNode no, String secao) {
+        boolean temRef = no.get("ref") != null && !no.get("ref").isNull();
+        boolean temId = no.get("id") != null && !no.get("id").isNull();
+        assertTrue(!temId, "Mensagem do servidor com id em: " + secao);
+        if (secao.startsWith("### 5.1 ")) {
+            assertTrue(temRef, "Resposta sem ref em: " + secao);
+        } else if (secao.startsWith("### 5.2 ")) {
+            assertTrue(!temRef, "Evento com ref em: " + secao);
+        }
     }
 
     /** Converte o JSON para a classe e confere que os campos são exatamente os componentes do record. */
@@ -125,6 +144,12 @@ class ExemplosDoProtocoloTest {
         for (RecordComponent componente : componentes) {
             assertNotNull(no.get(componente.getName()),
                     "Campo " + componente.getName() + " ausente no exemplo de: " + secao);
+        }
+        if (classe == SessaoEstado.class) {
+            // Cada item de presentes tem exatamente os campos de PresenteResumo
+            for (JsonNode presente : no.get("presentes")) {
+                conferirCampos(presente, PresenteResumo.class, secao);
+            }
         }
     }
 
