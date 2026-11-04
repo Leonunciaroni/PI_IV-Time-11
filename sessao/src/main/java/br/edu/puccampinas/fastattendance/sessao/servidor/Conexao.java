@@ -34,6 +34,7 @@ public final class Conexao {
     private final Json json;
     private final BlockingQueue<String> caixa = new ArrayBlockingQueue<>(CAPACIDADE_CAIXA);
     private final List<Future<?>> tarefas = new CopyOnWriteArrayList<>();
+    private final List<Runnable> acoesAoFechar = new CopyOnWriteArrayList<>();
 
     private volatile UsuarioAutenticado usuario;
     private volatile long ultimaAtividadeNanos = System.nanoTime();
@@ -76,8 +77,21 @@ public final class Conexao {
 
     void encerrar() {
         tarefas.forEach(t -> t.cancel(false));
+        acoesAoFechar.forEach(acao -> {
+            try {
+                acao.run();
+            } catch (RuntimeException e) {
+                System.getLogger(Conexao.class.getName())
+                        .log(System.Logger.Level.WARNING, "Falha em ação de fechamento da conexão", e);
+            }
+        });
         caixa.clear();
         caixa.offer(FIM);
+    }
+
+    /** Registra uma ação executada quando a conexão fecha (ex.: remover o professor dos acompanhantes). */
+    public void aoFechar(Runnable acao) {
+        acoesAoFechar.add(acao);
     }
 
     public void enviar(Envelope<?> envelope) {
