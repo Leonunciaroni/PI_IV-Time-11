@@ -58,6 +58,11 @@ export function enviar<T>(caminho: string, corpo: unknown): Promise<T> {
   return requisitar<T>("POST", caminho, corpo, true);
 }
 
+/** POST sem autenticação (login e cadastro). */
+function postar<T>(caminho: string, corpo: unknown): Promise<T> {
+  return requisitar<T>("POST", caminho, corpo);
+}
+
 export function login(email: string, senha: string): Promise<TokenResponse> {
-  return requisitar<TokenResponse>("POST", "/api/auth/login", { email, senha });
+  return postar<TokenResponse>("/api/auth/login", { email, senha });
 }
