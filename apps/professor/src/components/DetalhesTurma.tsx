@@ -37,11 +37,10 @@ export function DetalhesTurma() {
           {turma.situacao === "pronto" && (
             <>
               <div className="flex gap-2 text-sm">
-                {/* A abertura de chamada depende do servidor de sessão (P5) */}
-                <button type="button" disabled className={`${botaoSecundario} px-3 py-2`}>
+                <Link href={`/turmas/${id}/chamada`} className={`${botaoPrincipal} px-3 py-2`}>
                   Abrir chamada
-                </button>
-                <Link href={`/turmas/${id}/matricula`} className={`${botaoPrincipal} px-3 py-2`}>
+                </Link>
+                <Link href={`/turmas/${id}/matricula`} className={`${botaoSecundario} px-3 py-2`}>
                   Matricular alunos
                 </Link>
               </div>
