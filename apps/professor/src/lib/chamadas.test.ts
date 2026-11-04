@@ -3,8 +3,10 @@ import {
   chamadaDaTurma,
   esquecerChamada,
   guardarChamada,
+  guardarMarcacoes,
   guardarUltimaSala,
   lerChamada,
+  lerMarcacoes,
   ultimaSala,
   type ChamadaGuardada,
 } from "./chamadas";
@@ -83,7 +85,19 @@ describe("chamadas guardadas no navegador", () => {
     expect(ultimaSala(armazenamento)).toBe("sala-203");
   });
 
+  it("guarda as marcações da chamada e as esquece junto com ela", () => {
+    const armazenamento = memoria();
+    guardarChamada(chamada, armazenamento);
+    expect(lerMarcacoes("s1", armazenamento)).toEqual({});
+    guardarMarcacoes("s1", { a1: true, a2: false }, armazenamento);
+    expect(lerMarcacoes("s1", armazenamento)).toEqual({ a1: true, a2: false });
+    esquecerChamada("s1", armazenamento);
+    expect(lerMarcacoes("s1", armazenamento)).toEqual({});
+  });
+
   it("segue funcionando, sem guardar nada, quando o armazenamento está bloqueado", () => {
+    expect(() => guardarMarcacoes("s1", { a1: true }, bloqueado)).not.toThrow();
+    expect(lerMarcacoes("s1", bloqueado)).toEqual({});
     expect(() => guardarChamada(chamada, bloqueado)).not.toThrow();
     expect(lerChamada("s1", bloqueado)).toBeNull();
     expect(chamadaDaTurma("t1", bloqueado)).toBeNull();
