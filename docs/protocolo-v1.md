@@ -95,12 +95,9 @@ O fechamento, em qualquer momento, usa os códigos da seção 8.
 | `presenca.marcar_lote` | professor | `presenca.lote_ok` | 4 |
 | `checkin` | aluno | `checkin.ok` | 5 (QR), 6 (som) |
 
-Situação no servidor da branch `develop`: estão implementados `auth`, `ping`, `sessao.abrir`,
-`sessao.encerrar`, `presenca.marcar`, `presenca.marcar_lote` e `checkin` (canais QRCODE e SOM).
-`sessao.acompanhar` ainda não está implementado: a mensagem é reconhecida, mas responde
-`MENSAGEM_INVALIDA` (ou `SESSAO_ENCERRADA`, se a sessão já estiver encerrada). Seu comportamento
-descrito na seção 4.5 e os eventos da seção 5.2 dependem da PR #96 (`feature/painel-change-streams`),
-ainda não mergeada.
+Situação no servidor da branch `develop`: estão implementados todos os tipos desta tabela, com
+`checkin` nos canais QRCODE e SOM. Os eventos da seção 5.2 são produzidos a partir dos Change Streams
+do MongoDB, como descrito na seção 5.2.
 
 ### 4.1 `auth`
 
@@ -150,7 +147,8 @@ Regras, na ordem em que o servidor as verifica:
 
 Só o professor dono encerra (`PERMISSAO_NEGADA` para os demais). Sessão inexistente:
 `SESSAO_NAO_ENCONTRADA`; já encerrada, pelo professor ou por tempo limite: `SESSAO_ENCERRADA`. A
-resposta traz `totalPresentes`, que conta só as presenças com `presente: true`.
+resposta traz `totalPresentes`, que conta só as presenças com `presente: true`. Os professores que
+acompanham a sessão (seção 4.5) também recebem o evento `sessao.encerrada` (seção 5.2).
 
 Depois do encerramento, **nenhum registro é aceito**: toda mensagem com `sessaoId` (`checkin`,
 `presenca.marcar`, `presenca.marcar_lote`, `sessao.acompanhar`) verifica primeiro se a sessão está
@@ -158,16 +156,37 @@ aberta e responde `SESSAO_ENCERRADA` caso contrário.
 
 ### 4.5 `sessao.acompanhar`
 
-Inscreve a conexão para receber os eventos `presenca.atualizada` da sessão, por exemplo após
-recarregar a página do painel. A resposta é `sessao.estado` (seção 5.1), com `ref`.
+Inscreve a conexão para receber os eventos `presenca.atualizada` e `sessao.encerrada` da sessão
+(seção 5.2), por exemplo após recarregar a página do painel. A resposta é `sessao.estado` (seção 5.1),
+com `ref`.
 
 ```json
 { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9" }
 ```
 
-**Situação:** não implementado na branch `develop`; depende da PR #96. Pela PR, sessão inexistente
-ou encerrada responde `SESSAO_NAO_ENCONTRADA` ou `SESSAO_ENCERRADA`, e quem não é o professor dono
-recebe `PERMISSAO_NEGADA`.
+```json
+{ "v": 1, "tipo": "sessao.acompanhar", "id": "ac1", "ts": 1791370810000,
+  "dados": { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9" } }
+```
+
+Regras, na ordem em que o servidor as verifica:
+
+1. `sessaoId` ausente ou em branco: `MENSAGEM_INVALIDA`.
+2. Sessão inexistente ou com id em formato inválido: `SESSAO_NAO_ENCONTRADA`.
+3. Sessão encerrada, pelo professor ou por tempo limite: `SESSAO_ENCERRADA`. Esta verificação vem
+   antes da de papel: um aluno que pede uma sessão já encerrada recebe `SESSAO_ENCERRADA`, não
+   `PERMISSAO_NEGADA`.
+4. Usuário que não é o professor dono da sessão (aluno ou outro professor): `PERMISSAO_NEGADA`.
+
+- Repetir `sessao.acompanhar` na mesma conexão não duplica eventos: o registro é único por conexão e sessão.
+- O registro é feito antes da leitura do estado. Assim, uma presença gravada entre as duas operações
+  pode aparecer em `presentes` e também chegar como evento, às vezes antes da própria resposta
+  `sessao.estado`. O cliente deve tratar as duas fontes como uma só, deduplicando por `alunoId`.
+- **Acompanhante que desconecta:** ao fechar a conexão, por qualquer motivo (fechamento pelo cliente,
+  inatividade de 60 s, expiração do token com código 4003 ou queda de rede), o servidor a retira de
+  todas as sessões que ela acompanhava. Eventos não são guardados nem reenviados: o que ocorre
+  enquanto a conexão está fora não chega a ela. Ao reconectar, o cliente envia `auth` e, de novo,
+  `sessao.acompanhar`, que devolve o estado atual.
 
 ### 4.6 `presenca.marcar` (modo clássico)
 
@@ -175,8 +194,9 @@ recebe `PERMISSAO_NEGADA`.
 { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9", "alunoId": "66f1b9a1b2c3d4e5f6a7b8c9", "presente": true }
 ```
 
-Resposta `presenca.atualizada`, com `ref`, no mesmo formato de `dados` do evento da seção 5.2
-(implementado no `develop`). Regras, que valem também para `presenca.marcar_lote`, na ordem em que
+Resposta `presenca.atualizada`, com `ref`, cujos campos de `dados` são os mesmos do evento da seção
+5.2. Se o próprio professor também acompanha a sessão, a conexão recebe para a mesma marcação a
+resposta (com `ref`) e o evento (sem `ref`). Regras, que valem também para `presenca.marcar_lote`, na ordem em que
 o servidor as verifica:
 
 1. `presente` ausente ou que não seja booleano: `MENSAGEM_INVALIDA`. Vem antes de qualquer outra regra.
@@ -249,13 +269,32 @@ Os passos 9 e 10 também são garantidos pelos índices únicos `aluno_sessao_un
 | `pong` | `{}` |
 | `sessao.aberta` | `{ "sessaoId", "turmaId", "modo", "abertaEm", "totp" }` (ver 5.3) |
 | `sessao.encerrada` | `{ "sessaoId", "motivo": "PROFESSOR" \| "TEMPO_LIMITE", "encerradaEm", "totalPresentes" }` |
-| `sessao.estado` | `{ "sessaoId", "modo", "abertaEm", "presentes": [ { "alunoId", "nome", "origem", "registradoEm" } ], "totalMatriculados" }` (PR #96, ver seção 4.5) |
+| `sessao.estado` | `{ "sessaoId", "modo", "abertaEm", "presentes": [ { "alunoId", "nome", "origem", "registradoEm" } ], "totalMatriculados" }` (seção 4.5) |
 | `presenca.lote_ok` | `{ "sessaoId", "totalPresentes", "totalMatriculados" }` |
 | `checkin.ok` | `{ "sessaoId", "registradoEm" }` |
 | `erro` | `{ "codigo", "mensagem" }` |
 
 `sessao.aberta` é apenas resposta a `sessao.abrir`. `sessao.encerrada` é a resposta a
 `sessao.encerrar` e também um evento (5.2).
+
+Respostas levam `ref` e não levam `id`. Exemplos com o envelope completo:
+
+```json
+{ "v": 1, "tipo": "sessao.estado", "ref": "ac1", "ts": 1791370810040,
+  "dados": { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9", "modo": "QRCODE", "abertaEm": 1791370000000,
+             "presentes": [
+               { "alunoId": "66f1b9a1b2c3d4e5f6a7b8c9", "nome": "Ana Souza",
+                 "origem": "QRCODE", "registradoEm": 1791370805170 }
+             ],
+             "totalMatriculados": 58 } }
+```
+
+```json
+{ "v": 1, "tipo": "presenca.atualizada", "ref": "m1", "ts": 1791370900100,
+  "dados": { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9", "alunoId": "66f1baa1b2c3d4e5f6a7b8c9",
+             "nomeAluno": "Bruno Lima", "presente": false, "origem": "MANUAL",
+             "registradoEm": 1791370900090, "totalPresentes": 30, "totalMatriculados": 58 } }
+```
 
 ### 5.2 Eventos (push, sem `ref`)
 
@@ -264,10 +303,29 @@ Os passos 9 e 10 também são garantidos pelos índices únicos `aluno_sessao_un
 | `presenca.atualizada` | Professores acompanhando a sessão | `{ "sessaoId", "alunoId", "nomeAluno", "presente", "origem": "MANUAL" \| "QRCODE" \| "SOM", "registradoEm", "totalPresentes", "totalMatriculados" }` |
 | `sessao.encerrada` | Professores acompanhando a sessão | igual à resposta da seção 5.1 |
 
-**Situação:** os eventos não estão no `develop`. Vêm da PR #96 (`feature/painel-change-streams`),
-com um `PainelAoVivo` que registra os acompanhantes de cada sessão. Pela PR, os eventos são produzidos
-a partir dos Change Streams do MongoDB, de modo que um professor conectado a uma réplica recebe
-presenças registradas em qualquer outra réplica.
+Eventos não têm `ref`. Exemplo do encerramento por tempo limite:
+
+```json
+{ "v": 1, "tipo": "sessao.encerrada", "ts": 1791384400050,
+  "dados": { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9", "motivo": "TEMPO_LIMITE",
+             "encerradaEm": 1791384400000, "totalPresentes": 31 } }
+```
+
+**Origem dos eventos:** eles não são enviados pelo roteador de mensagens. O `ObservadorDeMudancas`
+de cada réplica acompanha dois fluxos do MongoDB: as presenças (inserção, atualização e substituição)
+e as sessões (atualização com `status` `ENCERRADA`). Cada evento é entregue às conexões acompanhando a
+sessão naquela réplica (`PainelAoVivo`). Assim, um professor conectado a uma réplica recebe as
+presenças registradas em qualquer outra. Por isso a chamada clássica não envia push direto aos
+acompanhantes: o evento vem só do fluxo.
+
+- Os fluxos exigem replica set. Se um fluxo cair, ele é reaberto com backoff, retomando a partir do
+  último resume token conhecido. Se o histórico já tiver sido descartado (código 286), a reabertura
+  parte do momento atual, e os eventos ocorridos no intervalo não são reenviados. Enquanto a
+  reconexão não termina, os eventos chegam atrasados.
+- `sessao.encerrada` como evento vai só aos acompanhantes. A resposta a `sessao.encerrar` vai só ao
+  professor que pediu. Quem encerra a sessão e a acompanha recebe as duas mensagens.
+- Ao encerrar a sessão, os acompanhantes são retirados dela: nenhum evento de presença é enviado
+  depois do `sessao.encerrada`.
 
 ### 5.3 Configuração TOTP
 
@@ -339,13 +397,13 @@ O `sessaoId` do QR Code é o mesmo `sessaoId` do `checkin`: 24 caracteres hexade
 | `4008` | Violação de política: limite de mensagens excedido repetidamente (seção 1), ou mais de 64 mensagens pendentes. |
 
 Ao receber `1001` ou uma queda de rede, o cliente reconecta com backoff exponencial
-(1 s, 2 s, 4 s… até 30 s), envia `auth` novamente e, no caso do professor, `sessao.acompanhar`
-(quando disponível, ver seção 4.5).
+(1 s, 2 s, 4 s… até 30 s), envia `auth` novamente e, se o professor estava acompanhando uma sessão,
+envia `sessao.acompanhar` de novo (seção 4.5): o servidor retira a conexão dos acompanhantes ao fechá-la.
 
 ## 9. Exemplo completo — check-in por QR Code
 
 Exemplo ilustrativo: os valores de `token` e de horário não correspondem a uma sessão real. O
-`presenca.atualizada` é o evento da seção 5.2, que depende da PR #96.
+`presenca.atualizada` é o evento da seção 5.2, recebido pelo professor que acompanha a sessão.
 
 ```json
 // aluno → servidor
@@ -371,4 +429,4 @@ Exemplo ilustrativo: os valores de `token` e de horário não correspondem a uma
 |---|---|---|
 | 1 | 04/10/2026 | Versão inicial. |
 | 1 | 20/10/2026 | Regras de `sessao.abrir` e `sessao.encerrar` e tempo limite da sessão (seções 4.3 e 4.4). Sem mudança de formato. |
-| 1 | 04/11/2026 | Revisão contra o servidor de `develop`: limites do servidor (seção 1), ordem de validação de `sessao.abrir`, `presenca.marcar` e `checkin`, situação de `sessao.acompanhar` e dos eventos (PR #96), detalhes do TOTP (seção 5.3), códigos de erro e de fechamento (seções 7 e 8). Sem mudança de formato. |
+| 1 | 04/11/2026 | Revisão contra o servidor de `develop`: limites do servidor (seção 1), ordem de validação de `sessao.abrir`, `presenca.marcar` e `checkin`, situação de `sessao.acompanhar` e dos eventos (PR #96), detalhes do TOTP (seção 5.3), códigos de erro e de fechamento (seções 7 e 8). Após o merge da PR #96, `sessao.acompanhar` e os eventos da seção 5.2 foram documentados como implementados, com a ordem de validação e o comportamento do acompanhante ao desconectar. Sem mudança de formato. |
