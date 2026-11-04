@@ -12,10 +12,10 @@
 
     <artifactId>sessao</artifactId>
     <name>Fast Attendance :: Sessão</name>
-    <description>Servidor de sessão em tempo real, sem framework, para o caminho crítico de check-in</description>
+    <description>Servidor de sessão em tempo real no modelo cliente-servidor por sockets (sem framework)</description>
 
     <properties>
-        <main.class>br.edu.puccampinas.fastattendance.sessao.SessaoApplication</main.class>
+        <main.class>br.edu.puccampinas.fastattendance.sessao.Servidor</main.class>
     </properties>
 
     <dependencies>
@@ -24,10 +24,6 @@
             <artifactId>common</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-        </dependency>
         <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
