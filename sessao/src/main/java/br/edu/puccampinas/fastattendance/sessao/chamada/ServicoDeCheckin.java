@@ -26,14 +26,17 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 /**
- * Check-in aluno pelo canal QR Code (docs/protocolo-v1.md, seções 4.8 e 7).
+ * Check-in do aluno pelos canais QR Code e som (docs/protocolo-v1.md, seções 4.8 e 7).
  * <p>
  * As validações seguem a ordem da seção 7: token, raio, matrícula, duplicidade de presença e
  * duplicidade de dispositivo. Antes delas, o pedido precisa ser de um aluno autenticado, em uma
- * sessão aberta e em modo {@code QRCODE}. A gravação usa o índice único {@code aluno_sessao_unico}
- * como última barreira, e o índice {@code sessao_dispositivo_unico} para o dispositivo.
+ * sessão aberta e em modo compatível com o canal.
  * <p>
- * O canal sonoro ({@code SOM}) não é tratado aqui; será implementado na semana 6.
+ * Só o canal {@code QRCODE} usa geolocalização: exige coordenadas e valida o raio até a sala. No
+ * canal {@code SOM} as coordenadas do pedido são ignoradas (não validadas e não gravadas). Os
+ * demais passos são iguais nos dois canais. A gravação usa o índice único
+ * {@code aluno_sessao_unico} como última barreira, e o índice {@code sessao_dispositivo_unico} para
+ * o dispositivo.
  */
 public final class ServicoDeCheckin {
 
@@ -68,32 +71,18 @@ public final class ServicoDeCheckin {
         if (pedido.canal() == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Campo canal ausente");
         }
-        if (pedido.canal() == OrigemPresenca.SOM) {
-            throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Canal SOM ainda não disponível nesta versão");
+        exigirModoDoCanal(pedido.canal(), sessao);
+        boolean comGeolocalizacao = pedido.canal() == OrigemPresenca.QRCODE;
+        if (comGeolocalizacao) {
+            exigirCoordenadas(pedido);
         }
-        if (pedido.canal() != OrigemPresenca.QRCODE || !ModoChamada.QRCODE.name().equals(sessao.getString("modo"))) {
-            throw new ErroDeProtocolo(CodigoErro.MODO_INCOMPATIVEL, "O check-in pelo canal QRCODE exige sessão em modo QRCODE");
-        }
-        exigirCoordenadas(pedido);
 
         // 1. Token TOTP da janela atual ou da anterior
-        long instante = relogio.instant().getEpochSecond();
-        ValidadorTotp.Resultado resultadoToken = ValidadorTotp.validar(sessao.getString("segredoTotp"), token, instante);
-        if (resultadoToken == ValidadorTotp.Resultado.TOKEN_INVALIDO) {
-            throw new ErroDeProtocolo(CodigoErro.TOKEN_INVALIDO, "Token não confere com a sessão");
-        }
-        if (resultadoToken == ValidadorTotp.Resultado.TOKEN_EXPIRADO) {
-            throw new ErroDeProtocolo(CodigoErro.TOKEN_EXPIRADO, "Token de uma janela já expirada");
-        }
+        validarToken(sessao, token);
 
-        // 2. Distância até a sala
-        Document sala = sala(sessao.getString("salaId"));
-        double distancia = Haversine.metros(sala.getDouble("latitude"), sala.getDouble("longitude"),
-                pedido.latitude(), pedido.longitude());
-        double raio = sala.getDouble("raioMetros");
-        if (distancia > raio) {
-            throw new ErroDeProtocolo(CodigoErro.FORA_DO_RAIO,
-                    "Aluno a %.0f m da sala; o raio aceito é de %.0f m".formatted(distancia, raio));
+        // 2. Distância até a sala (somente QRCODE; no SOM as coordenadas são ignoradas)
+        if (comGeolocalizacao) {
+            validarRaio(sessao, pedido);
         }
 
         // 3. Matrícula na turma
@@ -117,18 +106,62 @@ public final class ServicoDeCheckin {
                 .append("turmaId", turmaId)
                 .append("alunoId", aluno.id())
                 .append("presente", true)
-                .append("origem", OrigemPresenca.QRCODE.name())
+                .append("origem", pedido.canal().name())
                 .append("dispositivoId", dispositivoId)
-                .append("latitude", pedido.latitude())
-                .append("longitude", pedido.longitude())
                 .append("registradoEm", Date.from(agora));
+        if (comGeolocalizacao) {
+            presenca.append("latitude", pedido.latitude()).append("longitude", pedido.longitude());
+        }
+        gravar(presenca);
+        return new CheckinOk(sessaoHex, agora.toEpochMilli());
+    }
+
+    /** O canal precisa corresponder ao modo da sessão: QRCODE com QRCODE, SOM com SOM. */
+    private static void exigirModoDoCanal(OrigemPresenca canal, Document sessao) {
+        ModoChamada modoDoCanal = switch (canal) {
+            case QRCODE -> ModoChamada.QRCODE;
+            case SOM -> ModoChamada.SOM;
+            default -> null;
+        };
+        if (modoDoCanal == null) {
+            throw new ErroDeProtocolo(CodigoErro.MODO_INCOMPATIVEL, "Canal %s não aceita check-in".formatted(canal));
+        }
+        if (!modoDoCanal.name().equals(sessao.getString("modo"))) {
+            throw new ErroDeProtocolo(CodigoErro.MODO_INCOMPATIVEL,
+                    "O check-in pelo canal %s exige sessão em modo %s".formatted(canal, modoDoCanal));
+        }
+    }
+
+    private void validarToken(Document sessao, String token) {
+        long instante = relogio.instant().getEpochSecond();
+        ValidadorTotp.Resultado resultado = ValidadorTotp.validar(sessao.getString("segredoTotp"), token, instante);
+        if (resultado == ValidadorTotp.Resultado.TOKEN_INVALIDO) {
+            throw new ErroDeProtocolo(CodigoErro.TOKEN_INVALIDO, "Token não confere com a sessão");
+        }
+        if (resultado == ValidadorTotp.Resultado.TOKEN_EXPIRADO) {
+            throw new ErroDeProtocolo(CodigoErro.TOKEN_EXPIRADO, "Token de uma janela já expirada");
+        }
+    }
+
+    private void validarRaio(Document sessao, Checkin pedido) {
+        Document sala = sala(sessao.getString("salaId"));
+        double distancia = Haversine.metros(sala.getDouble("latitude"), sala.getDouble("longitude"),
+                pedido.latitude(), pedido.longitude());
+        double raio = sala.getDouble("raioMetros");
+        if (distancia > raio) {
+            throw new ErroDeProtocolo(CodigoErro.FORA_DO_RAIO,
+                    "Aluno a %.0f m da sala; o raio aceito é de %.0f m".formatted(distancia, raio));
+        }
+    }
+
+    /** Grava a presença; o índice violado (nome na mensagem) define o código de erro na corrida entre réplicas. */
+    private void gravar(Document presenca) {
         try {
             presencas.insertOne(presenca);
         } catch (MongoWriteException e) {
             if (e.getError().getCategory() != ErrorCategory.DUPLICATE_KEY) {
                 throw e;
             }
-            // Corrida com outra réplica: o nome do índice violado define o código de erro
             String mensagem = e.getError().getMessage();
             if (mensagem != null && mensagem.contains(INDICE_DISPOSITIVO)) {
                 throw new ErroDeProtocolo(CodigoErro.DISPOSITIVO_JA_UTILIZADO,
@@ -139,7 +172,6 @@ public final class ServicoDeCheckin {
             }
             throw e;
         }
-        return new CheckinOk(sessaoHex, agora.toEpochMilli());
     }
 
     private Document sala(String salaId) {
