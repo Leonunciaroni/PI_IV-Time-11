@@ -3,6 +3,7 @@ package br.edu.puccampinas.fastattendance.sessao;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoFechamento;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
+import br.edu.puccampinas.fastattendance.sessao.servidor.LimitadorDeMensagens;
 import br.edu.puccampinas.fastattendance.sessao.servidor.ServidorSessao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -156,6 +157,28 @@ class ServidorSessaoTest {
         for (int i = 0; i < 50; i++) {
             assertEquals("p" + i, ler(cliente.proxima()).get("ref").stringValue());
         }
+    }
+
+    @Test
+    void recusaMensagensAcimaDoLimitePorConexaoEFechaCom4008QuandoInsiste() throws Exception {
+        ClienteTeste cliente = conectar();
+        for (int i = 0; i < LimitadorDeMensagens.MAXIMO; i++) {
+            cliente.enviar(mensagem("ping", "p" + i, "{}"));
+        }
+        for (int i = 0; i < LimitadorDeMensagens.MAXIMO; i++) {
+            assertEquals("pong", ler(cliente.proxima()).get("tipo").stringValue());
+        }
+
+        cliente.enviar(mensagem("ping", "extra", "{}"));
+        JsonNode primeiraRecusa = assertErro(cliente.proxima(), "LIMITE_EXCEDIDO");
+        assertEquals("extra", primeiraRecusa.get("ref").stringValue());
+
+        // Recusas seguidas até o limite de insistência: a última fecha a conexão
+        for (int i = 1; i < LimitadorDeMensagens.REJEICOES_ATE_FECHAR; i++) {
+            cliente.enviar(mensagem("ping", "extra" + i, "{}"));
+            assertErro(cliente.proxima(), "LIMITE_EXCEDIDO");
+        }
+        assertEquals(CodigoFechamento.VIOLACAO_POLITICA, cliente.codigoFechamento(2_000));
     }
 
     @Test
