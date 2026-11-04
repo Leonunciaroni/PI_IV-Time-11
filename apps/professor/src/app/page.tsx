@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { PainelInicial } from "@/components/PainelInicial";
+import { ListaTurmas } from "@/components/ListaTurmas";
 
 export default function Inicio() {
   return (
     <Suspense fallback={null}>
-      <PainelInicial />
+      <ListaTurmas />
     </Suspense>
   );
 }
