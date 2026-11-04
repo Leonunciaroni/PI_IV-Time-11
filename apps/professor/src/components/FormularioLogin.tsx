@@ -5,6 +5,9 @@ import { browser } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ErroApi, login } from "@/lib/api";
 import { assinarSessao, lerSessao, salvarSessao } from "@/lib/sessao";
+import { Botao } from "./ui/Botao";
+import { Campo } from "./ui/Campo";
+import { MensagemDeErro } from "./ui/MensagemDeErro";
 
 export function FormularioLogin() {
   use(browser("A sessão do usuário fica no localStorage."));
@@ -47,41 +50,31 @@ export function FormularioLogin() {
 
   return (
     <form onSubmit={entrar} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        E-mail
-        <input
-          type="email"
-          name="email"
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md border border-black/20 bg-transparent px-3 py-2 text-base outline-none focus:border-blue-600 dark:border-white/25"
-        />
-      </label>
+      <Campo
+        rotulo="E-mail"
+        type="email"
+        name="email"
+        autoComplete="username"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
 
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Senha
-        <input
-          type="password"
-          name="senha"
-          autoComplete="current-password"
-          required
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="rounded-md border border-black/20 bg-transparent px-3 py-2 text-base outline-none focus:border-blue-600 dark:border-white/25"
-        />
-      </label>
+      <Campo
+        rotulo="Senha"
+        type="password"
+        name="senha"
+        autoComplete="current-password"
+        required
+        value={senha}
+        onChange={(e) => setSenha(e.target.value)}
+      />
 
-      <button
-        type="submit"
-        disabled={enviando}
-        className="rounded-md bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60"
-      >
+      <Botao type="submit" disabled={enviando}>
         {enviando ? "Entrando..." : "Entrar"}
-      </button>
+      </Botao>
 
-      <p role="alert" aria-live="polite" className="min-h-5 text-sm text-red-600 dark:text-red-400">
+      <MensagemDeErro>
         {erro}
         {contaDeOutraArea && (
           <>
@@ -92,7 +85,7 @@ export function FormularioLogin() {
             </a>
           </>
         )}
-      </p>
+      </MensagemDeErro>
     </form>
   );
 }

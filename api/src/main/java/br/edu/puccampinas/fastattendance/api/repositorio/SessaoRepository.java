@@ -10,5 +10,9 @@ public interface SessaoRepository extends MongoRepository<Sessao, String> {
 
     List<Sessao> findByTurmaIdIn(List<String> turmaIds);
 
+    List<Sessao> findByTurmaId(String turmaId);
+
+    List<Sessao> findByTurmaIdInAndStatus(List<String> turmaIds, StatusSessao status);
+
     List<Sessao> findByTurmaIdAndStatus(String turmaId, StatusSessao status);
 }

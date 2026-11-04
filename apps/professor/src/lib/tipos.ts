@@ -24,3 +24,26 @@ export interface Problema {
   detail?: string;
   campos?: Record<string, string>;
 }
+
+export interface Turma {
+  id: string;
+  nome: string;
+  disciplina: string;
+  horarioPadrao: string;
+  totalAlunos: number;
+  /** ISO-8601 */
+  criadaEm: string;
+}
+
+/** Dados do aluno exibidos ao professor (sem e-mail). */
+export interface Aluno {
+  id: string;
+  nome: string;
+  matricula: string;
+}
+
+export interface ResultadoMatricula {
+  matriculados: number;
+  jaMatriculados: number;
+  totalAlunos: number;
+}
