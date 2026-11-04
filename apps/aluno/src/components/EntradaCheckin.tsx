@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AreaAutenticada } from "./AreaAutenticada";
+import { CheckinQr } from "./CheckinQr";
 import { ErroApi, listarMinhasTurmas } from "@/lib/api";
 import { nomesModos } from "@/lib/chamadas";
 import { encerrarSessao } from "@/lib/sessao";
@@ -78,37 +79,41 @@ function CanalDaChamada({
       <Link href="/" className="text-sm font-semibold text-[#5040e8]">
         ← Voltar ao início
       </Link>
-      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-        <h1 className="text-2xl font-bold">Confirmar presença</h1>
-        {erro ? (
-          <p role="alert" className="mt-4 text-sm text-red-700">
-            {erro}
-          </p>
-        ) : turma ? (
-          <>
-            <p className="mt-3 text-slate-500">
-              {turma.disciplina} · {turma.nome}
+      {turma?.chamadaAberta?.modo === "QRCODE" ? (
+        <CheckinQr turma={turma} />
+      ) : (
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+          <h1 className="text-2xl font-bold">Confirmar presença</h1>
+          {erro ? (
+            <p role="alert" className="mt-4 text-sm text-red-700">
+              {erro}
             </p>
-            <h2 className="mt-6 rounded-xl bg-[#172033] p-5 text-lg font-semibold text-white">
-              Canal: {nomesModos[turma.chamadaAberta!.modo]}
-            </h2>
-            <p className="mt-5 text-sm leading-relaxed text-slate-600">
-              {modo === "QRCODE"
-                ? "Esta chamada usa o QR Code exibido pelo professor."
-                : "Esta chamada usa o sinal sonoro emitido pelo professor."}
+          ) : turma ? (
+            <>
+              <p className="mt-3 text-slate-500">
+                {turma.disciplina} · {turma.nome}
+              </p>
+              <h2 className="mt-6 rounded-xl bg-[#172033] p-5 text-lg font-semibold text-white">
+                Canal: {nomesModos[turma.chamadaAberta!.modo]}
+              </h2>
+              <p className="mt-5 text-sm leading-relaxed text-slate-600">
+                {modo === "QRCODE"
+                  ? "Esta chamada usa o QR Code exibido pelo professor."
+                  : "Esta chamada usa o sinal sonoro emitido pelo professor."}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                A captura e a confirmação de presença serão disponibilizadas na
+                etapa de check-in. Acessar esta página ainda não registra sua
+                presença.
+              </p>
+            </>
+          ) : (
+            <p role="status" className="mt-4 text-sm text-slate-500">
+              Verificando chamada aberta...
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              A captura e a confirmação de presença serão disponibilizadas na
-              etapa de check-in. Acessar esta página ainda não registra sua
-              presença.
-            </p>
-          </>
-        ) : (
-          <p role="status" className="mt-4 text-sm text-slate-500">
-            Verificando chamada aberta...
-          </p>
-        )}
-      </section>
+          )}
+        </section>
+      )}
     </main>
   );
 }
