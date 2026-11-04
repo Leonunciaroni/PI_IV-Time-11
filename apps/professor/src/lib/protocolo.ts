@@ -80,6 +80,32 @@ export interface SessaoAberta {
   totp: ConfiguracaoTotp;
 }
 
+export interface SessaoEncerrada {
+  sessaoId: string;
+  motivo: "PROFESSOR" | "TEMPO_LIMITE";
+  encerradaEm: number;
+  totalPresentes: number;
+}
+
+/** Resposta de presenca.marcar (seção 4.6), igual ao evento da seção 5.2. */
+export interface PresencaAtualizada {
+  sessaoId: string;
+  alunoId: string;
+  nomeAluno: string;
+  presente: boolean;
+  origem: "MANUAL" | "QRCODE" | "SOM";
+  registradoEm: number;
+  totalPresentes: number;
+  totalMatriculados: number;
+}
+
+/** Resposta de presenca.marcar_lote (seção 4.7). */
+export interface PresencaLoteOk {
+  sessaoId: string;
+  totalPresentes: number;
+  totalMatriculados: number;
+}
+
 const MENSAGENS: Record<CodigoErro, string> = {
   MENSAGEM_INVALIDA: "O servidor não entendeu o pedido. Recarregue a página e tente de novo.",
   VERSAO_NAO_SUPORTADA: "Esta versão do app está desatualizada. Recarregue a página.",

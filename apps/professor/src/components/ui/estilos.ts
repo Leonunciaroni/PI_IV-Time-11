@@ -9,5 +9,13 @@ export const botaoPrincipal =
 export const botaoSecundario =
   "rounded-controle border border-borda-forte disabled:cursor-not-allowed disabled:opacity-50";
 
+/** Ação que não tem volta, como encerrar a chamada: contorno para abrir a confirmação. */
+export const botaoPerigoContorno =
+  "rounded-controle border border-perigo font-semibold text-perigo disabled:cursor-not-allowed disabled:opacity-50";
+
+/** Confirmação de uma ação que não tem volta. */
+export const botaoPerigo =
+  "rounded-controle bg-perigo font-semibold text-white disabled:cursor-wait disabled:opacity-60";
+
 /** Bloco com borda, como o cartão de turma. */
 export const cartao = "rounded-cartao border border-borda";
