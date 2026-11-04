@@ -1,6 +1,8 @@
 package br.edu.puccampinas.fastattendance.sessao;
 
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
+import br.edu.puccampinas.fastattendance.sessao.chamada.ObservadorDeMudancas;
+import br.edu.puccampinas.fastattendance.sessao.chamada.PainelAoVivo;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeCheckin;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeChamadaClassica;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeSessoes;
@@ -66,13 +68,18 @@ public final class SessaoApplication {
         MongoDatabase banco = mongo.getDatabase(uri.getDatabase());
         ServicoDeSessoes sessoes = new ServicoDeSessoes(banco, relogio, configuracao.duracaoMaxima());
         ServicoDeChamadaClassica chamadaClassica = new ServicoDeChamadaClassica(banco, sessoes, relogio);
+        PainelAoVivo painel = new PainelAoVivo(banco, sessoes);
         ServicoDeCheckin checkin = new ServicoDeCheckin(banco, sessoes, relogio);
         RoteadorDeMensagens roteador = new RoteadorDeMensagens(json, jwt, agendador, relogio, sessoes,
-                chamadaClassica, checkin);
+                chamadaClassica, painel, checkin);
 
         ServidorSessao servidor = new ServidorSessao(configuracao, roteador, agendador, json);
+        // Os streams são fechados antes do cliente do MongoDB, que eles usam
+        ObservadorDeMudancas observador = new ObservadorDeMudancas(banco, painel);
+        servidor.aoEncerrar(observador);
         servidor.aoEncerrar(mongo::close);
         agendarEncerramentoPorTempoLimite(agendador, sessoes, configuracao.duracaoMaxima());
+        observador.iniciar();
         servidor.start();
         servidor.aguardarInicio(10, TimeUnit.SECONDS);
         return servidor;

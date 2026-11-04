@@ -28,7 +28,8 @@ final class MongoDeTeste {
 
     static synchronized String uri() {
         if (conteiner == null) {
-            conteiner = new MongoDBContainer(DockerImageName.parse("mongo:8.0"));
+            // Change Streams exigem replica set; no Testcontainers 2.x isso é opt-in (withReplicaSet)
+            conteiner = new MongoDBContainer(DockerImageName.parse("mongo:8.0")).withReplicaSet();
             conteiner.start();
             cliente = MongoClients.create(conteiner.getReplicaSetUrl(BANCO));
             // Mesmo índice criado pela API em IndicesMongo

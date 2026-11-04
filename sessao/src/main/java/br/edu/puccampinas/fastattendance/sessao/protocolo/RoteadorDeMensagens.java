@@ -18,6 +18,7 @@ import br.edu.puccampinas.fastattendance.common.protocolo.dados.Vazio;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
 import br.edu.puccampinas.fastattendance.common.seguranca.TokenInvalidoException;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
+import br.edu.puccampinas.fastattendance.sessao.chamada.PainelAoVivo;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeCheckin;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeChamadaClassica;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeSessoes;
@@ -36,10 +37,10 @@ import java.util.concurrent.TimeUnit;
  * Valida o envelope (docs/protocolo-v1.md, seção 2) e despacha cada tipo de mensagem.
  * <p>
  * Nesta versão são tratados {@code auth}, {@code ping}, {@code sessao.abrir},
- * {@code sessao.encerrar}, {@code presenca.marcar}, {@code presenca.marcar_lote} e {@code checkin}
- * (canal QR Code). Os demais tipos do protocolo são reconhecidos, exigem autenticação e recusam
- * sessões encerradas, mas ainda respondem que não estão disponíveis; serão implementados nas
- * próximas semanas do cronograma.
+ * {@code sessao.encerrar}, {@code sessao.acompanhar}, {@code presenca.marcar},
+ * {@code presenca.marcar_lote} e {@code checkin} (canal QR Code). Os demais tipos do protocolo são
+ * reconhecidos, exigem autenticação e recusam sessões encerradas, mas ainda respondem que não estão
+ * disponíveis; serão implementados nas próximas semanas do cronograma.
  * <p>
  * Antes de validar o envelope, cada mensagem passa pelo limite de mensagens por conexão
  * ({@code LIMITE_EXCEDIDO}).
@@ -54,17 +55,19 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
     private final Clock relogio;
     private final ServicoDeSessoes sessoes;
     private final ServicoDeChamadaClassica chamadaClassica;
+    private final PainelAoVivo painel;
     private final ServicoDeCheckin checkin;
 
     public RoteadorDeMensagens(Json json, JwtService jwt, ScheduledExecutorService agendador, Clock relogio,
                                ServicoDeSessoes sessoes, ServicoDeChamadaClassica chamadaClassica,
-                               ServicoDeCheckin checkin) {
+                               PainelAoVivo painel, ServicoDeCheckin checkin) {
         this.json = json;
         this.jwt = jwt;
         this.agendador = agendador;
         this.relogio = relogio;
         this.sessoes = sessoes;
         this.chamadaClassica = chamadaClassica;
+        this.painel = painel;
         this.checkin = checkin;
     }
 
@@ -152,6 +155,8 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
                     sessoes.abrir(usuario, json.converter(dados, SessaoAbrir.class))));
             case SESSAO_ENCERRAR -> conexao.enviar(Envelope.resposta(TipoMensagem.SESSAO_ENCERRADA, id,
                     sessoes.encerrar(usuario, json.converter(dados, SessaoRef.class).sessaoId())));
+            case SESSAO_ACOMPANHAR -> conexao.enviar(Envelope.resposta(TipoMensagem.SESSAO_ESTADO, id,
+                    painel.acompanhar(conexao, usuario, json.converter(dados, SessaoRef.class).sessaoId())));
             case PRESENCA_MARCAR -> {
                 exigirBooleano(dados, "presente");
                 conexao.enviar(Envelope.resposta(TipoMensagem.PRESENCA_ATUALIZADA, id,

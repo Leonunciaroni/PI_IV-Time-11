@@ -38,6 +38,11 @@ final class ClienteTeste implements WebSocket.Listener, AutoCloseable {
         return mensagem;
     }
 
+    /** Próxima mensagem, ou {@code null} se nada chegar no prazo (para afirmar que nada foi enviado). */
+    String aguardar(long timeoutMs) throws InterruptedException {
+        return recebidas.poll(timeoutMs, TimeUnit.MILLISECONDS);
+    }
+
     /** Código de fechamento enviado pelo servidor. */
     int codigoFechamento(long timeoutMs) throws Exception {
         return fechamento.get(timeoutMs, TimeUnit.MILLISECONDS);
