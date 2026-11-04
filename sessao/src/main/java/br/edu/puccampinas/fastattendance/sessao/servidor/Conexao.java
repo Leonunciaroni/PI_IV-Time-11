@@ -9,6 +9,7 @@ import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.Json;
 import org.java_websocket.WebSocket;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -35,6 +36,7 @@ public final class Conexao {
     private final BlockingQueue<String> caixa = new ArrayBlockingQueue<>(CAPACIDADE_CAIXA);
     private final List<Future<?>> tarefas = new CopyOnWriteArrayList<>();
     private final List<Runnable> acoesAoFechar = new CopyOnWriteArrayList<>();
+    private final LimitadorDeMensagens limitador = new LimitadorDeMensagens(Clock.systemUTC());
 
     private volatile UsuarioAutenticado usuario;
     private volatile long ultimaAtividadeNanos = System.nanoTime();
@@ -107,6 +109,10 @@ public final class Conexao {
     /** Registra uma tarefa agendada para ser cancelada quando a conexão fechar. */
     public void vincular(Future<?> tarefa) {
         tarefas.add(tarefa);
+    }
+
+    public LimitadorDeMensagens limitador() {
+        return limitador;
     }
 
     public boolean autenticada() {

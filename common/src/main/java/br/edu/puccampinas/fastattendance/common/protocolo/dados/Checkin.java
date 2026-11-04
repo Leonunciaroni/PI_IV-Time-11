@@ -4,7 +4,7 @@ import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 
 /**
  * Aluno → servidor: confirma presença com o token lido do QR Code ou do som.
- * Coordenadas são obrigatórias no canal QRCODE.
+ * Coordenadas são obrigatórias no canal QRCODE e ignoradas no canal SOM.
  */
 public record Checkin(
         String sessaoId,

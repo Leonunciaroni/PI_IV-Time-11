@@ -45,7 +45,7 @@ docs(protocolo): definir mensagens da versão 1
 
 ```bash
 ./mvnw verify                        # common, api e sessao (os testes da api usam Docker)
-cd apps/professor && npm run lint && npm run build
+cd apps/professor && npm run lint && npm test && npm run build
 cd apps/aluno && npm run lint && npm run build
 ```
 

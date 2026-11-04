@@ -8,6 +8,7 @@ import br.edu.puccampinas.fastattendance.common.protocolo.Protocolo;
 import br.edu.puccampinas.fastattendance.common.protocolo.TipoMensagem;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.Auth;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.AuthOk;
+import br.edu.puccampinas.fastattendance.common.protocolo.dados.Checkin;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.Erro;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaMarcar;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaMarcarLote;
@@ -18,6 +19,7 @@ import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
 import br.edu.puccampinas.fastattendance.common.seguranca.TokenInvalidoException;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.chamada.PainelAoVivo;
+import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeCheckin;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeChamadaClassica;
 import br.edu.puccampinas.fastattendance.sessao.chamada.ServicoDeSessoes;
 import br.edu.puccampinas.fastattendance.sessao.servidor.Conexao;
@@ -35,10 +37,13 @@ import java.util.concurrent.TimeUnit;
  * Valida o envelope (docs/protocolo-v1.md, seção 2) e despacha cada tipo de mensagem.
  * <p>
  * Nesta versão são tratados {@code auth}, {@code ping}, {@code sessao.abrir},
- * {@code sessao.encerrar}, {@code sessao.acompanhar}, {@code presenca.marcar} e
- * {@code presenca.marcar_lote}. Os demais tipos do protocolo são reconhecidos, exigem autenticação e
- * recusam sessões encerradas, mas ainda respondem que não estão disponíveis; serão implementados
- * nas próximas semanas do cronograma.
+ * {@code sessao.encerrar}, {@code sessao.acompanhar}, {@code presenca.marcar},
+ * {@code presenca.marcar_lote} e {@code checkin} (canal QR Code). Os demais tipos do protocolo são
+ * reconhecidos, exigem autenticação e recusam sessões encerradas, mas ainda respondem que não estão
+ * disponíveis; serão implementados nas próximas semanas do cronograma.
+ * <p>
+ * Antes de validar o envelope, cada mensagem passa pelo limite de mensagens por conexão
+ * ({@code LIMITE_EXCEDIDO}).
  */
 public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
 
@@ -51,10 +56,11 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
     private final ServicoDeSessoes sessoes;
     private final ServicoDeChamadaClassica chamadaClassica;
     private final PainelAoVivo painel;
+    private final ServicoDeCheckin checkin;
 
     public RoteadorDeMensagens(Json json, JwtService jwt, ScheduledExecutorService agendador, Clock relogio,
                                ServicoDeSessoes sessoes, ServicoDeChamadaClassica chamadaClassica,
-                               PainelAoVivo painel) {
+                               PainelAoVivo painel, ServicoDeCheckin checkin) {
         this.json = json;
         this.jwt = jwt;
         this.agendador = agendador;
@@ -62,10 +68,20 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
         this.sessoes = sessoes;
         this.chamadaClassica = chamadaClassica;
         this.painel = painel;
+        this.checkin = checkin;
     }
 
     @Override
     public void processar(Conexao conexao, String texto) {
+        // Antes de tudo, inclusive antes da validação do envelope: a conta é de mensagens recebidas
+        if (!conexao.limitador().registrar()) {
+            erro(conexao, idSeLegivel(texto), CodigoErro.LIMITE_EXCEDIDO, "Mensagens demais em pouco tempo");
+            if (conexao.limitador().excessoRepetido()) {
+                conexao.fechar(CodigoFechamento.VIOLACAO_POLITICA, "Limite de mensagens excedido repetidamente");
+            }
+            return;
+        }
+
         JsonNode mensagem;
         try {
             mensagem = json.ler(texto);
@@ -151,6 +167,8 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
                 conexao.enviar(Envelope.resposta(TipoMensagem.PRESENCA_LOTE_OK, id,
                         chamadaClassica.marcarLote(usuario, json.converter(dados, PresencaMarcarLote.class))));
             }
+            case CHECKIN -> conexao.enviar(Envelope.resposta(TipoMensagem.CHECKIN_OK, id,
+                    checkin.registrar(usuario, json.converter(dados, Checkin.class))));
             default -> {
                 // Todo registro passa por aqui primeiro: sessão encerrada não aceita mais nada
                 sessoes.aberta(texto(dados, "sessaoId"));
@@ -199,5 +217,15 @@ public final class RoteadorDeMensagens implements ProcessadorDeMensagens {
     private static String texto(JsonNode no, String campo) {
         JsonNode valor = no.get(campo);
         return valor != null && valor.isString() ? valor.stringValue() : null;
+    }
+
+    /** Id da mensagem para correlacionar a resposta de erro; {@code null} se o texto não for um objeto JSON. */
+    private String idSeLegivel(String texto) {
+        try {
+            JsonNode mensagem = json.ler(texto);
+            return mensagem != null && mensagem.isObject() ? texto(mensagem, "id") : null;
+        } catch (JacksonException e) {
+            return null;
+        }
     }
 }
