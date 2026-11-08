@@ -12,7 +12,7 @@ apps web é a etapa 2, e `docs/protocolo-v1.md` continua descrevendo o que os ap
 
 | Modelo (`Servidor/`) | Projeto (`sessao/`, salvo indicação) | Observação |
 |---|---|---|
-| `Servidor` (main, `PORTA_PADRAO`, `[PORTA]`, `desativar`) | `sessao/Servidor` | `PORTA_PADRAO = "8081"`. Console `desativar` envia `ComunicadoDeDesligamento` a todos, chama `System.exit(0)`. |
+| `Servidor` (main, `PORTA_PADRAO`, `[PORTA]`, `desativar`) | `sessao/Servidor` | `PORTA_PADRAO = "3000"` (como no modelo; o Compose passa 8081 por argumento). Console `desativar` envia `ComunicadoDeDesligamento` a todos, chama `System.exit(0)`. |
 | `Teclado` | `sessao/Teclado` | Só `getUmString()`. |
 | `AceitadoraDeConexao` | `sessao/servidor/AceitadoraDeConexao` | Igual ao modelo; recebe também `Servicos`. |
 | `SupervisoraDeConexao` | `sessao/servidor/SupervisoraDeConexao` | Um thread por conexão; despacho por `instanceof`. Absorve a lógica de `RoteadorDeMensagens` (ver seção 4). |
