@@ -18,7 +18,8 @@ usado para entregar o token ao aluno.
 |---|---|---|
 | `common/` | Modelos, protocolo de mensagens e JWT compartilhados | A, B |
 | `api/` | Servidor HTTP (Spring Boot + MongoDB) | A |
-| `sessao/` | Servidor de sessão em tempo real (Java-WebSocket) | B |
+| `sessao/` | Servidor de sessão em tempo real, no modelo cliente-servidor por sockets (TCP) | B |
+| `ponte/` | Ponte WebSocket (protocolo v1, JSON) ↔ servidor de sessão (TCP), com Java-WebSocket | B |
 | `apps/professor/` | Aplicação web do professor (Next.js) | C |
 | `apps/aluno/` | Aplicação web do aluno (Next.js) | D |
 | `infra/` | Docker Compose, Nginx e scripts do MongoDB | E |
@@ -40,7 +41,7 @@ docker compose up -d --build
 | http://localhost:8088/professor | Aplicação do professor |
 | http://localhost:8088/aluno | Aplicação do aluno |
 | http://localhost:8088/api | API REST ([docs/api-rest.md](docs/api-rest.md)) |
-| ws://localhost:8088/ws | Servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
+| ws://localhost:8088/ws | Ponte para o servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
 
 Para desenvolver um app com recarga automática, deixe o Compose rodando e use `npm run dev` em
 `apps/professor` (porta 3000) ou `apps/aluno` (porta 3001); as chamadas a `/api` são encaminhadas
@@ -52,7 +53,8 @@ Testes: `./mvnw verify` na raiz (os testes da API sobem um MongoDB com Testconta
 
 | Documento | Conteúdo |
 |---|---|
-| [docs/protocolo-v1.md](docs/protocolo-v1.md) | Mensagens WebSocket entre os apps e o servidor de sessão |
+| [docs/protocolo-v1.md](docs/protocolo-v1.md) | Mensagens WebSocket entre os apps e o servidor de sessão (pela ponte) |
+| [docs/servidor-modelo-socket.md](docs/servidor-modelo-socket.md) | Servidor de sessão no modelo por sockets e a ponte WebSocket↔TCP |
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções e índices do MongoDB |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
