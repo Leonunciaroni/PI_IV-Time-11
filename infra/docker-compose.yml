@@ -1,6 +1,6 @@
 # Ambiente completo do Fast Attendance.
 #   cd infra && cp .env.example .env && docker compose up -d --build
-# Tolerância a falha: docker compose up -d --scale api=2 --scale sessao=2 e depois docker compose stop <container>
+# Tolerância a falha: docker compose up -d --scale api=2 --scale sessao=2 --scale ponte=2 e depois docker compose stop <container>
 
 name: fast-attendance
 
@@ -80,11 +80,33 @@ services:
     depends_on:
       api: { condition: service_healthy }
     restart: unless-stopped
-    # Tempo para fechar as conexões com 1001 e os clientes reconectarem em outra réplica
+    # Sem `ports`: o servidor fala TCP só com a ponte, na rede interna
     stop_grace_period: 5s
     networks: [interna]
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8081'"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+
+  # Ponte WebSocket (protocolo v1, JSON) ↔ servidor de sessão (TCP). É o que o Nginx expõe em /ws.
+  ponte:
+    build:
+      context: ..
+      dockerfile: ponte/Dockerfile
+    command: ["8082"]
+    environment:
+      SESSAO_HOST: sessao
+      SESSAO_PORTA: 8081
+    depends_on:
+      sessao: { condition: service_healthy }
+    restart: unless-stopped
+    # Tempo para fechar os WebSockets com 1001 e os clientes reconectarem em outra réplica
+    stop_grace_period: 5s
+    networks: [interna]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8082'"]
       interval: 10s
       timeout: 3s
       retries: 6
@@ -110,7 +132,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
-      - sessao
+      - ponte
       - professor
       - aluno
     restart: unless-stopped
