@@ -71,6 +71,7 @@ services:
     build:
       context: ..
       dockerfile: sessao/Dockerfile
+    command: ["8081"]
     environment:
       MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET em infra/.env}

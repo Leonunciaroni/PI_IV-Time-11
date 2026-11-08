@@ -18,3 +18,5 @@ WORKDIR /app
 COPY --from=build /src/sessao/target/sessao.jar app.jar
 EXPOSE 8081
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
+# Porta do servidor de sessão (argumento [PORTA] do main)
+CMD ["8081"]
