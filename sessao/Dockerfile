@@ -6,6 +6,7 @@ COPY .mvn .mvn
 COPY common/pom.xml common/
 COPY api/pom.xml api/
 COPY sessao/pom.xml sessao/
+COPY ponte/pom.xml ponte/
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -pl sessao -am dependency:go-offline
 COPY common common
 COPY sessao sessao
