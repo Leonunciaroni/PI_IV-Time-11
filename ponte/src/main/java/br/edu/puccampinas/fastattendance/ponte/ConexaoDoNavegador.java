@@ -137,6 +137,11 @@ final class ConexaoDoNavegador {
             fechar(CodigoFechamento.SERVIDOR_REINICIANDO, "Servidor de sessão indisponível");
             return;
         }
+        if (fechamentoIniciado.get()) {
+            // Fechou enquanto conectava (ex.: prazo de autenticação): o socket recém-aberto não pode ficar
+            servidor.adeus();
+            return;
+        }
         Thread.ofVirtual().name("ponte-servidor").start(this::lerDoServidor);
 
         try {
