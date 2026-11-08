@@ -16,6 +16,7 @@
         <module>common</module>
         <module>api</module>
         <module>sessao</module>
+        <module>ponte</module>
     </modules>
 
     <properties>
@@ -26,6 +27,7 @@
 
         <spring-boot.version>4.1.1</spring-boot.version>
         <jjwt.version>0.13.0</jjwt.version>
+        <java-websocket.version>1.6.0</java-websocket.version>
 
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
@@ -63,6 +65,12 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.java-websocket</groupId>
+                <artifactId>Java-WebSocket</artifactId>
+                <version>${java-websocket.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
