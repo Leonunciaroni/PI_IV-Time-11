@@ -19,7 +19,7 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 | Parte | Situação |
 |---|---|
 | **API REST** (`api/`) | Pronta: cadastro e login com JWT, perfil, turmas, matrículas, salas, frequência, estatísticas, histórico do aluno e sessões ativas. Detalhes em [docs/api-rest.md](docs/api-rest.md). |
-| **Servidor de sessão** (`sessao/`) | Pronto: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
+| **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
 | **Antifraude** (no servidor) | Pronto: token válido, raio até a sala (Haversine), matrícula, uma presença por aluno e uma por dispositivo em cada sessão. Só é exercitado diretamente pelo WebSocket, porque o app do aluno ainda não envia check-in. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
 | **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. O modo **Som** aparece desabilitado na tela de abertura de chamada. |
@@ -36,16 +36,24 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
                  Nginx (porta 8088 no host)
                     │ /api            │ /ws                 │ /professor, /aluno
                     ▼                 ▼                     ▼
-            API (Spring Boot)   Servidor de sessão     Apps Next.js
-            porta 8080          (Java-WebSocket)       (professor 3000,
-                    │           porta 8081                aluno 3001)
+            API (Spring Boot)   Ponte (WebSocket↔TCP)  Apps Next.js
+            porta 8080          porta 8082             (professor 3000,
+                    │                 │ TCP              aluno 3001)
+                    │                 ▼
+                    │           Servidor de sessão
+                    │           (sockets, porta 8081)
                     └────────┬────────┘
                              ▼
              MongoDB, replica set rs0 (mongo1, mongo2, mongo3)
 ```
 
+O servidor de sessão segue o modelo cliente-servidor por sockets (TCP, serialização Java, classes
+`Servidor`, `AceitadoraDeConexao`, `SupervisoraDeConexao`, `Parceiro` e `Comunicado`). Como o
+navegador só fala WebSocket, a **ponte** converte o JSON do protocolo v1 em `Comunicado`s e vice-versa; os
+apps não mudam. Veja [docs/servidor-modelo-socket.md](docs/servidor-modelo-socket.md).
+
 A API e o servidor de sessão compartilham o MongoDB e o segredo `JWT_SECRET`: o servidor de sessão
-valida o mesmo JWT que a API emite, na mensagem `auth` do WebSocket. As regras de unicidade
+valida o mesmo JWT que a API emite, na mensagem `auth` (recebida pela ponte, no WebSocket). As regras de unicidade
 (uma presença por aluno e por sessão, uma sessão aberta por turma) ficam em índices do banco, porque
 as duas aplicações escrevem nas mesmas coleções. O diagrama de arquitetura detalhado é tratado na
 issue #73 e ainda não existe no repositório.
@@ -54,9 +62,10 @@ issue #73 e ainda não existe no repositório.
 
 | Caminho | Conteúdo |
 |---|---|
-| `common/` | Modelos, protocolo de mensagens e JWT compartilhados (Java 21) |
+| `common/` | Modelos, protocolo de mensagens, `Comunicado`s e JWT compartilhados (Java 21) |
 | `api/` | Servidor HTTP: Spring Boot e MongoDB |
-| `sessao/` | Servidor de sessão em tempo real: Java-WebSocket |
+| `sessao/` | Servidor de sessão em tempo real, no modelo cliente-servidor por sockets (TCP) |
+| `ponte/` | Ponte WebSocket (protocolo v1, JSON) ↔ servidor de sessão (TCP), com Java-WebSocket |
 | `apps/professor/` | Aplicação web do professor (Next.js 16, React 19) |
 | `apps/aluno/` | Aplicação web do aluno (Next.js 16, React 19) |
 | `infra/` | Docker Compose, Nginx, script de replica set e contas de demonstração |
@@ -114,7 +123,7 @@ essa mensagem.
 | http://localhost:8088/professor | Aplicação do professor |
 | http://localhost:8088/aluno | Aplicação do aluno (`/` redireciona para cá) |
 | http://localhost:8088/api | API REST ([docs/api-rest.md](docs/api-rest.md)) |
-| ws://localhost:8088/ws | Servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
+| ws://localhost:8088/ws | Ponte para o servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
 
 Apenas o Nginx é publicado no host, além do `mongo1` em `127.0.0.1:27017`, para ferramentas
 locais. Para conectar ao MongoDB de fora do Docker, use
@@ -189,7 +198,8 @@ Somente documentos que existem no repositório:
 
 | Documento | Conteúdo |
 |---|---|
-| [docs/protocolo-v1.md](docs/protocolo-v1.md) | Protocolo WebSocket entre os apps e o servidor de sessão (revisado em 04/11/2026) |
+| [docs/protocolo-v1.md](docs/protocolo-v1.md) | Protocolo WebSocket entre os apps e o servidor de sessão, pela ponte (revisado em 04/11/2026) |
+| [docs/servidor-modelo-socket.md](docs/servidor-modelo-socket.md) | Servidor de sessão no modelo por sockets e a ponte WebSocket↔TCP |
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |

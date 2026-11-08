@@ -16,7 +16,7 @@ import java.util.ArrayList;
  */
 public class Servidor
 {
-    public static String PORTA_PADRAO = "8081";
+    public static String PORTA_PADRAO = "3000";
 
     public static void main (String[] args)
     {
