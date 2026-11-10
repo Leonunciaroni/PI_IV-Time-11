@@ -8,6 +8,9 @@ import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeCheckin;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
+import br.edu.puccampinas.fastattendance.common.comunicado.Erro;
+import br.edu.puccampinas.fastattendance.sessao.chamada.Haversine;
 import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
@@ -25,6 +28,9 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.*;
@@ -452,6 +458,79 @@ class CheckinTest {
     }
 
     // ---- Apoio ----
+
+    @Test
+    void aceitaDistanciaExatamenteIgualAoRaio() throws Exception {
+        double distancia = Haversine.metros(SALA_LAT, SALA_LON, PERTO_LAT, SALA_LON);
+        MongoDeTeste.banco().getCollection("salas").updateOne(eq("_id", new ObjectId(salaId)),
+                new Document("$set", new Document("raioMetros", distancia)));
+        Sessao sessao = abrirQrcode();
+        ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-limite", PERTO_LAT, SALA_LON));
+        aluno.proximo(RespostaDeCheckin.class);
+        assertEquals(1, presencas.countDocuments());
+    }
+
+    @Test
+    void recusaDistanciaLogoAcimaDoRaioMesmoComPrecisaoAlta() throws Exception {
+        double distancia = Haversine.metros(SALA_LAT, SALA_LON, PERTO_LAT, SALA_LON);
+        MongoDeTeste.banco().getCollection("salas").updateOne(eq("_id", new ObjectId(salaId)),
+                new Document("$set", new Document("raioMetros", Math.nextDown(distancia))));
+        Sessao sessao = abrirQrcode();
+        ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
+        aluno.enviar(new PedidoDeCheckin(sessao.id(), tokenAtual(sessao), OrigemPresenca.QRCODE,
+                "disp-fora", PERTO_LAT, SALA_LON, 1000.0));
+        aluno.proximoErro(CodigoErro.FORA_DO_RAIO);
+        assertEquals(0, presencas.countDocuments());
+    }
+
+    @Test
+    void doisCheckinsConcorrentesDoMesmoAlunoGravamUmaUnicaPresenca() throws Exception {
+        Sessao sessao = abrirQrcode();
+        ClienteTeste primeiro = autenticado(ana, Papel.ALUNO);
+        ClienteTeste segundo = autenticado(ana, Papel.ALUNO);
+        String token = tokenAtual(sessao);
+        conferirConcorrencia(primeiro, checkin(sessao, token, "disp-1", SALA_LAT, SALA_LON),
+                segundo, checkin(sessao, token, "disp-2", SALA_LAT, SALA_LON), CodigoErro.PRESENCA_DUPLICADA);
+    }
+
+    @Test
+    void doisAlunosConcorrentesNoMesmoDispositivoGravamUmaUnicaPresenca() throws Exception {
+        Sessao sessao = abrirSom();
+        ClienteTeste primeiro = autenticado(ana, Papel.ALUNO);
+        ClienteTeste segundo = autenticado(bruno, Papel.ALUNO);
+        String token = tokenAtual(sessao);
+        conferirConcorrencia(primeiro, checkinSom(sessao, token, "disp-unico", null, null, null),
+                segundo, checkinSom(sessao, token, "disp-unico", null, null, null), CodigoErro.DISPOSITIVO_JA_UTILIZADO);
+    }
+
+    private void conferirConcorrencia(ClienteTeste primeiro, PedidoDeCheckin pedido1,
+                                      ClienteTeste segundo, PedidoDeCheckin pedido2, CodigoErro esperado) throws Exception {
+        CountDownLatch prontos = new CountDownLatch(2);
+        CountDownLatch disparar = new CountDownLatch(1);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            var resposta1 = executor.submit(() -> {
+                prontos.countDown();
+                assertTrue(disparar.await(3, TimeUnit.SECONDS));
+                primeiro.enviar(pedido1);
+                return primeiro.proximo();
+            });
+            var resposta2 = executor.submit(() -> {
+                prontos.countDown();
+                assertTrue(disparar.await(3, TimeUnit.SECONDS));
+                segundo.enviar(pedido2);
+                return segundo.proximo();
+            });
+            assertTrue(prontos.await(3, TimeUnit.SECONDS));
+            disparar.countDown();
+            List<Comunicado> respostas = List.of(resposta1.get(5, TimeUnit.SECONDS), resposta2.get(5, TimeUnit.SECONDS));
+            assertEquals(1, respostas.stream().filter(RespostaDeCheckin.class::isInstance).count());
+            List<Erro> erros = respostas.stream().filter(Erro.class::isInstance).map(Erro.class::cast).toList();
+            assertEquals(1, erros.size());
+            assertEquals(esperado, erros.getFirst().getCodigo());
+            assertEquals(1, presencas.countDocuments());
+        }
+    }
 
     /** Sessão aberta pelo professor, com o segredo TOTP da resposta {@code sessao.aberta}. */
     private record Sessao(String id, String segredo) {
