@@ -20,10 +20,10 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 |---|---|
 | **API REST** (`api/`) | Pronta: cadastro e login com JWT, perfil, turmas, matrículas, salas, frequência, estatísticas, histórico do aluno e sessões ativas. Detalhes em [docs/api-rest.md](docs/api-rest.md). |
 | **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
-| **Antifraude** (no servidor) | Pronto: token válido, raio até a sala (Haversine), matrícula, uma presença por aluno e uma por dispositivo em cada sessão. Só é exercitado diretamente pelo WebSocket, porque o app do aluno ainda não envia check-in. |
+| **Antifraude** (no servidor) | Pronto: token válido, raio até a sala (Haversine), matrícula, uma presença por aluno e uma por dispositivo em cada sessão. O app do aluno envia o check-in por QR Code pela ponte WebSocket/TCP. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
 | **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. O modo **Som** aparece desabilitado na tela de abertura de chamada. |
-| **App do aluno** | Parcial: login, início (turmas, frequência, chamadas abertas) e histórico de frequência. A página de check-in confere a chamada aberta, mas **ainda não captura o QR Code nem confirma a presença**. |
+| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico e check-in por QR Code com câmera e geolocalização. A captura por som depende da entrega do modem de áudio. |
 | **Modo Som ponta a ponta** | Pendente. O servidor já valida o token, mas a emissão pelo professor (`audio/emissor.mjs`, módulo isolado) não está ligada à tela e o aluno não captura o sinal. Ver [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md). |
 
 ## Arquitetura
@@ -161,6 +161,7 @@ docker compose down -v     # apaga também os volumes do MongoDB
 ```bash
 ./mvnw verify                              # common, api e sessao; os testes da API sobem MongoDB em contêiner
 cd apps/professor && npm test              # testes unitários do app do professor (Vitest)
+cd apps/aluno && npm test                  # leitura QR, localização e transporte de check-in (Vitest)
 node --test audio/emissor.test.mjs         # testes do emissor sonoro (Node)
 ```
 
@@ -205,6 +206,7 @@ Somente documentos que existem no repositório:
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
+| [docs/checkin-qr.md](docs/checkin-qr.md) | Leitura do QR Code e check-in com geolocalização |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
