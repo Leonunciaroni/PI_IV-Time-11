@@ -208,6 +208,7 @@ Somente documentos que existem no repositório:
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
 | [docs/cadastro.md](docs/cadastro.md) | Cadastro docente e regras de autorização |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
+| [docs/roteiro-demonstracao.md](docs/roteiro-demonstracao.md) | Roteiro cronometrado, preparação e plano B da demonstração |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/checkin-qr.md](docs/checkin-qr.md) | Leitura do QR Code e check-in com geolocalização |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
