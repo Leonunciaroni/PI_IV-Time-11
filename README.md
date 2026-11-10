@@ -207,6 +207,7 @@ Somente documentos que existem no repositório:
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/checkin-qr.md](docs/checkin-qr.md) | Leitura do QR Code e check-in com geolocalização |
+| [docs/revisao-aluno.md](docs/revisao-aluno.md) | Revisão dos wireframes e regressão das telas do aluno |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
