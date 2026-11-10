@@ -66,6 +66,26 @@ errada, com o mesmo tempo de resposta, para não revelar quais e-mails estão ca
 
 Devolve o `UsuarioResponse` do dono do token. `401` sem token ou com token inválido/expirado.
 
+### `PATCH /api/auth/me`
+
+Aluno ou professor autenticado edita somente o próprio perfil. Campos opcionais:
+`nome` (não vazio, até 120), `email` (válido, único, até 254), `novaSenha` (8–72 caracteres,
+até 72 bytes UTF-8) e `senhaAtual`. Trocar a senha exige `senhaAtual` correta.
+Campos omitidos são preservados; papel e matrícula não são editáveis.
+
+```json
+{ "nome": "Ana Souza", "email": "ana.nova@instituicao.edu.br" }
+```
+
+```json
+{ "senhaAtual": "senha-anterior", "novaSenha": "nova-senha-segura" }
+```
+
+Resposta `200` com `UsuarioResponse`, sem senha ou hash. O cliente pode usar a resposta
+para atualizar a sessão exibida. `400` para campos inválidos, pedido vazio ou senha atual
+incorreta; `401` sem autenticação; `409` para e-mail em uso. A atualização é atômica:
+uma recusa não altera os demais campos. O JWT atual mantém sua validade original.
+
 ## Turmas
 
 Todas as rotas de `/api/turmas` exigem o papel `PROFESSOR`: sem token a resposta é `401`, e com o
@@ -258,6 +278,57 @@ com uma lista de `SalaResponse`.
 { "id": "66f1c3bb...", "nome": "H15 - Sala 203", "latitude": -22.8337, "longitude": -47.0525,
   "raioMetros": 30.0 }
 ```
+
+## Início do aluno
+
+### `GET /api/aluno/turmas`
+
+Exige JWT com papel `ALUNO`. Sem autenticação responde `401`; professor recebe `403`.
+A identidade vem do token, sem aceitar outro `alunoId` informado pelo cliente.
+
+Lista somente turmas nas quais o aluno autenticado está matriculado, ordenadas por disciplina
+e nome. Sem matrículas, retorna `[]`. Consulta turmas, aulas e presenças em lote.
+
+```json
+[
+  {
+    "id": "turma-id", "nome": "Turma A", "disciplina": "Engenharia de Software I",
+    "horarioPadrao": "Seg 19:00", "aulasDadas": 20, "presencas": 19,
+    "percentual": 95.0, "minimo": 75, "abaixoDoMinimo": false,
+    "chamadaAberta": { "id": "sessao-id", "modo": "QRCODE", "abertaEm": "2026-10-26T22:00:00Z" }
+  }
+]
+```
+
+Frequência segue o histórico existente: só aulas encerradas, sem presença ou `presente: false`
+conta como ausência. Sem aulas encerradas, `percentual` vale `0` e `abaixoDoMinimo` é `false`;
+a interface apresenta “—” para distinguir falta de dados de frequência zero.
+
+`chamadaAberta` é `null` quando não existe aula aberta. O modo pode ser `CLASSICA`, `QRCODE`
+ou `SOM`. A resposta nunca inclui o segredo TOTP. O histórico detalhado continua disponível
+em `GET /api/turmas/{id}/frequencia/{alunoId}` com as autorizações já documentadas.
+
+## Aulas e sessões ativas
+
+### `GET /api/turmas/{id}/aulas`
+
+Somente professor dono da turma. Lista aulas abertas e encerradas, da mais recente para a
+mais antiga, com `id`, `turmaId`, `modo`, `status`, `abertaEm`, `encerradaEm` e `totalPresentes`.
+`encerradaEm` é `null` na aula aberta. Conta apenas registros com `presente: true`.
+Sem aulas retorna `[]`; turma inexistente ou de outro professor responde `404`; aluno, `403`.
+
+### `GET /api/sessoes/ativas`
+
+Somente aluno autenticado. Retorna as chamadas abertas das turmas em que ele está matriculado,
+da mais recente para a mais antiga, nos modos `CLASSICA`, `QRCODE` ou `SOM`:
+
+```json
+[{ "sessaoId": "sessao-id", "turmaId": "turma-id", "turma": "Turma A",
+   "disciplina": "Engenharia de Software I", "modo": "SOM", "abertaEm": "2026-10-29T22:00:00Z" }]
+```
+
+Nunca retorna segredos TOTP ou dados de presença de outros alunos. Sem matrículas/chamadas,
+responde `[]`; professor recebe `403`. Ambas as consultas exigem JWT; sem token respondem `401`.
 
 ## Saúde
 

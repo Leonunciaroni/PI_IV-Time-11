@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
   // Gera .next/standalone com server.js para a imagem Docker.
   output: "standalone",
   async redirects() {
-    // No dev, aceita os endereços sem prefixo abertos pelo terminal ou digitados à mão.
     if (process.env.NODE_ENV !== "development") return [];
     return ["/", "/login"].map((caminho) => ({
       source: caminho,
@@ -21,7 +20,13 @@ const nextConfig: NextConfig = {
     // encaminha /api para o ambiente do Docker Compose.
     if (process.env.NODE_ENV !== "development") return [];
     const api = process.env.API_URL ?? "http://localhost:8088";
-    return [{ source: "/api/:path*", destination: `${api}/api/:path*`, basePath: false }];
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${api}/api/:path*`,
+        basePath: false,
+      },
+    ];
   },
   cacheComponents: true,
   partialPrefetching: true,

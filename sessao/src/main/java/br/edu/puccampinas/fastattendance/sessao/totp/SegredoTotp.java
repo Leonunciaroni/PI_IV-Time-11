@@ -1,8 +1,9 @@
 package br.edu.puccampinas.fastattendance.sessao.totp;
 
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.ConfiguracaoTotp;
+import br.edu.puccampinas.fastattendance.common.comunicado.ConfiguracaoTotp;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 /** Segredo e parâmetros TOTP de uma sessão (docs/protocolo-v1.md, seção 5.3). */
 public final class SegredoTotp {
@@ -15,7 +16,7 @@ public final class SegredoTotp {
     /** 160 bits, o tamanho recomendado pela RFC 4226 para o segredo compartilhado. */
     static final int BYTES = 20;
 
-    private static final char[] ALFABETO_BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".toCharArray();
+    private static final String ALFABETO_BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
     private SegredoTotp() {
     }
@@ -40,13 +41,35 @@ public final class SegredoTotp {
             acumulado = (acumulado << 8) | (b & 0xff);
             bits += 8;
             while (bits >= 5) {
-                texto.append(ALFABETO_BASE32[(acumulado >> (bits - 5)) & 31]);
+                texto.append(ALFABETO_BASE32.charAt((acumulado >> (bits - 5)) & 31));
                 bits -= 5;
             }
         }
         if (bits > 0) {
-            texto.append(ALFABETO_BASE32[(acumulado << (5 - bits)) & 31]);
+            texto.append(ALFABETO_BASE32.charAt((acumulado << (5 - bits)) & 31));
         }
         return texto.toString();
+    }
+
+    /** Decodifica Base32 da RFC 4648 (sem preenchimento) para os bytes da chave HMAC. */
+    static byte[] decodificarBase32(String texto) {
+        byte[] saida = new byte[texto.length() * 5 / 8];
+        int indice = 0;
+        int acumulado = 0;
+        int bits = 0;
+        for (int i = 0; i < texto.length(); i++) {
+            int valor = ALFABETO_BASE32.indexOf(texto.charAt(i));
+            if (valor < 0) {
+                throw new IllegalArgumentException("Caractere Base32 inválido: " + texto.charAt(i));
+            }
+            acumulado = (acumulado << 5) | valor;
+            bits += 5;
+            if (bits >= 8) {
+                saida[indice++] = (byte) (acumulado >> (bits - 8));
+                bits -= 8;
+                acumulado &= (1 << bits) - 1;
+            }
+        }
+        return Arrays.copyOf(saida, indice);
     }
 }

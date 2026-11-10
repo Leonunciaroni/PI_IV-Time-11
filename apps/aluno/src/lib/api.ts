@@ -1,11 +1,15 @@
-import type { Problema, TokenResponse } from "./tipos";
+import type {
+  HistoricoAluno,
+  Problema,
+  TokenResponse,
+  TurmaDoAluno,
+} from "./tipos";
 
 /** Erro da API com a mensagem já pronta para exibir ao usuário. */
 export class ErroApi extends Error {
   constructor(
     message: string,
     readonly status: number,
-    readonly campos?: Record<string, string>,
   ) {
     super(message);
     this.name = "ErroApi";
@@ -22,19 +26,75 @@ async function postar<T>(caminho: string, corpo: unknown): Promise<T> {
       body: JSON.stringify(corpo),
     });
   } catch {
-    throw new ErroApi("Não foi possível conectar ao servidor. Verifique sua conexão.", 0);
+    throw new ErroApi(
+      "Não foi possível conectar ao servidor. Verifique sua conexão.",
+      0,
+    );
   }
 
   if (!resposta.ok) {
-    const problema = (await resposta.json().catch(() => null)) as Problema | null;
-    const mensagem = resposta.status >= 500
-      ? "O serviço está temporariamente indisponível. Tente novamente em alguns instantes."
-      : "Não foi possível concluir a solicitação. Tente novamente.";
-    throw new ErroApi(problema?.detail ?? mensagem, resposta.status, problema?.campos);
+    const problema = (await resposta
+      .json()
+      .catch(() => null)) as Problema | null;
+    throw new ErroApi(
+      problema?.detail ?? "Erro inesperado. Tente novamente.",
+      resposta.status,
+    );
   }
   return (await resposta.json()) as T;
 }
 
 export function login(email: string, senha: string): Promise<TokenResponse> {
   return postar<TokenResponse>("/api/auth/login", { email, senha });
+}
+
+async function consultar<T>(
+  caminho: string,
+  token: string,
+  signal?: AbortSignal,
+): Promise<T> {
+  let resposta: Response;
+  try {
+    resposta = await fetch(caminho, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      signal,
+    });
+  } catch (erro) {
+    if (signal?.aborted) throw erro;
+    throw new ErroApi(
+      "Não foi possível conectar ao servidor. Verifique sua conexão.",
+      0,
+    );
+  }
+  if (!resposta.ok) {
+    const problema = (await resposta
+      .json()
+      .catch(() => null)) as Problema | null;
+    throw new ErroApi(
+      problema?.detail ?? "O serviço está indisponível. Tente novamente.",
+      resposta.status,
+    );
+  }
+  return resposta.json() as Promise<T>;
+}
+
+export function listarMinhasTurmas(
+  token: string,
+  signal?: AbortSignal,
+): Promise<TurmaDoAluno[]> {
+  return consultar("/api/aluno/turmas", token, signal);
+}
+
+export function consultarHistorico(
+  token: string,
+  turmaId: string,
+  alunoId: string,
+  signal?: AbortSignal,
+): Promise<HistoricoAluno> {
+  return consultar(
+    `/api/turmas/${encodeURIComponent(turmaId)}/frequencia/${encodeURIComponent(alunoId)}`,
+    token,
+    signal,
+  );
 }

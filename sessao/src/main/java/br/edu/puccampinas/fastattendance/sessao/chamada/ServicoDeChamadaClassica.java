@@ -4,10 +4,10 @@ import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
 import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaAtualizada;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaLoteOk;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaMarcar;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaMarcarLote;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeMarcarPresenca;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeMarcarPresencaEmLote;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresenca;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresencaEmLote;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.ErroDeProtocolo;
 import com.mongodb.ErrorCategory;
@@ -63,17 +63,17 @@ public final class ServicoDeChamadaClassica {
         this.relogio = relogio;
     }
 
-    public PresencaAtualizada marcar(UsuarioAutenticado professor, PresencaMarcar pedido) {
-        Document sessao = sessaoClassicaDoProfessor(professor, pedido.sessaoId());
+    public RespostaDeMarcarPresenca marcar(UsuarioAutenticado professor, PedidoDeMarcarPresenca pedido) {
+        Document sessao = sessaoClassicaDoProfessor(professor, pedido.getSessaoId());
         String sessaoId = sessao.getObjectId("_id").toHexString();
         String turmaId = sessao.getString("turmaId");
-        String alunoId = pedido.alunoId() == null ? "" : pedido.alunoId().strip();
+        String alunoId = pedido.getAlunoId() == null ? "" : pedido.getAlunoId().strip();
         if (matriculas.countDocuments(and(eq("turmaId", turmaId), eq("alunoId", alunoId))) == 0) {
             throw new ErroDeProtocolo(CodigoErro.ALUNO_NAO_MATRICULADO, "Aluno não matriculado na turma");
         }
 
         Instant agora = agora();
-        UpdateOneModel<Document> marcacao = marcacao(sessaoId, turmaId, alunoId, pedido.presente(), agora);
+        UpdateOneModel<Document> marcacao = marcacao(sessaoId, turmaId, alunoId, pedido.isPresente(), agora);
         try {
             presencas.updateOne(marcacao.getFilter(), marcacao.getUpdate(), UPSERT);
         } catch (MongoWriteException e) {
@@ -83,13 +83,13 @@ public final class ServicoDeChamadaClassica {
             // Dois upserts simultâneos para o mesmo aluno: o outro criou o documento, agora basta atualizá-lo
             presencas.updateOne(marcacao.getFilter(), marcacao.getUpdate(), UPSERT);
         }
-        return new PresencaAtualizada(sessaoId, alunoId, nome(alunoId), pedido.presente(), OrigemPresenca.MANUAL,
+        return new RespostaDeMarcarPresenca(sessaoId, alunoId, nome(alunoId), pedido.isPresente(), OrigemPresenca.MANUAL,
                 agora.toEpochMilli(), sessoes.totalPresentes(sessaoId), totalMatriculados(turmaId));
     }
 
     /** Marca todos os matriculados com {@code presente} e o oposto nas exceções, em uma única escrita em lote. */
-    public PresencaLoteOk marcarLote(UsuarioAutenticado professor, PresencaMarcarLote pedido) {
-        Document sessao = sessaoClassicaDoProfessor(professor, pedido.sessaoId());
+    public RespostaDeMarcarPresencaEmLote marcarLote(UsuarioAutenticado professor, PedidoDeMarcarPresencaEmLote pedido) {
+        Document sessao = sessaoClassicaDoProfessor(professor, pedido.getSessaoId());
         String sessaoId = sessao.getObjectId("_id").toHexString();
         String turmaId = sessao.getString("turmaId");
 
@@ -97,7 +97,7 @@ public final class ServicoDeChamadaClassica {
         for (Document matricula : matriculas.find(eq("turmaId", turmaId)).projection(include("alunoId"))) {
             matriculados.add(matricula.getString("alunoId"));
         }
-        Set<String> excecoes = new HashSet<>(pedido.excecoes() == null ? List.of() : pedido.excecoes());
+        Set<String> excecoes = new HashSet<>(pedido.getExcecoes() == null ? List.of() : pedido.getExcecoes());
         if (!matriculados.containsAll(excecoes)) {
             // Recusa antes de gravar: o lote é aplicado inteiro ou não é aplicado
             throw new ErroDeProtocolo(CodigoErro.ALUNO_NAO_MATRICULADO, "Há exceções que não são alunos da turma");
@@ -107,7 +107,7 @@ public final class ServicoDeChamadaClassica {
             Instant agora = agora();
             List<WriteModel<Document>> escritas = new ArrayList<>(matriculados.size());
             for (String alunoId : matriculados) {
-                boolean presente = excecoes.contains(alunoId) != pedido.presente();
+                boolean presente = excecoes.contains(alunoId) != pedido.isPresente();
                 escritas.add(marcacao(sessaoId, turmaId, alunoId, presente, agora));
             }
             BulkWriteOptions opcoes = new BulkWriteOptions().ordered(false);
@@ -123,7 +123,7 @@ public final class ServicoDeChamadaClassica {
                 presencas.bulkWrite(escritas, opcoes);
             }
         }
-        return new PresencaLoteOk(sessaoId, sessoes.totalPresentes(sessaoId), matriculados.size());
+        return new RespostaDeMarcarPresencaEmLote(sessaoId, sessoes.totalPresentes(sessaoId), matriculados.size());
     }
 
     private Document sessaoClassicaDoProfessor(UsuarioAutenticado professor, String sessaoId) {

@@ -10,6 +10,6 @@ npm run lint
 npm run build
 ```
 
-Em desenvolvimento, abrir `http://localhost:3001/` redireciona para
-`/aluno`. O atalho `/login` leva a `/aluno/login`.
-A área do aluno oferece somente login para contas existentes, sem tela de cadastro.
+A tela inicial autenticada lista turmas, frequência e chamadas abertas. Detalhes e limites da
+integração com o check-in em [docs/inicio-aluno.md](../../docs/inicio-aluno.md).
+Em desenvolvimento, `http://localhost:3001/` redireciona para `/aluno`.
