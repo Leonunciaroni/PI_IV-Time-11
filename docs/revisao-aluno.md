@@ -7,7 +7,6 @@ azul escuro, fundo claro e cartões brancos. Não introduz outro canal de presen
 ## Ajustes
 
 - A marca do cabeçalho volta ao início, com nome acessível e foco visível.
-- Nomes extensos ficam limitados no cabeçalho; o texto completo permanece no título.
 - O resultado e os erros do QR oferecem acesso ao histórico da turma. É possível
   conferir o registro quando um envio ficou sem confirmação, sem repetir o check-in
   automaticamente. O histórico considera apenas as aulas já encerradas.

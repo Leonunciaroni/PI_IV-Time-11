@@ -51,7 +51,7 @@ export function AreaAutenticada({
             </span>
           </Link>
           <div className="flex items-center gap-3 text-sm">
-            <span className="hidden max-w-64 truncate sm:inline" title={sessao.usuario.nome}>{sessao.usuario.nome}</span>
+            <span className="hidden sm:inline">{sessao.usuario.nome}</span>
             <button
               onClick={sair}
               className="rounded-lg border border-[#e2e8f0] px-4 py-2 font-medium hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#5040e8]"
