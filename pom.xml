@@ -16,6 +16,7 @@
         <module>common</module>
         <module>api</module>
         <module>sessao</module>
+        <module>ponte</module>
     </modules>
 
     <properties>

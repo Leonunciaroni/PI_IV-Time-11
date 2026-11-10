@@ -308,6 +308,28 @@ a interface apresenta “—” para distinguir falta de dados de frequência ze
 ou `SOM`. A resposta nunca inclui o segredo TOTP. O histórico detalhado continua disponível
 em `GET /api/turmas/{id}/frequencia/{alunoId}` com as autorizações já documentadas.
 
+## Aulas e sessões ativas
+
+### `GET /api/turmas/{id}/aulas`
+
+Somente professor dono da turma. Lista aulas abertas e encerradas, da mais recente para a
+mais antiga, com `id`, `turmaId`, `modo`, `status`, `abertaEm`, `encerradaEm` e `totalPresentes`.
+`encerradaEm` é `null` na aula aberta. Conta apenas registros com `presente: true`.
+Sem aulas retorna `[]`; turma inexistente ou de outro professor responde `404`; aluno, `403`.
+
+### `GET /api/sessoes/ativas`
+
+Somente aluno autenticado. Retorna as chamadas abertas das turmas em que ele está matriculado,
+da mais recente para a mais antiga, nos modos `CLASSICA`, `QRCODE` ou `SOM`:
+
+```json
+[{ "sessaoId": "sessao-id", "turmaId": "turma-id", "turma": "Turma A",
+   "disciplina": "Engenharia de Software I", "modo": "SOM", "abertaEm": "2026-10-29T22:00:00Z" }]
+```
+
+Nunca retorna segredos TOTP ou dados de presença de outros alunos. Sem matrículas/chamadas,
+responde `[]`; professor recebe `403`. Ambas as consultas exigem JWT; sem token respondem `401`.
+
 ## Saúde
 
 `GET /actuator/health` (direto na porta 8080 do contêiner; não é exposto pelo Nginx).

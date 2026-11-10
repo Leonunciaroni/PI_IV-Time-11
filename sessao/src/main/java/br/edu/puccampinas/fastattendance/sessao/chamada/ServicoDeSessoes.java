@@ -6,9 +6,9 @@ import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import br.edu.puccampinas.fastattendance.common.modelo.StatusSessao;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.MotivoEncerramento;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoAberta;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoAbrir;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoEncerrada;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSessao;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.ErroDeProtocolo;
 import br.edu.puccampinas.fastattendance.sessao.totp.SegredoTotp;
@@ -62,19 +62,19 @@ public final class ServicoDeSessoes {
         this.duracaoMaxima = duracaoMaxima;
     }
 
-    public SessaoAberta abrir(UsuarioAutenticado professor, SessaoAbrir pedido) {
+    public RespostaDeAbrirSessao abrir(UsuarioAutenticado professor, PedidoDeAbrirSessao pedido) {
         exigirProfessor(professor);
-        if (vazio(pedido.turmaId()) || pedido.modo() == null) {
+        if (vazio(pedido.getTurmaId()) || pedido.getModo() == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Informe turmaId e modo");
         }
-        String turmaId = pedido.turmaId().strip();
+        String turmaId = pedido.getTurmaId().strip();
         Document turma = porId(turmas, turmaId);
         // Turma inexistente e turma de outro professor têm a mesma resposta, para não revelar quais existem
         if (turma == null || !professor.id().equals(turma.getString("professorId"))) {
             throw new ErroDeProtocolo(CodigoErro.PERMISSAO_NEGADA, "Turma não encontrada");
         }
-        String salaId = vazio(pedido.salaId()) ? null : pedido.salaId().strip();
-        if (pedido.modo() == ModoChamada.QRCODE && salaId == null) {
+        String salaId = vazio(pedido.getSalaId()) ? null : pedido.getSalaId().strip();
+        if (pedido.getModo() == ModoChamada.QRCODE && salaId == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "O modo QRCODE exige salaId");
         }
         if (salaId != null && porId(salas, salaId) == null) {
@@ -90,7 +90,7 @@ public final class ServicoDeSessoes {
         Document sessao = new Document("_id", id)
                 .append("turmaId", turmaId)
                 .append("professorId", professor.id())
-                .append("modo", pedido.modo().name())
+                .append("modo", pedido.getModo().name())
                 .append("segredoTotp", segredo)
                 .append("status", StatusSessao.ABERTA.name())
                 .append("abertaEm", Date.from(agora));
@@ -105,11 +105,11 @@ public final class ServicoDeSessoes {
             }
             throw e;
         }
-        return new SessaoAberta(id.toHexString(), turmaId, pedido.modo(), agora.toEpochMilli(),
+        return new RespostaDeAbrirSessao(id.toHexString(), turmaId, pedido.getModo(), agora.toEpochMilli(),
                 SegredoTotp.configuracao(segredo));
     }
 
-    public SessaoEncerrada encerrar(UsuarioAutenticado professor, String sessaoId) {
+    public RespostaDeEncerrarSessao encerrar(UsuarioAutenticado professor, String sessaoId) {
         exigirProfessor(professor);
         Document sessao = buscar(sessaoId);
         if (!professor.id().equals(sessao.getString("professorId"))) {
@@ -126,7 +126,7 @@ public final class ServicoDeSessoes {
             // Encerrada por outra conexão ou pelo tempo limite entre a leitura e a atualização
             throw new ErroDeProtocolo(CodigoErro.SESSAO_ENCERRADA, "A sessão já foi encerrada");
         }
-        return new SessaoEncerrada(sessaoId, MotivoEncerramento.PROFESSOR, agora.toEpochMilli(),
+        return new RespostaDeEncerrarSessao(sessaoId, MotivoEncerramento.PROFESSOR, agora.toEpochMilli(),
                 totalPresentes(sessaoId));
     }
 
