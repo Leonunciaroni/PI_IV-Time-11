@@ -204,6 +204,7 @@ Somente documentos que existem no repositório:
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
+| [docs/cadastro.md](docs/cadastro.md) | Cadastro docente e regras de autorização |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/checkin-qr.md](docs/checkin-qr.md) | Leitura do QR Code e check-in com geolocalização |
