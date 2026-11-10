@@ -29,10 +29,14 @@ Medição local em 10/11/2026: **103 testes de sessão aprovados**, além dos 9 
 |---|---|---|
 | `ValidadorTotp` | 34 / 36 (94,4%) | 21 / 22 (95,5%) |
 | `Haversine` | 8 / 8 (100%) | Sem ramos |
-| `ServicoDeCheckin` | 93 / 98 (94,9%) | 57 / 75 (76%) |
+| `ServicoDeCheckin` | 92 / 98 (93,9%) | 56 / 75 (74,7%) |
 
 Os números são a fotografia dessa execução; o HTML/XML/CSV gerado pelo comando
 acima é a referência para medir mudanças futuras.
+Na compilação limpa completa dessa entrega, passaram 365 testes: 9 de `common`,
+165 da API, 103 de sessão e 88 da ponte. Os caminhos de disputa que chegam ao índice
+podem variar com o escalonamento; por isso a cobertura do serviço pode mudar entre
+execuções, mesmo com todos os casos aprovados.
 
 ## Cenários cobertos
 
