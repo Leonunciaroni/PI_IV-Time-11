@@ -36,7 +36,7 @@ export function AreaAutenticada({
     <div className="flex flex-1 flex-col bg-[#f8fafc] text-[#172033]">
       <header className="border-b border-[#e2e8f0] bg-white px-5 py-4 sm:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <span className="flex items-center gap-3 font-bold tracking-tight">
+          <Link href="/" aria-label="Fast Attendance — início do aluno" className="flex items-center gap-3 rounded-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5040e8]">
             <span
               aria-hidden="true"
               className="flex size-10 items-center justify-center rounded-xl bg-[#5040e8] text-xl text-white"
@@ -49,7 +49,7 @@ export function AreaAutenticada({
                 Área do aluno
               </span>
             </span>
-          </span>
+          </Link>
           <div className="flex items-center gap-3 text-sm">
             <Link href="/perfil" className="font-medium text-[#5040e8] hover:underline">Perfil</Link>
             <span className="hidden sm:inline">{sessao.usuario.nome}</span>
