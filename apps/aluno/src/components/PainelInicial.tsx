@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AreaAutenticada } from "./AreaAutenticada";
-import { HistoricoDaTurma } from "./HistoricoDaTurma";
 import { ErroApi, listarMinhasTurmas } from "@/lib/api";
 import { caminhoCheckin, nomesModos } from "@/lib/chamadas";
 import { encerrarSessao, type Sessao } from "@/lib/sessao";
@@ -25,7 +24,6 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
   const [erro, setErro] = useState<string | null>(null);
   const [versao, setVersao] = useState(0);
   const [atualizando, setAtualizando] = useState(false);
-  const [historicoId, setHistoricoId] = useState<string | null>(null);
   const [atualizadoEm, setAtualizadoEm] = useState<string | null>(null);
 
   useEffect(() => {
@@ -269,30 +267,12 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
                           : "Sua frequência aparecerá após a primeira aula encerrada."}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      aria-expanded={historicoId === turma.id}
-                      aria-controls={`historico-${turma.id}`}
-                      onClick={() =>
-                        setHistoricoId(
-                          historicoId === turma.id ? null : turma.id,
-                        )
-                      }
-                      className="mt-5 text-sm font-semibold text-[#5040e8] hover:underline"
+                    <Link
+                      href={`/historico?turmaId=${encodeURIComponent(turma.id)}`}
+                      className="mt-5 inline-flex text-sm font-semibold text-[#5040e8] hover:underline"
                     >
-                      {historicoId === turma.id
-                        ? "Ocultar histórico"
-                        : "Ver histórico"}
-                    </button>
-                    {historicoId === turma.id && (
-                      <div id={`historico-${turma.id}`}>
-                        <HistoricoDaTurma
-                          token={sessao.token}
-                          alunoId={sessao.usuario.id}
-                          turmaId={turma.id}
-                        />
-                      </div>
-                    )}
+                      Ver histórico
+                    </Link>
                   </article>
                 ))}
               </div>
