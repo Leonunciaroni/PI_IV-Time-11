@@ -143,9 +143,11 @@ final class ConversorDeFrames {
     }
 
     private static List<String> excecoes(JsonNode dados) {
+        // Sempre um ArrayList: o servidor de sessão só desserializa essa classe entre as coleções
+        // (FiltroDeComunicados), e List.of() chegaria recusado, derrubando a conexão.
         JsonNode no = dados.get("excecoes");
         if (no == null || no.isNull()) {
-            return List.of();
+            return new ArrayList<>();
         }
         if (!no.isArray()) {
             throw new IllegalArgumentException("Campo excecoes deve ser uma lista de textos");
