@@ -33,7 +33,7 @@ export function ChamadaEmAndamento() {
   const [encerradaSemResumo, setEncerradaSemResumo] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const aoVivo = useAcompanharSessao(cliente, sessaoId);
-  const classica = useChamadaClassica(sessaoId, id, cliente, (mensagem) => {
+  const classica = useChamadaClassica(sessaoId, id, cliente, aoVivo, (mensagem) => {
     esquecerChamada(sessaoId);
     setEncerradaSemResumo(mensagem);
   });
@@ -117,9 +117,10 @@ export function ChamadaEmAndamento() {
 
         const eClassica = chamada.modo === "CLASSICA";
         const eQr = chamada.modo === "QRCODE";
-        // Na QR os totais vêm do servidor; na clássica, da lista que o professor está vendo
+        // Na QR os totais vêm do servidor; na clássica, das marcações do servidor entre os alunos da
+        // lista (com o toque ainda sem resposta), para o contador bater com o que está marcado
         const contagem = eClassica
-          ? classica.alunos.situacao === "pronto"
+          ? classica.alunos.situacao === "pronto" && aoVivo.carregado
             ? { presentes: classica.presentes, total: classica.total }
             : null
           : aoVivo.totalMatriculados !== null
@@ -183,7 +184,8 @@ export function ChamadaEmAndamento() {
                 turmaId={id}
                 alunos={classica.alunos}
                 marcacoes={classica.marcacoes}
-                habilitada={estado === "pronto"}
+                // Até o estado chegar não se sabe quem está presente: um toque poderia inverter errado
+                habilitada={estado === "pronto" && aoVivo.carregado}
                 emLote={classica.emLote}
                 alternar={classica.alternar}
                 marcarLote={classica.marcarLote}
