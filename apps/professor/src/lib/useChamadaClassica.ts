@@ -58,7 +58,9 @@ export function useChamadaClassica(
     setEmLote(true);
     setPendentes(Object.fromEntries(lista.map((aluno) => [aluno.id, { presente, id }])));
     try {
-      await cliente.requisitar<PresencaLoteOk>("presenca.marcar_lote", { sessaoId, presente });
+      // excecoes vai sempre, mesmo vazio: sem o campo, a ponte manda ao servidor uma lista que o
+      // filtro de desserialização dele recusa, e a conexão cai sem resposta
+      await cliente.requisitar<PresencaLoteOk>("presenca.marcar_lote", { sessaoId, presente, excecoes: [] });
       // O lote responde só os totais; o estado novo diz quem ficou presente
       await aoVivo.recarregar();
     } catch (e) {
