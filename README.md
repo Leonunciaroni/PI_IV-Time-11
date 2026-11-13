@@ -24,7 +24,7 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
 | **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. O modo **Som** aparece desabilitado na tela de abertura de chamada. |
 | **App do aluno** | Parcial: login, início (turmas, frequência, chamadas abertas) e histórico de frequência. A página de check-in confere a chamada aberta, mas **ainda não captura o QR Code nem confirma a presença**. |
-| **Modo Som ponta a ponta** | Pendente. O servidor já valida o token, mas a emissão pelo professor (`audio/emissor.mjs`, módulo isolado) não está ligada à tela e o aluno não captura o sinal. Ver [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md). |
+| **Modo Som ponta a ponta** | Modem FSK, emissor e receptor de microfone disponíveis como módulos isolados, com [demonstração no navegador](docs/audio-modem.md#testar-no-navegador). Integração às telas e validação física a 3 m pendentes; o servidor já valida o token. |
 
 ## Arquitetura
 
@@ -69,7 +69,7 @@ issue #73 e ainda não existe no repositório.
 | `apps/professor/` | Aplicação web do professor (Next.js 16, React 19) |
 | `apps/aluno/` | Aplicação web do aluno (Next.js 16, React 19) |
 | `infra/` | Docker Compose, Nginx, script de replica set e contas de demonstração |
-| `audio/` | Módulo de emissão do token sonoro, com testes em Node |
+| `audio/` | Modem FSK, emissor, receptor de microfone, demonstração no navegador e testes em Node |
 | `spikes/` | Experimentos técnicos (áudio ultrassônico) |
 | `docs/` | Protocolo, API, modelo de dados, stack e wireframes |
 
@@ -161,7 +161,7 @@ docker compose down -v     # apaga também os volumes do MongoDB
 ```bash
 ./mvnw verify                              # common, api e sessao; os testes da API sobem MongoDB em contêiner
 cd apps/professor && npm test              # testes unitários do app do professor (Vitest)
-node --test audio/emissor.test.mjs         # testes do emissor sonoro (Node)
+node --test audio/*.test.mjs               # codec FSK e emissor sonoro (Node)
 ```
 
 Os testes da API usam Testcontainers, então o Docker precisa estar rodando. Para lint e build dos
@@ -206,7 +206,7 @@ Somente documentos que existem no repositório:
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
-| [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
+| [docs/audio-modem.md](docs/audio-modem.md) | Protocolo FSK, emissor/receptor e demonstração no navegador |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
 | [infra/README.md](infra/README.md) | Ambiente Docker, MongoDB, rotas do Nginx e tolerância a falha |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits e pull requests |
