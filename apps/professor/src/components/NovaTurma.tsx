@@ -11,8 +11,9 @@ export function NovaTurma() {
   const router = useRouter();
 
   async function criar(dados: DadosTurma) {
-    await enviar<Turma>("/api/turmas", dados);
-    router.push("/");
+    const turma = await enviar<Turma>("/api/turmas", dados);
+    // A lista confirma o cadastro a partir do id
+    router.push(`/?criada=${encodeURIComponent(turma.id)}`);
   }
 
   return (
@@ -24,6 +25,7 @@ export function NovaTurma() {
               ← Minhas turmas
             </Link>
             <h1 className="mt-2 text-xl font-semibold">Nova turma</h1>
+            <p className="text-sm opacity-70">Todos os campos são obrigatórios.</p>
           </div>
           <FormularioTurma aoEnviar={criar} />
         </main>
