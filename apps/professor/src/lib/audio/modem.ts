@@ -4,15 +4,21 @@
 // Se o enquadramento ou o perfil mudarem no #124 (teste físico, #13), atualize esta cópia.
 
 /** Perfil inicial do docs/audio-modem.md; os dois lados precisam usar os mesmos tons e duração. */
-export const CONFIGURACAO_PADRAO = Object.freeze({
+export interface ConfiguracaoModem {
+  frequencia0: number;
+  frequencia1: number;
+  duracaoSimboloMs: number;
+  amplitudeMinima: number;
+  contrasteMinimo: number;
+}
+
+export const CONFIGURACAO_PADRAO: Readonly<ConfiguracaoModem> = Object.freeze({
   frequencia0: 18500,
   frequencia1: 19500,
   duracaoSimboloMs: 20,
   amplitudeMinima: 0.0001,
   contrasteMinimo: 0.6,
 });
-
-export type ConfiguracaoModem = typeof CONFIGURACAO_PADRAO;
 
 /** Silêncio antes e depois do quadro, para as rampas de 50 ms do emissor não atenuarem símbolos. */
 export const MARGEM_SEGUNDOS = 0.06;
