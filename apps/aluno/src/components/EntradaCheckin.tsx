@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { CheckinQr } from "./CheckinQr";
-import { ErroApi, listarMinhasTurmas } from "@/lib/api";
-import { nomesModos } from "@/lib/chamadas";
+import { CheckinSom } from "./CheckinSom";
+import { ErroApi, listarMinhasTurmas, listarSessoesAtivas } from "@/lib/api";
 import { encerrarSessao } from "@/lib/sessao";
 import type { TurmaDoAluno } from "@/lib/tipos";
 
@@ -45,8 +45,10 @@ function CanalDaChamada({
   const [erro, setErro] = useState<string | null>(null);
   useEffect(() => {
     const controle = new AbortController();
-    listarMinhasTurmas(token, controle.signal)
-      .then((turmas) => {
+    Promise.all([
+      listarMinhasTurmas(token, controle.signal),
+      modo === "SOM" ? listarSessoesAtivas(token, controle.signal) : Promise.resolve(null),
+    ]).then(([turmas, ativas]) => {
         if (controle.signal.aborted) return;
         const encontrada = turmas.find(
           (t) =>
@@ -54,7 +56,7 @@ function CanalDaChamada({
             t.chamadaAberta?.id === sessaoId &&
             t.chamadaAberta.modo === modo,
         );
-        if (!encontrada || (modo !== "QRCODE" && modo !== "SOM")) {
+        if (!encontrada || (modo !== "QRCODE" && modo !== "SOM") || (ativas !== null && !ativas.some((s) => s.sessaoId === sessaoId && s.turmaId === turmaId && s.modo === "SOM"))) {
           setErro(
             "Esta chamada não está mais disponível neste canal. Volte ao início e atualize suas turmas.",
           );
@@ -81,6 +83,8 @@ function CanalDaChamada({
       </Link>
       {turma?.chamadaAberta?.modo === "QRCODE" ? (
         <CheckinQr turma={turma} />
+      ) : turma?.chamadaAberta?.modo === "SOM" ? (
+        <CheckinSom turma={turma} token={token} />
       ) : (
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-bold">Confirmar presença</h1>
@@ -88,23 +92,6 @@ function CanalDaChamada({
             <p role="alert" className="mt-4 text-sm text-red-700">
               {erro}
             </p>
-          ) : turma ? (
-            <>
-              <p className="mt-3 text-slate-500">
-                {turma.disciplina} · {turma.nome}
-              </p>
-              <h2 className="mt-6 rounded-xl bg-[#172033] p-5 text-lg font-semibold text-white">
-                Canal: {nomesModos[turma.chamadaAberta!.modo]}
-              </h2>
-              <p className="mt-5 text-sm leading-relaxed text-slate-600">
-                Esta chamada usa o sinal sonoro emitido pelo professor.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                A confirmação por som ainda não está disponível. Peça ao professor
-                uma chamada por QR Code ou chamada clássica. Acessar esta página
-                não registra sua presença.
-              </p>
-            </>
           ) : (
             <p role="status" className="mt-4 text-sm text-slate-500">
               Verificando chamada aberta...

@@ -2,7 +2,7 @@
 
 Revisão do início A2, check-in A3, resultado A3b e histórico A4 contra
 [os wireframes](wireframes.md). Mantém o visual do cadastro docente: roxo,
-azul escuro, fundo claro e cartões brancos. Não introduz outro canal de presença.
+azul escuro, fundo claro e cartões brancos.
 
 ## Ajustes
 
@@ -10,8 +10,8 @@ azul escuro, fundo claro e cartões brancos. Não introduz outro canal de presen
 - O resultado e os erros do QR oferecem acesso ao histórico da turma. É possível
   conferir o registro quando um envio ficou sem confirmação, sem repetir o check-in
   automaticamente. O histórico considera apenas as aulas já encerradas.
-- A tela de som informa que a confirmação ainda não está disponível e orienta pedir
-  QR ou chamada clássica. Não pede microfone nem simula escuta, envio ou sucesso.
+- A tela de som integra o receptor FSK da #26, com início por toque, escuta, envio
+  automático de um token e resultado confirmado pelo servidor. Ver [check-in por som](checkin-som.md).
 
 ## Roteiro de regressão
 
@@ -26,7 +26,7 @@ Com os serviços rodando e Ana matriculada em uma turma:
 | A3 QR, permissões | Câmera ou GPS negados exibem orientação; não enviam presença. Cancelar libera as tracks de vídeo. |
 | A3 QR, recusas | Duplicidade, fora do raio e QR de outra sessão têm mensagens distintas. Não mostram sucesso e não repetem o envio automaticamente. |
 | A3b | Sucesso só depois de `checkin.ok`, com horário devolvido pelo servidor, retorno ao início e acesso ao histórico. |
-| A3 som | Mensagem de indisponibilidade, alternativa QR/clássica e nenhuma alegação de presença confirmada. |
+| A3 som | Permissão → escuta → envio → resultado; microfone liberado após token, cancelamento, aba oculta e saída. Sem GPS ou áudio no payload. |
 | A4 | Seleção da própria turma, percentual, datas, modo e Presente/Ausente em texto. Turma inválida é recusada. |
 | Sessão expirada | `401` limpa a sessão local e leva ao login. |
 | Navegação | Marca do cabeçalho volta ao início; início abre histórico; resultado permite conferir o histórico da turma. |
@@ -41,14 +41,14 @@ Na verificação de navegador, câmera virtual fornece quadros reais do gerador 
 professor; a localização é controlada. API, ponte WebSocket/TCP e MongoDB são reais,
 em banco de teste separado. Sucesso e recusas são conferidos com esses serviços;
 as presenças também são conferidas no histórico após encerrar a chamada.
-Falhas de carga, ausência de matrículas, canal sonoro indisponível e expiração
+Falhas de carga, ausência de matrículas e expiração
 usam respostas controladas para testar a interface. Isso não substitui testes de
 alcance ou permissões em um celular físico.
 
 Não foram fornecidos relatos de testes em sala para reproduzir nesta revisão.
 A validação física da câmera, GPS e navegação fica para a hospedagem com HTTPS,
-conforme decisão do responsável. A captura por som (#45) aguarda o modem (#26);
-o feedback de escuta e resultado desse canal só pode ser validado depois da integração.
+conforme decisão do responsável. O fluxo digital de som (#45) foi integrado e
+testado com o modem entregue (#26); falta a validação acústica em aparelhos reais.
 
 A tela inicial (#25) e o histórico (#32) já foram integrados à `develop` pelos PRs
 #102 e #103. Esta revisão valida sua convivência com o QR, sem recriar essas telas.
