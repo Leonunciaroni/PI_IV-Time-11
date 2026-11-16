@@ -20,8 +20,7 @@ import { botaoSecundario } from "./ui/estilos";
 const MODOS: { modo: ModoChamada; nome: string; descricao: string; disponivel: boolean }[] = [
   { modo: "CLASSICA", nome: "Clássica", descricao: "Marque a lista aluno por aluno ou todos de uma vez.", disponivel: true },
   { modo: "QRCODE", nome: "QR Code", descricao: "Código que muda a cada 15 s, com a localização do aluno.", disponivel: true },
-  // A emissão do sinal sonoro (P8) ainda não existe
-  { modo: "SOM", nome: "Som", descricao: "Ultrassom, sem câmera nem foto.", disponivel: false },
+  { modo: "SOM", nome: "Som", descricao: "Ultrassom, sem câmera nem foto.", disponivel: true },
 ];
 
 export function AbrirChamada() {
