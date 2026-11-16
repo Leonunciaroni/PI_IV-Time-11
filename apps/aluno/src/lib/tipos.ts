@@ -10,6 +10,15 @@ export interface ChamadaAberta {
   abertaEm: string;
 }
 
+export interface SessaoAtiva {
+  sessaoId: string;
+  turmaId: string;
+  turma: string;
+  disciplina: string;
+  modo: ModoChamada;
+  abertaEm: string;
+}
+
 export interface TurmaDoAluno {
   id: string;
   nome: string;
