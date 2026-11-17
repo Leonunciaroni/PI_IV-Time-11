@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { ErroApi } from "@/lib/api";
+import { baixarArquivo } from "@/lib/arquivos";
 import { useRecurso } from "@/lib/recurso";
 import type { Aluno, Turma } from "@/lib/tipos";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { AvisoDeSucesso } from "./ui/AvisoDeSucesso";
+import { Botao } from "./ui/Botao";
 import { Carregando } from "./ui/Carregando";
 import { ErroDeCarga } from "./ui/ErroDeCarga";
+import { MensagemDeErro } from "./ui/MensagemDeErro";
 import { botaoPrincipal, botaoSecundario } from "./ui/estilos";
 
 /** Texto da confirmação que a matrícula manda pela URL (?matriculados=N&ja=M). */
@@ -28,6 +33,21 @@ export function DetalhesTurma() {
   const turma = useRecurso<Turma>(`/api/turmas/${id}`);
   const alunos = useRecurso<Aluno[]>(`/api/turmas/${id}/alunos`);
   const confirmacao = confirmacaoMatricula(parametros.get("matriculados"), parametros.get("ja"));
+  const [exportando, setExportando] = useState(false);
+  const [erroExportacao, setErroExportacao] = useState<string | null>(null);
+
+  /** Consolidado de frequência (presenças, aulas e % por aluno), pronto para o Excel. */
+  async function exportar() {
+    setErroExportacao(null);
+    setExportando(true);
+    try {
+      await baixarArquivo(`/api/turmas/${id}/exportacao/consolidado`, "frequencia.csv");
+    } catch (e) {
+      setErroExportacao(e instanceof ErroApi ? e.message : "Não foi possível gerar o arquivo. Tente novamente.");
+    } finally {
+      setExportando(false);
+    }
+  }
 
   return (
     <AreaAutenticada>
@@ -74,7 +94,15 @@ export function DetalhesTurma() {
                 <Link href={`/turmas/${id}/matricula`} className={`${botaoSecundario} px-3 py-2`}>
                   Matricular alunos
                 </Link>
+                <Botao variante="secundario" onClick={exportar} disabled={exportando}>
+                  {exportando ? "Gerando arquivo..." : "Exportar CSV"}
+                </Botao>
               </div>
+              {erroExportacao && (
+                <div className="-mt-4">
+                  <MensagemDeErro>{erroExportacao}</MensagemDeErro>
+                </div>
+              )}
 
               <section aria-labelledby="titulo-alunos" className="flex flex-col gap-3">
                 <h2 id="titulo-alunos" className="font-semibold">
