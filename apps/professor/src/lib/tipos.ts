@@ -47,3 +47,12 @@ export interface ResultadoMatricula {
   jaMatriculados: number;
   totalAlunos: number;
 }
+
+/** Resposta de POST /api/turmas/{id}/importacao (CSV de alunos). */
+export interface ResultadoImportacao {
+  importados: number;
+  jaMatriculados: number;
+  /** `linha` conta o cabeçalho como 1. */
+  rejeitados: { linha: number; motivo: string }[];
+  totalAlunos: number;
+}
