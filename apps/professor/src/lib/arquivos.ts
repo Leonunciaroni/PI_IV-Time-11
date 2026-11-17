@@ -77,6 +77,24 @@ export async function baixarArquivo(caminho: string, nomePadrao: string): Promis
   return nome;
 }
 
+/** Só a extensão: o tipo informado pelo navegador para CSV varia (text/csv, application/vnd.ms-excel...). */
+export function eArquivoCsv(nome: string): boolean {
+  return /\.csv$/i.test(nome.trim());
+}
+
+export const MENSAGEM_NAO_CSV = "Escolha um arquivo .csv. No Excel, use Salvar como → CSV.";
+
+/**
+ * Mensagem para uma falha na importação. A API responde 500 quando não consegue ler o arquivo
+ * (aspas fora do lugar, arquivo binário); em vez do "erro inesperado", explica o que conferir.
+ */
+export function mensagemDeErroDaImportacao(erro: unknown): string {
+  if (erro instanceof ErroApi && erro.status >= 500) {
+    return "Não foi possível ler o arquivo. Confira se ele é um CSV com as colunas nome, email e matricula.";
+  }
+  return erro instanceof ErroApi ? erro.message : "Erro inesperado. Tente novamente.";
+}
+
 const plural = (n: number, um: string, varios: string) => (n === 1 ? `1 ${um}` : `${n} ${varios}`);
 
 /** Resumo do relatório de importação, para o aviso no topo da lista. */

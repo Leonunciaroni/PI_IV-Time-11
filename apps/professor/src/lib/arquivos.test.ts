@@ -1,5 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { nomeDoArquivo, resumoImportacao } from "./arquivos";
+import { ErroApi } from "./api";
+import { eArquivoCsv, mensagemDeErroDaImportacao, nomeDoArquivo, resumoImportacao } from "./arquivos";
+
+describe("eArquivoCsv", () => {
+  it("aceita .csv em qualquer caixa", () => {
+    expect(eArquivoCsv("alunos.csv")).toBe(true);
+    expect(eArquivoCsv("TURMA A.CSV")).toBe(true);
+  });
+
+  it("recusa planilha, imagem, texto e nome sem extensão", () => {
+    for (const nome of ["alunos.xlsx", "foto.png", "lista.txt", "alunos", "alunos.csv.png"]) {
+      expect(eArquivoCsv(nome)).toBe(false);
+    }
+  });
+});
+
+describe("mensagemDeErroDaImportacao", () => {
+  it("explica o que conferir quando a API não consegue ler o arquivo (500)", () => {
+    expect(mensagemDeErroDaImportacao(new ErroApi("Erro inesperado. Tente novamente.", 500))).toMatch(
+      /Não foi possível ler o arquivo/,
+    );
+  });
+
+  it("mantém a mensagem da API nos outros erros", () => {
+    const erro = new ErroApi("O cabeçalho precisa ter as colunas nome, email e matricula.", 400);
+    expect(mensagemDeErroDaImportacao(erro)).toBe(erro.message);
+    expect(mensagemDeErroDaImportacao(new Error("x"))).toBe("Erro inesperado. Tente novamente.");
+  });
+});
 
 describe("nomeDoArquivo", () => {
   it("prefere filename* com acentos (RFC 5987)", () => {

@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useRef, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { ErroApi, enviar } from "@/lib/api";
-import { enviarArquivo, resumoImportacao } from "@/lib/arquivos";
+import {
+  MENSAGEM_NAO_CSV,
+  eArquivoCsv,
+  enviarArquivo,
+  mensagemDeErroDaImportacao,
+  resumoImportacao,
+} from "@/lib/arquivos";
 import { useRecurso } from "@/lib/recurso";
 import type { Aluno, ResultadoImportacao, ResultadoMatricula, Turma } from "@/lib/tipos";
 import { AreaAutenticada } from "./AreaAutenticada";
@@ -66,8 +72,13 @@ export function MatriculaAlunos() {
     // Limpa a escolha para o mesmo arquivo poder ser enviado de novo depois de corrigido
     evento.target.value = "";
     if (!arquivo) return;
-    setErroImportacao(null);
     setImportacao(null);
+    // O seletor já filtra .csv, mas o professor pode trocar para "Todos os arquivos"
+    if (!eArquivoCsv(arquivo.name)) {
+      setErroImportacao(MENSAGEM_NAO_CSV);
+      return;
+    }
+    setErroImportacao(null);
     setImportando(true);
     try {
       const resultado = await enviarArquivo<ResultadoImportacao>(`/api/turmas/${id}/importacao`, "arquivo", arquivo);
@@ -75,7 +86,7 @@ export function MatriculaAlunos() {
       // Quem entrou na turma sai da lista de candidatos (se ela já estiver carregando, virá atualizada)
       if (candidatos.situacao !== "carregando") candidatos.recarregar();
     } catch (e) {
-      setErroImportacao(e instanceof ErroApi ? e.message : "Erro inesperado. Tente novamente.");
+      setErroImportacao(mensagemDeErroDaImportacao(e));
     } finally {
       setImportando(false);
     }
