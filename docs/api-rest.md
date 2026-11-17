@@ -173,6 +173,25 @@ Números do dashboard de frequência da turma (tela P9). Só entram no cálculo 
 
 Os percentuais têm uma casa decimal. Turma sem aulas ou sem alunos devolve zeros e listas vazias.
 
+### `GET /api/turmas/{id}/exportacao/consolidado`
+
+Baixa o CSV com a frequência acumulada da turma: uma linha por aluno matriculado, em ordem
+alfabética, com `Nome`, `Matrícula`, `Presenças`, `Aulas`, `Frequência (%)` e `Situação`
+(`Regular`, `Abaixo de 75%` ou `Sem aulas`). Só contam as aulas encerradas, com as mesmas regras do
+dashboard.
+
+### `GET /api/turmas/{id}/exportacao/aulas/{sessaoId}`
+
+Baixa o CSV da chamada de uma aula da turma: todos os alunos matriculados com `Nome`, `Matrícula`,
+`Situação` (`Presente` ou `Ausente`), `Origem` (`MANUAL`, `QRCODE` ou `SOM`) e `Registrado em`
+(horário de Brasília).
+
+Os dois arquivos vêm como `text/csv` em UTF-8 com BOM, ponto e vírgula como separador e vírgula
+decimal, para abrir direto no Excel em português. O nome sugerido em `Content-Disposition` usa o
+nome da turma (`frequencia-<turma>.csv`, `chamada-<turma>-<data>.csv`). Textos que começam com `=`,
+`+`, `-` ou `@` ganham um apóstrofo na frente, para o Excel não executá-los como fórmula. Turma
+inexistente ou de outro professor, ou aula que não é da turma, responde `404`; aluno recebe `403`.
+
 ### `GET /api/turmas/{id}/frequencia/{alunoId}`
 
 Histórico de um aluno na turma: todas as aulas encerradas e se ele esteve presente em cada uma,
