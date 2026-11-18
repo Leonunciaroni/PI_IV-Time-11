@@ -14,4 +14,6 @@ public interface MatriculaRepository extends MongoRepository<Matricula, String> 
     long countByTurmaId(String turmaId);
 
     boolean existsByTurmaIdAndAlunoId(String turmaId, String alunoId);
+
+    long deleteByTurmaIdAndAlunoId(String turmaId, String alunoId);
 }

@@ -94,6 +94,9 @@ export function DetalhesTurma() {
                 <Link href={`/turmas/${id}/matricula`} className={`${botaoSecundario} px-3 py-2`}>
                   Matricular alunos
                 </Link>
+                <Link href={`/turmas/${id}/frequencia`} className={`${botaoSecundario} px-3 py-2`}>
+                  Frequência
+                </Link>
                 <Botao variante="secundario" onClick={exportar} disabled={exportando}>
                   {exportando ? "Gerando arquivo..." : "Exportar CSV"}
                 </Botao>

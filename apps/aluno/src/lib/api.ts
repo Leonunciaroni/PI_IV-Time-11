@@ -3,6 +3,7 @@ import type {
   Problema,
   TokenResponse,
   TurmaDoAluno,
+  SessaoAtiva,
 } from "./tipos";
 
 /** Erro da API com a mensagem já pronta para exibir ao usuário. */
@@ -84,6 +85,10 @@ export function listarMinhasTurmas(
   signal?: AbortSignal,
 ): Promise<TurmaDoAluno[]> {
   return consultar("/api/aluno/turmas", token, signal);
+}
+
+export function listarSessoesAtivas(token: string, signal?: AbortSignal): Promise<SessaoAtiva[]> {
+  return consultar("/api/sessoes/ativas", token, signal);
 }
 
 export function consultarHistorico(

@@ -32,6 +32,9 @@ export function AreaAutenticada({ children }: { children: (sessao: Sessao) => Re
           <Logo />
         </Link>
         <div className="flex items-center gap-3 text-sm whitespace-nowrap">
+          <Link href="/perfil" className={`${alvoDeToque} text-base font-medium underline-offset-4 transition hover:text-link-hover hover:underline max-sm:px-1`}>
+            Perfil
+          </Link>
           <Link href="/salas" className={`${alvoDeToque} text-base font-medium underline-offset-4 transition hover:text-link-hover hover:underline max-sm:px-1`}>
             Salas
           </Link>
