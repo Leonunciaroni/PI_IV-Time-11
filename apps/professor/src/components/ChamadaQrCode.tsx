@@ -65,20 +65,20 @@ export function ChamadaQrCode({ chamada, cliente, presentes, carregado }: Chamad
             <div className="h-full rounded-full bg-primaria" style={{ width: `${(restanteMs / periodoMs) * 100}%` }} />
           </div>
         </div>
-        <p className="text-center opacity-70">Aponte a câmera do app do aluno para o código.</p>
+        <p className="text-center text-suave">Aponte a câmera do app do aluno para o código.</p>
         <MensagemDeErro>{desenho ? erro : null}</MensagemDeErro>
       </section>
 
       <PainelAoVivo
         presentes={presentes}
         carregado={carregado}
-        vazio="Os alunos aparecem aqui conforme registram presença pelo código."
+        vazio="Nenhum aluno registrou presença ainda."
       >
         {/* O protocolo v1 ainda não tem troca de modo (#49); encerrar e abrir outra criaria duas aulas */}
         <Botao variante="secundario" disabled>
           Trocar para clássica
         </Botao>
-        <p className="-mt-1 text-sm opacity-70">A troca de modo ainda não está disponível: depende da #49.</p>
+        <p className="-mt-1 text-sm text-suave">A troca de modo ainda não está disponível: depende da #49.</p>
       </PainelAoVivo>
     </div>
   );

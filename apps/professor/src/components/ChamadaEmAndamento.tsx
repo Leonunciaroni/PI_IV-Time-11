@@ -109,7 +109,7 @@ export function ChamadaEmAndamento() {
             <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-6">
               <h1 className="text-xl font-semibold">{fimSemResumo ?? "Chamada não encontrada neste navegador"}</h1>
               {!fimSemResumo && (
-                <p className="text-sm opacity-70">Ela pode ter sido encerrada ou aberta em outro navegador ou aparelho.</p>
+                <p className="text-sm text-suave">Ela pode ter sido encerrada ou aberta em outro navegador ou aparelho.</p>
               )}
               {voltar}
             </main>
@@ -134,15 +134,15 @@ export function ChamadaEmAndamento() {
             <div className="sticky top-0 z-10 -mx-6 flex flex-col gap-3 border-b border-borda-suave bg-background px-6 pt-6 pb-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm opacity-70">
+                  <p className="text-sm text-suave">
                     {NOME_DO_MODO[chamada.modo]} · aberta às {hora.format(chamada.abertaEm)}
                   </p>
                   <h1 className="text-xl font-semibold">{titulo}</h1>
                 </div>
                 <div className="flex items-center gap-4">
                   {contagem && (
-                    <p aria-live="polite" className="opacity-80">
-                      <span className="text-2xl font-bold tabular-nums">{contagem.presentes}</span>/{contagem.total}{" "}
+                    <p aria-live="polite" className="text-suave">
+                      <span className="text-2xl font-bold tabular-nums text-foreground">{contagem.presentes}</span>/{contagem.total}{" "}
                       presentes
                     </p>
                   )}
@@ -151,7 +151,7 @@ export function ChamadaEmAndamento() {
                   </Botao>
                 </div>
               </div>
-              <p role="status" className="flex items-center gap-2 text-sm opacity-70">
+              <p role="status" className="flex items-center gap-2 text-sm text-suave">
                 <span
                   aria-hidden="true"
                   className={`size-2 rounded-full ${estado === "pronto" ? "bg-sucesso" : "bg-borda-forte"}`}
@@ -164,7 +164,7 @@ export function ChamadaEmAndamento() {
                   <h2 id="titulo-encerrar" className="font-semibold">
                     Encerrar a chamada?
                   </h2>
-                  <p className="text-sm opacity-70">
+                  <p className="text-sm text-suave">
                     {contagem ? `${contagem.presentes} de ${contagem.total} alunos estão presentes. ` : ""}
                     Depois de encerrar, nenhuma presença é registrada.
                   </p>

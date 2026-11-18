@@ -6,6 +6,7 @@ import { enviar } from "@/lib/api";
 import type { Turma } from "@/lib/tipos";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { FormularioTurma, type DadosTurma } from "./FormularioTurma";
+import { alvoDeToque } from "./ui/estilos";
 
 export function NovaTurma() {
   const router = useRouter();
@@ -21,11 +22,11 @@ export function NovaTurma() {
       {() => (
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 p-6">
           <div>
-            <Link href="/" className="text-sm underline">
+            <Link href="/" className={`${alvoDeToque} text-sm underline`}>
               ← Minhas turmas
             </Link>
             <h1 className="mt-2 text-xl font-semibold">Nova turma</h1>
-            <p className="text-sm opacity-70">Todos os campos são obrigatórios.</p>
+            <p className="text-sm font-medium text-perigo">Todos os campos são obrigatórios.</p>
           </div>
           <FormularioTurma aoEnviar={criar} />
         </main>

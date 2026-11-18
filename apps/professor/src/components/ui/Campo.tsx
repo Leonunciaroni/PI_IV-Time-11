@@ -21,17 +21,17 @@ export function Campo({ rotulo, dica, erro, ...entrada }: CampoProps) {
         {...entrada}
         aria-invalid={erro !== undefined}
         aria-describedby={descricao}
-        className={`rounded-controle border bg-transparent px-3 py-2 text-base outline-none focus:border-primaria focus:ring-1 focus:ring-primaria ${
+        className={`rounded-controle border bg-superficie px-3 py-2 text-base outline-none focus:border-primaria focus:ring-1 focus:ring-primaria ${
           erro ? "border-perigo" : "border-borda-forte"
         }`}
       />
       {dica && (
-        <span id={`${id}-dica`} className="text-sm font-normal opacity-70">
+        <span id={`${id}-dica`} className="text-sm font-normal text-suave">
           {dica}
         </span>
       )}
       {erro && (
-        <span id={`${id}-erro`} role="alert" className="text-sm font-normal text-perigo">
+        <span id={`${id}-erro`} role="alert" className="text-sm font-medium text-perigo">
           {erro}
         </span>
       )}
