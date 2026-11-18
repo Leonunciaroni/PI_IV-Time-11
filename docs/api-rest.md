@@ -158,6 +158,39 @@ Quem já está na turma não gera erro: conta em `jaMatriculados`. Se algum id n
 de um aluno, a resposta é `400` (`"A lista tem alunos que não existem."`) e **nenhum** aluno da
 lista é matriculado. Se a lista for vazia, `400` com `campos`.
 
+### `POST /api/turmas/{id}/importacao`
+
+Matricula na turma os alunos listados em um CSV. Requisição `multipart/form-data` com o arquivo no
+campo `arquivo`. O cabeçalho (primeira linha) precisa ter as colunas `nome`, `email` e `matricula`
+(`ra` também vale para a matrícula), em qualquer ordem; aceita vírgula ou ponto e vírgula, e o UTF-8
+do Excel com BOM. Limite de 2000 linhas por arquivo.
+
+```csv
+nome,email,matricula
+Ana Souza,ana@puc.br,24001234
+```
+
+Só entram alunos que **já têm conta**: o aluno é encontrado pelo e-mail (sem diferenciar maiúsculas)
+e a matrícula do arquivo precisa ser a cadastrada. Resposta `200`:
+
+```json
+{
+  "importados": 1,
+  "jaMatriculados": 1,
+  "rejeitados": [{ "linha": 4, "motivo": "Aluno não cadastrado." }],
+  "totalAlunos": 2
+}
+```
+
+`linha` conta o cabeçalho como 1. Motivos de rejeição: campo obrigatório vazio, e-mail inválido,
+e-mail repetido no arquivo, aluno não cadastrado (inclui e-mail de professor) e matrícula que não
+confere. Uma linha rejeitada não impede as demais. É idempotente: quem já está na turma conta em
+`jaMatriculados`. Arquivo ausente, vazio, sem as colunas ou com mais de 2000 linhas responde `400`;
+turma inexistente ou de outro professor, `404`. Um arquivo que não dá para ler como CSV (aspas fora
+do lugar, como em `Ana "Aninha" Souza`, ou um arquivo binário) também responde `400`, com
+`"Não foi possível ler o arquivo como CSV. Confira as aspas e o separador."`. Nenhum aluno do
+arquivo é importado nesse caso.
+
 ### `GET /api/turmas/{id}/estatisticas`
 
 Números do dashboard de frequência da turma (tela P9). Só entram no cálculo as aulas já
