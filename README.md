@@ -192,6 +192,7 @@ Somente documentos que existem no repositório:
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
 | [docs/arquitetura.md](docs/arquitetura.md) | Diagramas de arquitetura e check-in, imagens para slides e fontes editáveis |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
+| [docs/https-celulares.md](docs/https-celulares.md) | HTTPS e diagnóstico de permissões nos celulares |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/roteiro-demonstracao.md](docs/roteiro-demonstracao.md) | Roteiro cronometrado, preparação e plano B da demonstração |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
