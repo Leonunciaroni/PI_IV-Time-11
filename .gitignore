@@ -24,6 +24,9 @@ next-env.d.ts
 .env.local
 .env.*.local
 
+# Dados, credenciais e resultados locais dos testes de carga
+infra/carga/execucoes/
+
 # Sistema
 .DS_Store
 Thumbs.db

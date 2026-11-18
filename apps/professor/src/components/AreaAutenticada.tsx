@@ -31,6 +31,7 @@ export function AreaAutenticada({ children }: { children: (sessao: Sessao) => Re
           FAST ATTENDANCE
         </Link>
         <div className="flex items-center gap-3 text-sm whitespace-nowrap">
+          <Link href="/perfil" className="underline-offset-4 hover:underline">Perfil</Link>
           <Link href="/salas" className="underline-offset-4 hover:underline">
             Salas
           </Link>

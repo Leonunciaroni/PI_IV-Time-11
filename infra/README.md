@@ -15,12 +15,59 @@ docker compose ps
 
 O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 
+## HTTPS para celulares
+
+Com o `.env` configurado, habilite o túnel opcional para testar câmera, microfone
+e localização no celular:
+
+```bash
+docker compose --profile https up -d --build
+docker compose logs -f tunel
+```
+
+Abra no celular o endereço `https://...trycloudflare.com` dos logs, acrescentando
+`/professor`, `/aluno` ou `/teste-celular/` para verificar as permissões. O túnel
+requer Internet e só é iniciado ao solicitar o perfil `https` ou o serviço `tunel`.
+Para encerrá-lo, use `docker compose stop tunel`.
+
+Veja o [roteiro completo e o registro de validação](../docs/https-celulares.md).
+
+## Contas de demonstração
+
 Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-mail do professor,
 `professor@demo.br`, precisa estar em `PROFESSORES_PERMITIDOS` (já está no `.env.example`):
 
 ```bash
 ./usuarios-demo.sh
 ```
+
+### Dados de demonstração (dashboard e apresentação)
+
+Para o dashboard ter números que pareçam reais, rode, com o Compose no ar:
+
+```bash
+./dados-demo.sh            # ou ./dados-demo.sh http://localhost:<NGINX_PORTA>
+```
+
+O script cria as contas de `usuarios-demo.sh` e mais 60 alunos (`aluno01@demo.br` a
+`aluno60@demo.br`, matrícula `24100001` a `24100060`), todos com a senha `demo12345`, pela API. Depois,
+`mongo/dados-demo.js` grava direto no banco, pelo `mongosh` do `mongo1`:
+
+| O quê | Conteúdo |
+|---|---|
+| Turmas do `professor@demo.br` | Engenharia de Software I · Turma A (Seg 19:00, 32 alunos, com Ana e Bruno) e Estrutura de Dados · Turma B (Qua 21:00, 31 alunos, com Ana) |
+| Salas | H15 - Sala 203 (raio 60 m) e H15 - Laboratório 4 (raio 40 m), com coordenadas do campus I |
+| Aulas encerradas | 12 na Turma A (Clássica 2 · QR Code 7 · Som 3) e 10 na Turma B, uma por semana até a última antes de hoje, no dia e horário da turma |
+| Presenças | Nos três modos: `MANUAL` na clássica (com algumas desmarcadas), `QRCODE` com coordenadas dentro do raio e `SOM`, as duas com `dispositivoId`. Uns poucos alunos faltam de propósito e ficam abaixo de 75% |
+
+As aulas e presenças vão direto no banco porque a API não abre aulas (quem abre é o servidor de
+sessão, ao vivo). O script é idempotente: contas que já existem são mantidas, as
+turmas são encontradas pelo nome e pela disciplina (outras turmas do professor não são alteradas) e as salas pelo nome, as matrículas não se repetem e uma turma que já tem aula encerrada não ganha
+aulas novas. Para gerar as aulas de novo, com as datas recalculadas a partir de hoje, apague os
+volumes (`docker compose down -v`) e rode de novo.
+
+Com o banco autenticado (#54), o script usa o usuário da aplicação (`MONGO_APP_USUARIO` e
+`MONGO_APP_SENHA` do container `mongo1`). A URI pode ser trocada pela variável `MONGO_URI`.
 
 | Rota no Nginx | Destino |
 |---|---|
@@ -142,6 +189,16 @@ abrupta (`docker kill`) não foi testada.
 com `kill -9` não foi testado. As execuções usaram um único professor e uma sessão `CLASSICA`. O
 caminho do check-in por QR Code não foi exercitado sob falha. O script cria usuários de teste no
 banco de desenvolvimento (`tol<sufixo>N@demo.br`).
+
+## Plano de teste de carga
+
+O cenário `carga/carga.jmx` simula autenticação e check-in via WebSocket com
+15 salas × 70 alunos. Usa JMeter 5.6.3 e Java 21, sem plugins adicionais.
+Os scripts `carga/preparar.mjs` e `carga/analisar.mjs` preparam os dados e comparam
+o JTL com as presenças persistidas. Dados e credenciais gerados ficam fora do Git.
+
+Veja [plano, comandos e critérios de aprovação](../docs/plano-teste-carga.md).
+O plano é a entrega da #50; a execução da carga completa e seus resultados são a #52.
 
 ## Limpar
 

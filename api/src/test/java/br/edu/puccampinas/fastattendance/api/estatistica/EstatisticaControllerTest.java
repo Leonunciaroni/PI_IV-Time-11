@@ -102,6 +102,13 @@ class EstatisticaControllerTest {
                 .andExpect(jsonPath("$.aulas[1].presentes").value(1))
                 .andExpect(jsonPath("$.aulas[1].matriculados").value(2))
                 .andExpect(jsonPath("$.aulas[1].percentual").value(50.0))
+                .andExpect(jsonPath("$.alunos.length()").value(2))
+                .andExpect(jsonPath("$.alunos[0].nome").value("Ana Souza"))
+                .andExpect(jsonPath("$.alunos[0].presencas").value(2))
+                .andExpect(jsonPath("$.alunos[0].aulas").value(2))
+                .andExpect(jsonPath("$.alunos[0].percentual").value(100.0))
+                .andExpect(jsonPath("$.alunos[1].nome").value("Bruno Lima"))
+                .andExpect(jsonPath("$.alunos[1].percentual").value(50.0))
                 .andExpect(jsonPath("$.abaixoDoMinimo.length()").value(1))
                 .andExpect(jsonPath("$.abaixoDoMinimo[0].nome").value("Bruno Lima"))
                 .andExpect(jsonPath("$.abaixoDoMinimo[0].matricula").value("24005678"))
@@ -123,6 +130,9 @@ class EstatisticaControllerTest {
                 .andExpect(jsonPath("$.totalAlunos").value(1))
                 .andExpect(jsonPath("$.frequenciaMedia").value(0.0))
                 .andExpect(jsonPath("$.aulas.length()").value(0))
+                .andExpect(jsonPath("$.alunos.length()").value(1))
+                .andExpect(jsonPath("$.alunos[0].nome").value("Ana Souza"))
+                .andExpect(jsonPath("$.alunos[0].aulas").value(0))
                 .andExpect(jsonPath("$.abaixoDoMinimo.length()").value(0));
     }
 
@@ -149,6 +159,8 @@ class EstatisticaControllerTest {
         consultar(professor, turma.id())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.aulas[0].presentes").value(0))
+                .andExpect(jsonPath("$.alunos[0].presencas").value(0))
+                .andExpect(jsonPath("$.alunos[0].percentual").value(0.0))
                 .andExpect(jsonPath("$.abaixoDoMinimo[0].nome").value("Ana Souza"));
     }
 

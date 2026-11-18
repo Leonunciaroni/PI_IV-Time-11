@@ -1,0 +1,70 @@
+---
+title: Fast Attendance — contrato de check-in por QR Code e som
+---
+sequenceDiagram
+    accTitle: Fluxo de check-in por QR Code e som até o MongoDB
+    accDescr: Com JWTs emitidos pela API e conexões autenticadas, o professor abre a sessão e recebe o segredo TOTP. O aluno obtém o token por QR Code ou som e envia check-in pelo Nginx, ponte WebSocket para TCP e servidor de sessão. O servidor valida as regras, grava no MongoDB e devolve confirmação. O painel recebe um evento independente via Change Streams. A captura no app do aluno e o modem de som ainda estão pendentes.
+
+    participant P as Professor<br/>(app)
+    participant A as Aluno<br/>(app)
+    participant N as Nginx<br/>:80
+    participant B as Ponte<br/>:8082
+    participant S as Sessão<br/>:8081
+    participant M as MongoDB<br/>rs0
+
+    Note over P,M: Pré-condições: JWTs obtidos na API e WebSockets autenticados com auth / auth.ok.
+
+    P->>N: sessao.abrir (turma, modo, sala)
+    N->>B: Envelope JSON v1
+    B->>S: PedidoDeAbrirSessao (TCP)
+    S->>M: Grava sessão aberta e segredo TOTP
+    M-->>S: Sessão criada
+    S-->>B: RespostaDeAbrirSessao
+    B-->>N: sessao.aberta + configuração TOTP
+    N-->>P: Parâmetros enviados só ao professor
+    Note over P,S: Professor se inscreve via sessao.acompanhar para receber as presenças.
+    P->>P: Gera TOTP localmente a cada 15 s
+
+    alt QRCODE — exibição pronta, leitura no aluno pendente
+        P-->>A: QR com FA1:sessaoId:token
+        Note over A: Câmera lê o QR e geolocalização fornece a posição.
+    else SOM — integração e modem FSK pendentes
+        P-->>A: Sinal sonoro com token de 6 dígitos
+        Note over A: Microfone decodifica o token e sessaoId vem da API.
+    end
+
+    Note over A,S: A tela atual do aluno ainda não envia o check-in. O servidor já atende ambos os canais.
+    A->>N: checkin (sessaoId, token, canal, dispositivoId e posição só em QRCODE)
+    N->>B: Envelope JSON v1 com id
+    B->>S: PedidoDeCheckin (TCP)
+    S->>M: Consulta sessão aberta
+    M-->>S: Modo e segredo TOTP da sessão
+    S->>S: Valida campos, canal e token TOTP
+    opt Apenas no canal QRCODE
+        S->>M: Consulta coordenadas e raio da sala
+        M-->>S: Dados da sala
+        S->>S: Valida posição e raio da sala (Haversine)
+    end
+    S->>M: Consulta matrícula e presenças existentes
+    M-->>S: Vínculo e possíveis duplicidades
+    S->>S: Confere matrícula, aluno e dispositivo
+
+    alt Regras atendidas e índices únicos preservados
+        S->>M: insertOne em presencas
+        Note over S,M: aluno_sessao_unico + sessao_dispositivo_unico impedem duplicidade concorrente.
+        M-->>S: Escrita confirmada
+        par Resposta correlacionada ao aluno
+            S-->>B: RespostaDeCheckin
+            B-->>N: checkin.ok com ref
+            N-->>A: Presença confirmada
+        and Evento independente para o painel
+            M-->>S: Change Stream da presença
+            S-->>B: EventoDePresencaAtualizada
+            B-->>N: presenca.atualizada sem ref
+            N-->>P: Atualiza o painel ao vivo
+        end
+    else Validação recusada ou violação de índice único
+        S-->>B: Erro com código do protocolo
+        B-->>N: erro com ref
+        N-->>A: Motivo da recusa
+    end

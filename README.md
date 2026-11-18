@@ -20,32 +20,19 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 |---|---|
 | **API REST** (`api/`) | Pronta: cadastro e login com JWT, perfil, turmas, matrículas, salas, frequência, estatísticas, histórico do aluno e sessões ativas. Detalhes em [docs/api-rest.md](docs/api-rest.md). |
 | **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
-| **Antifraude** (no servidor) | Pronto: token válido, raio até a sala (Haversine), matrícula, uma presença por aluno e uma por dispositivo em cada sessão. Só é exercitado diretamente pelo WebSocket, porque o app do aluno ainda não envia check-in. |
+| **Antifraude** (no servidor) | Pronto: token válido, matrícula e unicidade por aluno/aparelho nos canais QR Code e Som; raio até a sala (Haversine) somente no QR Code. Check-ins enviados pela ponte WebSocket/TCP. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
-| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. O modo **Som** aparece desabilitado na tela de abertura de chamada. |
-| **App do aluno** | Parcial: login, início (turmas, frequência, chamadas abertas) e histórico de frequência. A página de check-in confere a chamada aberta, mas **ainda não captura o QR Code nem confirma a presença**. |
-| **Modo Som ponta a ponta** | Pendente. O servidor já valida o token, mas a emissão pelo professor (`audio/emissor.mjs`, módulo isolado) não está ligada à tela e o aluno não captura o sinal. Ver [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md). |
+| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. A tela de emissão por Som está no PR #125. |
+| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por som com confirmação automática. |
+| **Modo Som ponta a ponta** | Captação e check-in integrados no aluno. A emissão na tela do professor está no PR #125 (dependente do #118). Fluxo digital conferido com as duas telas, ponte e banco reais; medições acústicas em sala continuam pendentes. Ver [docs/checkin-som.md](docs/checkin-som.md). |
 
 ## Arquitetura
 
-```
- navegador do professor (/professor)     navegador do aluno (/aluno)
-        │ HTTP /api                              │ HTTP /api        │ WebSocket /ws
-        └──────────────────┬─────────────────────┴──────────────────┘
-                           ▼
-                 Nginx (porta 8088 no host)
-                    │ /api            │ /ws                 │ /professor, /aluno
-                    ▼                 ▼                     ▼
-            API (Spring Boot)   Ponte (WebSocket↔TCP)  Apps Next.js
-            porta 8080          porta 8082             (professor 3000,
-                    │                 │ TCP              aluno 3001)
-                    │                 ▼
-                    │           Servidor de sessão
-                    │           (sockets, porta 8081)
-                    └────────┬────────┘
-                             ▼
-             MongoDB, replica set rs0 (mongo1, mongo2, mongo3)
-```
+![Arquitetura do Fast Attendance: apps, Nginx, API REST, ponte WebSocket para TCP, servidor de sessão e MongoDB em replica set](docs/diagramas/arquitetura.svg)
+
+[Arquitetura e fluxo de check-in](docs/arquitetura.md) ·
+[Fonte editável](docs/diagramas/arquitetura.mmd) ·
+[PNG para apresentações](docs/diagramas/arquitetura.png)
 
 O servidor de sessão segue o modelo cliente-servidor por sockets (TCP, serialização Java, classes
 `Servidor`, `AceitadoraDeConexao`, `SupervisoraDeConexao`, `Parceiro` e `Comunicado`). Como o
@@ -55,8 +42,8 @@ apps não mudam. Veja [docs/servidor-modelo-socket.md](docs/servidor-modelo-sock
 A API e o servidor de sessão compartilham o MongoDB e o segredo `JWT_SECRET`: o servidor de sessão
 valida o mesmo JWT que a API emite, na mensagem `auth` (recebida pela ponte, no WebSocket). As regras de unicidade
 (uma presença por aluno e por sessão, uma sessão aberta por turma) ficam em índices do banco, porque
-as duas aplicações escrevem nas mesmas coleções. O diagrama de arquitetura detalhado é tratado na
-issue #73 e ainda não existe no repositório.
+as duas aplicações escrevem nas mesmas coleções. O [fluxo de check-in por QR Code e som](docs/arquitetura.md#fluxo-do-check-in)
+mostra a validação, a persistência e a atualização do painel, com as partes ainda pendentes nos apps.
 
 ## Estrutura do repositório
 
@@ -116,6 +103,10 @@ O script é idempotente. Ele cria `professor@demo.br` (professor), `ana@demo.br`
 (alunos). Se o e-mail do professor não estiver em `PROFESSORES_PERMITIDOS`, o script falha com
 essa mensagem.
 
+Para a apresentação, `./infra/dados-demo.sh` cria também 60 alunos, duas turmas com mais de 30
+alunos cada, salas e aulas passadas com presenças nos três modos, para o dashboard ter dados. Detalhes
+em [infra/README.md](infra/README.md#dados-de-demonstração-dashboard-e-apresentação).
+
 ### Endereços
 
 | Endereço | O que é |
@@ -161,6 +152,7 @@ docker compose down -v     # apaga também os volumes do MongoDB
 ```bash
 ./mvnw verify                              # common, api e sessao; os testes da API sobem MongoDB em contêiner
 cd apps/professor && npm test              # testes unitários do app do professor (Vitest)
+cd apps/aluno && npm test                  # leitura QR, localização e transporte de check-in (Vitest)
 node --test audio/emissor.test.mjs         # testes do emissor sonoro (Node)
 ```
 
@@ -199,20 +191,27 @@ Somente documentos que existem no repositório:
 | Documento | Conteúdo |
 |---|---|
 | [docs/protocolo-v1.md](docs/protocolo-v1.md) | Protocolo WebSocket entre os apps e o servidor de sessão, pela ponte (revisado em 04/11/2026) |
+| [docs/testes-validacao.md](docs/testes-validacao.md) | Testes JUnit das regras e relatório de cobertura |
 | [docs/servidor-modelo-socket.md](docs/servidor-modelo-socket.md) | Servidor de sessão no modelo por sockets e a ponte WebSocket↔TCP |
+| [docs/perfil.md](docs/perfil.md) | Edição de perfil e troca de senha nos dois apps |
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
+| [docs/arquitetura.md](docs/arquitetura.md) | Diagramas de arquitetura e check-in, imagens para slides e fontes editáveis |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
 | [docs/cadastro.md](docs/cadastro.md) | Cadastro docente e regras de autorização |
+| [docs/plano-teste-carga.md](docs/plano-teste-carga.md) | Cenário JMeter para 15 salas × 70 alunos e critérios de aprovação |
+| [docs/https-celulares.md](docs/https-celulares.md) | HTTPS e diagnóstico de permissões nos celulares |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
+| [docs/roteiro-demonstracao.md](docs/roteiro-demonstracao.md) | Roteiro cronometrado, preparação e plano B da demonstração |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
+| [docs/checkin-qr.md](docs/checkin-qr.md) | Leitura do QR Code e check-in com geolocalização |
+| [docs/checkin-som.md](docs/checkin-som.md) | Captação do token pelo microfone e check-in por som |
+| [docs/revisao-aluno.md](docs/revisao-aluno.md) | Revisão dos wireframes e regressão das telas do aluno |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
 | [infra/README.md](infra/README.md) | Ambiente Docker, MongoDB, rotas do Nginx e tolerância a falha |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits e pull requests |
-
-Diagrama de arquitetura: pendente (issue #73).
 
 ## Fluxo de trabalho
 
