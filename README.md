@@ -20,11 +20,11 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 |---|---|
 | **API REST** (`api/`) | Pronta: cadastro e login com JWT, perfil, turmas, matrículas, salas, frequência, estatísticas, histórico do aluno e sessões ativas. Detalhes em [docs/api-rest.md](docs/api-rest.md). |
 | **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
-| **Antifraude** (no servidor) | Pronto: token válido, raio até a sala (Haversine), matrícula, uma presença por aluno e uma por dispositivo em cada sessão. O app do aluno envia o check-in por QR Code pela ponte WebSocket/TCP. |
+| **Antifraude** (no servidor) | Pronto: token válido, matrícula e unicidade por aluno/aparelho nos canais QR Code e Som; raio até a sala (Haversine) somente no QR Code. Check-ins enviados pela ponte WebSocket/TCP. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
-| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. O modo **Som** aparece desabilitado na tela de abertura de chamada. |
-| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico e check-in por QR Code com câmera e geolocalização. A captura por som depende da entrega do modem de áudio. |
-| **Modo Som ponta a ponta** | Pendente. O servidor já valida o token, mas a emissão pelo professor (`audio/emissor.mjs`, módulo isolado) não está ligada à tela e o aluno não captura o sinal. Ver [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md). |
+| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. A tela de emissão por Som está no PR #125. |
+| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por som com confirmação automática. |
+| **Modo Som ponta a ponta** | Captação e check-in integrados no aluno. A emissão na tela do professor está no PR #125 (dependente do #118). Fluxo digital conferido com as duas telas, ponte e banco reais; medições acústicas em sala continuam pendentes. Ver [docs/checkin-som.md](docs/checkin-som.md). |
 
 ## Arquitetura
 
@@ -204,6 +204,7 @@ Somente documentos que existem no repositório:
 | [docs/roteiro-demonstracao.md](docs/roteiro-demonstracao.md) | Roteiro cronometrado, preparação e plano B da demonstração |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/checkin-qr.md](docs/checkin-qr.md) | Leitura do QR Code e check-in com geolocalização |
+| [docs/checkin-som.md](docs/checkin-som.md) | Captação do token pelo microfone e check-in por som |
 | [docs/revisao-aluno.md](docs/revisao-aluno.md) | Revisão dos wireframes e regressão das telas do aluno |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
