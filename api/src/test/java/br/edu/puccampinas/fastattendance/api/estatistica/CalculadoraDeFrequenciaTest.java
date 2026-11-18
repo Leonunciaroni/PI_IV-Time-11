@@ -28,6 +28,7 @@ class CalculadoraDeFrequenciaTest {
         assertEquals(0, resultado.totalAlunos());
         assertEquals(0.0, resultado.frequenciaMedia());
         assertTrue(resultado.aulas().isEmpty());
+        assertTrue(resultado.alunos().isEmpty());
         assertTrue(resultado.abaixoDoMinimo().isEmpty());
     }
 
@@ -117,6 +118,36 @@ class CalculadoraDeFrequenciaTest {
 
         assertEquals(List.of("Bruno", "Ana"),
                 resultado.abaixoDoMinimo().stream().map(AlunoEstatistica::nome).toList());
+    }
+
+    @Test
+    void listaTodosOsAlunosComQualquerPercentualEmOrdemAlfabetica() {
+        List<Usuario> alunos = List.of(aluno("a3", "carla"), aluno("a1", "Bruno"), aluno("a2", "Ana"));
+        List<Sessao> aulas = List.of(aula("s1", 0, ModoChamada.CLASSICA), aula("s2", 1, ModoChamada.QRCODE));
+        List<Presenca> presencas = List.of(
+                presenca("s1", "a2", true), presenca("s2", "a2", true),                  // Ana: 100%
+                presenca("s1", "a1", true),                                              // Bruno: 50%
+                presenca("s1", "a3", false));                                            // Carla: 0%
+
+        EstatisticasResponse resultado = CalculadoraDeFrequencia.calcular(aulas, alunos, presencas);
+
+        assertEquals(List.of("Ana", "Bruno", "carla"),
+                resultado.alunos().stream().map(AlunoEstatistica::nome).toList());
+        assertEquals(List.of(100.0, 50.0, 0.0),
+                resultado.alunos().stream().map(AlunoEstatistica::percentual).toList());
+        assertEquals(new AlunoEstatistica("a1", "Bruno", "RAa1", 1, 2, 50.0), resultado.alunos().get(1));
+        // Abaixo do mínimo continua com o mesmo filtro e a mesma ordem
+        assertEquals(List.of("carla", "Bruno"),
+                resultado.abaixoDoMinimo().stream().map(AlunoEstatistica::nome).toList());
+    }
+
+    @Test
+    void semAulasEncerradasOsAlunosAparecemComZeroAulas() {
+        List<Usuario> alunos = List.of(aluno("a1", "Ana"));
+
+        EstatisticasResponse resultado = CalculadoraDeFrequencia.calcular(List.of(), alunos, List.of());
+
+        assertEquals(List.of(new AlunoEstatistica("a1", "Ana", "RAa1", 0, 0, 0.0)), resultado.alunos());
     }
 
     @Test
