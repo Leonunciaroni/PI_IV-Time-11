@@ -158,6 +158,15 @@ Quem já está na turma não gera erro: conta em `jaMatriculados`. Se algum id n
 de um aluno, a resposta é `400` (`"A lista tem alunos que não existem."`) e **nenhum** aluno da
 lista é matriculado. Se a lista for vazia, `400` com `campos`.
 
+### `DELETE /api/turmas/{id}/matriculas/{alunoId}`
+
+Tira o aluno da turma. Resposta `204` sem corpo. Se o aluno não estiver matriculado na turma, a
+resposta é `404` com `"detail": "Matrícula não encontrada"`.
+
+As presenças que o aluno já tinha continuam gravadas, mas ele sai da lista de alunos e das
+estatísticas da turma, o histórico dele na turma passa a responder `404` e ele volta a aparecer em
+`candidatos`. As matrículas dele em outras turmas não mudam.
+
 ### `POST /api/turmas/{id}/importacao`
 
 Matricula na turma os alunos listados em um CSV. Requisição `multipart/form-data` com o arquivo no
