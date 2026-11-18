@@ -26,16 +26,16 @@ export function PainelAoVivo({ presentes, carregado, vazio, children }: PainelAo
         Presentes (ao vivo)
       </h2>
       {presentes.length === 0 ? (
-        <p role="status" className="text-sm opacity-70">
+        <p role="status" className="text-sm text-suave">
           {carregado ? vazio : "Carregando os presentes..."}
         </p>
       ) : (
         <ol className="border-t border-borda-suave">
           {presentes.map((presenca) => (
             <li key={presenca.alunoId} className="flex items-baseline gap-3 border-b border-borda-suave py-2">
-              <span className="font-mono text-sm opacity-70">{hora.format(presenca.registradoEm)}</span>
+              <span className="font-mono text-sm text-suave">{hora.format(presenca.registradoEm)}</span>
               <span className="min-w-0 flex-1">{presenca.nome}</span>
-              <span className="text-xs opacity-60">{NOME_DA_ORIGEM[presenca.origem]}</span>
+              <span className="text-xs text-suave">{NOME_DA_ORIGEM[presenca.origem]}</span>
             </li>
           ))}
         </ol>

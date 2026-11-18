@@ -16,10 +16,10 @@ export function CartaoTurma({ turma }: { turma: Turma }) {
     <li className={`${cartao} flex flex-col gap-3 p-4`}>
       <div className="min-w-0">
         <h2 className="font-semibold break-words">{turma.disciplina}</h2>
-        <p className="text-sm opacity-80">
+        <p className="text-sm text-suave">
           {turma.nome} · {turma.horarioPadrao}
         </p>
-        <p className="text-sm opacity-80">{alunos}</p>
+        <p className="text-sm text-suave">{alunos}</p>
       </div>
       {/* mt-auto: os botões ficam na mesma altura mesmo quando um cartão da linha tem título maior */}
       <div className="mt-auto flex flex-wrap gap-2 text-sm">

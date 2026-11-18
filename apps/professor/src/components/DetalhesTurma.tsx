@@ -13,7 +13,7 @@ import { Botao } from "./ui/Botao";
 import { Carregando } from "./ui/Carregando";
 import { ErroDeCarga } from "./ui/ErroDeCarga";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
-import { botaoPrincipal, botaoSecundario } from "./ui/estilos";
+import { alvoDeToque, botaoPrincipal, botaoSecundario } from "./ui/estilos";
 
 /** Texto da confirmação que a matrícula manda pela URL (?matriculados=N&ja=M). */
 function confirmacaoMatricula(matriculados: string | null, ja: string | null): string | null {
@@ -54,7 +54,7 @@ export function DetalhesTurma() {
       {() => (
         <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
           <div>
-            <Link href="/" className="text-sm underline">
+            <Link href="/" className={`${alvoDeToque} text-sm underline`}>
               ← Minhas turmas
             </Link>
             {turma.situacao === "pronto" && (
@@ -62,7 +62,7 @@ export function DetalhesTurma() {
                 <h1 className="mt-2 text-xl font-semibold break-words">
                   {turma.dados.disciplina} · {turma.dados.nome}
                 </h1>
-                <p className="text-sm opacity-70">Horário padrão: {turma.dados.horarioPadrao}</p>
+                <p className="text-sm text-suave">Horário padrão: {turma.dados.horarioPadrao}</p>
               </>
             )}
           </div>
@@ -108,7 +108,7 @@ export function DetalhesTurma() {
                 <h2 id="titulo-alunos" className="font-semibold">
                   Alunos matriculados
                   {alunos.situacao === "pronto" && alunos.dados.length > 0 && (
-                    <span className="font-normal opacity-70"> ({alunos.dados.length})</span>
+                    <span className="font-normal text-suave"> ({alunos.dados.length})</span>
                   )}
                 </h2>
 
@@ -118,7 +118,7 @@ export function DetalhesTurma() {
                 )}
                 {alunos.situacao === "pronto" &&
                   (alunos.dados.length === 0 ? (
-                    <p className="text-sm opacity-70">
+                    <p className="text-sm text-suave">
                       Nenhum aluno matriculado ainda. Use “Matricular alunos” para incluir os alunos da turma.
                     </p>
                   ) : (

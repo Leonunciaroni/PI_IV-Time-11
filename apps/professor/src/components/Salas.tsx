@@ -91,7 +91,7 @@ export function Salas() {
         <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-6">
           <div>
             <h1 className="text-xl font-semibold">Salas</h1>
-            <p className="text-sm opacity-70">
+            <p className="text-sm text-suave">
               As salas valem para todos os professores e definem a distância aceita no modo QR Code.
             </p>
           </div>
@@ -175,7 +175,7 @@ export function Salas() {
               )}
               {salas.situacao === "pronto" &&
                 (salas.dados.length === 0 ? (
-                  <p className="text-sm opacity-70">
+                  <p className="text-sm text-suave">
                     Nenhuma sala cadastrada ainda. Use o formulário “Nova sala” para cadastrar a primeira.
                   </p>
                 ) : (
@@ -204,14 +204,14 @@ export function Salas() {
                       {salas.dados.map((sala) => (
                         <tr key={sala.id} className="border-b border-borda-suave">
                           <td className="py-2 pr-3 break-words">{sala.nome}</td>
-                          <td className="py-2 pr-3 font-mono opacity-70 sm:hidden">
+                          <td className="py-2 pr-3 font-mono text-suave sm:hidden">
                             <span className="block">{numero.format(sala.latitude)}</span>
                             <span className="block">{numero.format(sala.longitude)}</span>
                           </td>
-                          <td className="hidden py-2 pr-3 font-mono opacity-70 sm:table-cell">
+                          <td className="hidden py-2 pr-3 font-mono text-suave sm:table-cell">
                             {numero.format(sala.latitude)}
                           </td>
-                          <td className="hidden py-2 pr-3 font-mono opacity-70 sm:table-cell">
+                          <td className="hidden py-2 pr-3 font-mono text-suave sm:table-cell">
                             {numero.format(sala.longitude)}
                           </td>
                           <td className="py-2 text-right whitespace-nowrap">{numero.format(sala.raioMetros)} m</td>

@@ -43,7 +43,7 @@ export function ListaTurmas() {
               <div className={`${cartao} flex flex-col items-start gap-3 border-dashed p-6`}>
                 <div>
                   <h2 className="font-semibold">Você ainda não tem turmas</h2>
-                  <p className="text-sm opacity-70">
+                  <p className="text-sm text-suave">
                     Crie a primeira turma para matricular os alunos e abrir chamadas.
                   </p>
                 </div>

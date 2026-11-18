@@ -53,7 +53,7 @@ export function ChamadaSom({ chamada, cliente, presentes, carregado }: ChamadaSo
         <label className="flex w-full max-w-xs flex-col gap-2 text-sm font-medium">
           <span className="flex justify-between">
             Volume
-            <span className="tabular-nums opacity-70">{Math.round(volume * 100)}%</span>
+            <span className="tabular-nums text-suave">{Math.round(volume * 100)}%</span>
           </span>
           <input
             type="range"
@@ -62,7 +62,7 @@ export function ChamadaSom({ chamada, cliente, presentes, carregado }: ChamadaSo
             step={5}
             value={Math.round(volume * 100)}
             onChange={(e) => mudarVolume(Number(e.target.value) / 100)}
-            className="accent-primaria"
+            className="accent-primaria dark:accent-auto"
           />
         </label>
 
@@ -76,14 +76,14 @@ export function ChamadaSom({ chamada, cliente, presentes, carregado }: ChamadaSo
           )}
         </div>
 
-        <p className="max-w-sm text-center text-sm opacity-70">
+        <p className="max-w-sm text-center text-sm text-suave">
           Deixe esta aba aberta, com o notebook voltado para a turma. Os alunos registram presença pelo
           microfone do app, sem câmera. Um novo código sai a cada 15 s.
         </p>
         <MensagemDeErro>{erro}</MensagemDeErro>
       </section>
 
-      <PainelAoVivo presentes={presentes} carregado={carregado} vazio="Os alunos aparecem aqui conforme o app capta o som.">
+      <PainelAoVivo presentes={presentes} carregado={carregado} vazio="Nenhum aluno registrou presença ainda.">
         {/* O protocolo v1 ainda não tem troca de modo (#49); encerrar e abrir outra criaria duas aulas */}
         <Botao variante="secundario" disabled>
           Trocar para QR Code
@@ -91,7 +91,7 @@ export function ChamadaSom({ chamada, cliente, presentes, carregado }: ChamadaSo
         <Botao variante="secundario" disabled>
           Trocar para clássica
         </Botao>
-        <p className="-mt-1 text-sm opacity-70">A troca de modo ainda não está disponível: depende da #49.</p>
+        <p className="-mt-1 text-sm text-suave">A troca de modo ainda não está disponível: depende da #49.</p>
       </PainelAoVivo>
     </div>
   );
