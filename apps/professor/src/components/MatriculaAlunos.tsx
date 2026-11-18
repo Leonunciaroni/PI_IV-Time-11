@@ -43,8 +43,11 @@ export function MatriculaAlunos() {
     setErro(null);
     setEnviando(true);
     try {
-      await enviar<ResultadoMatricula>(`/api/turmas/${id}/matriculas`, { alunoIds: [...selecionados] });
-      router.push(`/turmas/${id}`);
+      const resultado = await enviar<ResultadoMatricula>(`/api/turmas/${id}/matriculas`, {
+        alunoIds: [...selecionados],
+      });
+      // Os detalhes da turma confirmam quantos entraram
+      router.push(`/turmas/${id}?matriculados=${resultado.matriculados}&ja=${resultado.jaMatriculados}`);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : "Erro inesperado. Tente novamente.");
       setEnviando(false);
@@ -56,22 +59,28 @@ export function MatriculaAlunos() {
       {() => (
         <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
           <div>
-            <Link href={`/turmas/${id}`} className="text-sm underline">
-              ← {turma.situacao === "pronto" ? turma.dados.nome : "Turma"}
+            <Link href={`/turmas/${id}`} className="text-sm underline break-words">
+              ← {turma.situacao === "pronto" ? `${turma.dados.disciplina} · ${turma.dados.nome}` : "Turma"}
             </Link>
             <h1 className="mt-2 text-xl font-semibold">Matricular alunos</h1>
+            <p className="text-sm opacity-70">A lista mostra só os alunos que ainda não estão na turma.</p>
           </div>
 
-          <form onSubmit={buscar} className="flex items-end gap-2">
-            <div className="flex-1">
+          <form onSubmit={buscar} role="search" className="flex items-end gap-2">
+            {/* min-w-0: sem isto o campo não encolhe e empurra o botão para fora da tela no celular */}
+            <div className="min-w-0 flex-1">
               <Campo
                 rotulo="Buscar aluno por nome ou matrícula"
                 name="busca"
+                type="search"
+                autoComplete="off"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
             </div>
-            <Botao type="submit">Buscar</Botao>
+            <Botao type="submit" variante="secundario">
+              Buscar
+            </Botao>
           </form>
 
           {candidatos.situacao === "carregando" && <Carregando texto="Carregando alunos..." />}
@@ -80,9 +89,13 @@ export function MatriculaAlunos() {
           )}
           {candidatos.situacao === "pronto" &&
             (candidatos.dados.length === 0 ? (
-              <p className="text-sm opacity-70">Nenhum aluno encontrado para matricular.</p>
+              <p className="text-sm opacity-70">
+                {buscaAplicada
+                  ? `Nenhum aluno encontrado para “${buscaAplicada}”. Quem já está na turma não aparece aqui.`
+                  : "Todos os alunos cadastrados já estão nesta turma."}
+              </p>
             ) : (
-              <ul className="flex flex-col gap-1">
+              <ul aria-label="Alunos que podem ser matriculados" className="flex flex-col gap-1">
                 {candidatos.dados.map((aluno) => (
                   <li key={aluno.id}>
                     <label className="flex cursor-pointer items-center gap-3 rounded-controle px-2 py-1 hover:bg-realce">
@@ -90,19 +103,33 @@ export function MatriculaAlunos() {
                         type="checkbox"
                         checked={selecionados.has(aluno.id)}
                         onChange={() => alternar(aluno.id)}
+                        className="shrink-0 accent-primaria"
                       />
-                      <span>{aluno.nome}</span>
-                      <span className="text-sm opacity-70">{aluno.matricula}</span>
+                      {/* Nome longo quebra a linha sem jogar a matrícula para baixo da caixa de seleção */}
+                      <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+                        <span className="break-words">{aluno.nome}</span>
+                        <span className="text-sm tabular-nums opacity-70">{aluno.matricula}</span>
+                      </span>
                     </label>
                   </li>
                 ))}
               </ul>
             ))}
 
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+            {/* A seleção vale entre buscas; o total avisa quem já marcou alunos que saíram da lista */}
+            <p aria-live="polite" className="text-sm opacity-70">
+              {selecionados.size === 0
+                ? "Nenhum aluno selecionado"
+                : selecionados.size === 1
+                  ? "1 aluno selecionado"
+                  : `${selecionados.size} alunos selecionados`}
+            </p>
             <Botao onClick={matricular} disabled={selecionados.size === 0 || enviando}>
               {enviando ? "Matriculando..." : "Matricular selecionados"}
             </Botao>
+          </div>
+          <div className="-mt-4 flex justify-end">
             <MensagemDeErro>{erro}</MensagemDeErro>
           </div>
         </main>
