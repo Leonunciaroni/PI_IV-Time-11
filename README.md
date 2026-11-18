@@ -198,6 +198,7 @@ Somente documentos que existem no repositório:
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
 | [docs/arquitetura.md](docs/arquitetura.md) | Diagramas de arquitetura e check-in, imagens para slides e fontes editáveis |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
+| [docs/cadastro.md](docs/cadastro.md) | Cadastro docente e regras de autorização |
 | [docs/plano-teste-carga.md](docs/plano-teste-carga.md) | Cenário JMeter para 15 salas × 70 alunos e critérios de aprovação |
 | [docs/https-celulares.md](docs/https-celulares.md) | HTTPS e diagnóstico de permissões nos celulares |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
