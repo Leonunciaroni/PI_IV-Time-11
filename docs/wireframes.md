@@ -213,6 +213,13 @@ QR Code (fallback previsto no cronograma).
 Atende a coordenação: percentual por aluno, destaque de quem está abaixo dos 75% e exportação em
 CSV. O registro do modo usado em cada aula permite comparar a eficácia dos três modos.
 
+Fica em `/turmas/{id}/frequencia`, aberta pelo botão **Frequência** da P3, e usa
+`GET /api/turmas/{id}/estatisticas`. As barras seguem a ordem das aulas; a aula abaixo de 75% fica
+em vermelho e cada barra mostra data, modo e presentes ao passar o mouse (e para o leitor de tela).
+**Exportar CSV** baixa o consolidado (`GET /api/turmas/{id}/exportacao/consolidado`). Sem aulas
+encerradas, a tela mostra só os números, com "—" na frequência média, e um aviso no lugar do
+gráfico.
+
 ---
 
 ## Aplicação do aluno (celular)
