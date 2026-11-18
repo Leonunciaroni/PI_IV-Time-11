@@ -167,6 +167,39 @@ As presenças que o aluno já tinha continuam gravadas, mas ele sai da lista de 
 estatísticas da turma, o histórico dele na turma passa a responder `404` e ele volta a aparecer em
 `candidatos`. As matrículas dele em outras turmas não mudam.
 
+### `POST /api/turmas/{id}/importacao`
+
+Matricula na turma os alunos listados em um CSV. Requisição `multipart/form-data` com o arquivo no
+campo `arquivo`. O cabeçalho (primeira linha) precisa ter as colunas `nome`, `email` e `matricula`
+(`ra` também vale para a matrícula), em qualquer ordem; aceita vírgula ou ponto e vírgula, e o UTF-8
+do Excel com BOM. Limite de 2000 linhas por arquivo.
+
+```csv
+nome,email,matricula
+Ana Souza,ana@puc.br,24001234
+```
+
+Só entram alunos que **já têm conta**: o aluno é encontrado pelo e-mail (sem diferenciar maiúsculas)
+e a matrícula do arquivo precisa ser a cadastrada. Resposta `200`:
+
+```json
+{
+  "importados": 1,
+  "jaMatriculados": 1,
+  "rejeitados": [{ "linha": 4, "motivo": "Aluno não cadastrado." }],
+  "totalAlunos": 2
+}
+```
+
+`linha` conta o cabeçalho como 1. Motivos de rejeição: campo obrigatório vazio, e-mail inválido,
+e-mail repetido no arquivo, aluno não cadastrado (inclui e-mail de professor) e matrícula que não
+confere. Uma linha rejeitada não impede as demais. É idempotente: quem já está na turma conta em
+`jaMatriculados`. Arquivo ausente, vazio, sem as colunas ou com mais de 2000 linhas responde `400`;
+turma inexistente ou de outro professor, `404`. Um arquivo que não dá para ler como CSV (aspas fora
+do lugar, como em `Ana "Aninha" Souza`, ou um arquivo binário) também responde `400`, com
+`"Não foi possível ler o arquivo como CSV. Confira as aspas e o separador."`. Nenhum aluno do
+arquivo é importado nesse caso.
+
 ### `GET /api/turmas/{id}/estatisticas`
 
 Números do dashboard de frequência da turma (tela P9). Só entram no cálculo as aulas já
@@ -181,6 +214,25 @@ Números do dashboard de frequência da turma (tela P9). Só entram no cálculo 
 | Uso por modo | Número de aulas dadas em cada modo; os três modos sempre aparecem, mesmo com zero. |
 
 Os percentuais têm uma casa decimal. Turma sem aulas ou sem alunos devolve zeros e listas vazias.
+
+### `GET /api/turmas/{id}/exportacao/consolidado`
+
+Baixa o CSV com a frequência acumulada da turma: uma linha por aluno matriculado, em ordem
+alfabética, com `Nome`, `Matrícula`, `Presenças`, `Aulas`, `Frequência (%)` e `Situação`
+(`Regular`, `Abaixo de 75%` ou `Sem aulas`). Só contam as aulas encerradas, com as mesmas regras do
+dashboard.
+
+### `GET /api/turmas/{id}/exportacao/aulas/{sessaoId}`
+
+Baixa o CSV da chamada de uma aula da turma: todos os alunos matriculados com `Nome`, `Matrícula`,
+`Situação` (`Presente` ou `Ausente`), `Origem` (`MANUAL`, `QRCODE` ou `SOM`) e `Registrado em`
+(horário de Brasília).
+
+Os dois arquivos vêm como `text/csv` em UTF-8 com BOM, ponto e vírgula como separador e vírgula
+decimal, para abrir direto no Excel em português. O nome sugerido em `Content-Disposition` usa o
+nome da turma (`frequencia-<turma>.csv`, `chamada-<turma>-<data>.csv`). Textos que começam com `=`,
+`+`, `-` ou `@` ganham um apóstrofo na frente, para o Excel não executá-los como fórmula. Turma
+inexistente ou de outro professor, ou aula que não é da turma, responde `404`; aluno recebe `403`.
 
 ### `GET /api/turmas/{id}/frequencia/{alunoId}`
 

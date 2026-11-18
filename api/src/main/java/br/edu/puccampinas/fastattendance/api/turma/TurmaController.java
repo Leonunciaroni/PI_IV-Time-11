@@ -3,6 +3,8 @@ package br.edu.puccampinas.fastattendance.api.turma;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +24,11 @@ import java.util.List;
 public class TurmaController {
 
     private final TurmaService turmas;
+    private final ImportacaoService importacao;
 
-    public TurmaController(TurmaService turmas) {
+    public TurmaController(TurmaService turmas, ImportacaoService importacao) {
         this.turmas = turmas;
+        this.importacao = importacao;
     }
 
     @PostMapping
@@ -71,5 +75,13 @@ public class TurmaController {
                                  @PathVariable String id,
                                  @PathVariable String alunoId) {
         turmas.removerMatricula(professor.id(), id, alunoId);
+    }
+
+    /** Importa alunos de um CSV (campo {@code arquivo}) e devolve o relatório de linhas aceitas e rejeitadas. */
+    @PostMapping(path = "/{id}/importacao", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportacaoResponse importar(@AuthenticationPrincipal UsuarioAutenticado professor,
+                                       @PathVariable String id,
+                                       @RequestParam(required = false) MultipartFile arquivo) {
+        return importacao.importar(professor.id(), id, arquivo);
     }
 }

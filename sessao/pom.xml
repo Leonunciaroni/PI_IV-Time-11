@@ -55,6 +55,21 @@
     <build>
         <finalName>sessao</finalName>
         <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.16</version>
+                <executions>
+                    <execution>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>relatorio-cobertura</id>
+                        <phase>verify</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Gera um jar executável com todas as dependências (java -jar sessao.jar) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste no celular · Fast Attendance</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { max-width: 42rem; margin: auto; padding: 1.5rem; line-height: 1.5; }
+    section { border: 1px solid #888; border-radius: .5rem; padding: 1rem; margin: 1rem 0; }
+    button, a { display: inline-block; padding: .6rem; margin: .25rem; }
+    video { display: block; width: 100%; max-height: 18rem; background: #222; }
+    video[hidden] { display: none; }
+    p { overflow-wrap: anywhere; }
+  </style>
+  <script src="teste.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>Teste no celular</h1>
+    <p>Confira as permissões antes de usar a chamada. Câmera e microfone são desligados ao parar,
+      sair desta página ou colocar a aba em segundo plano. Nenhuma captura é enviada ou salva.</p>
+    <p id="contexto" role="status"></p>
+    <nav aria-label="Aplicações">
+      <a href="/professor">Abrir professor</a>
+      <a href="/aluno">Abrir aluno</a>
+    </nav>
+    <section aria-labelledby="titulo-camera">
+      <h2 id="titulo-camera">Câmera</h2>
+      <button id="camera" type="button">Testar câmera</button>
+      <p id="estado-camera" role="status">Ainda não testada.</p>
+      <video id="video" autoplay playsinline muted hidden></video>
+    </section>
+    <section aria-labelledby="titulo-microfone">
+      <h2 id="titulo-microfone">Microfone</h2>
+      <button id="microfone" type="button">Testar microfone</button>
+      <p id="estado-microfone" role="status">Ainda não testado.</p>
+    </section>
+    <section aria-labelledby="titulo-localizacao">
+      <h2 id="titulo-localizacao">Localização</h2>
+      <button id="localizacao" type="button">Testar localização</button>
+      <p id="estado-localizacao" role="status">Ainda não testada.</p>
+    </section>
+    <button id="parar" type="button">Parar câmera e microfone</button>
+  </main>
+</body>
+</html>

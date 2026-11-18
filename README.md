@@ -28,24 +28,11 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 
 ## Arquitetura
 
-```
- navegador do professor (/professor)     navegador do aluno (/aluno)
-        │ HTTP /api                              │ HTTP /api        │ WebSocket /ws
-        └──────────────────┬─────────────────────┴──────────────────┘
-                           ▼
-                 Nginx (porta 8088 no host)
-                    │ /api            │ /ws                 │ /professor, /aluno
-                    ▼                 ▼                     ▼
-            API (Spring Boot)   Ponte (WebSocket↔TCP)  Apps Next.js
-            porta 8080          porta 8082             (professor 3000,
-                    │                 │ TCP              aluno 3001)
-                    │                 ▼
-                    │           Servidor de sessão
-                    │           (sockets, porta 8081)
-                    └────────┬────────┘
-                             ▼
-             MongoDB, replica set rs0 (mongo1, mongo2, mongo3)
-```
+![Arquitetura do Fast Attendance: apps, Nginx, API REST, ponte WebSocket para TCP, servidor de sessão e MongoDB em replica set](docs/diagramas/arquitetura.svg)
+
+[Arquitetura e fluxo de check-in](docs/arquitetura.md) ·
+[Fonte editável](docs/diagramas/arquitetura.mmd) ·
+[PNG para apresentações](docs/diagramas/arquitetura.png)
 
 O servidor de sessão segue o modelo cliente-servidor por sockets (TCP, serialização Java, classes
 `Servidor`, `AceitadoraDeConexao`, `SupervisoraDeConexao`, `Parceiro` e `Comunicado`). Como o
@@ -55,8 +42,8 @@ apps não mudam. Veja [docs/servidor-modelo-socket.md](docs/servidor-modelo-sock
 A API e o servidor de sessão compartilham o MongoDB e o segredo `JWT_SECRET`: o servidor de sessão
 valida o mesmo JWT que a API emite, na mensagem `auth` (recebida pela ponte, no WebSocket). As regras de unicidade
 (uma presença por aluno e por sessão, uma sessão aberta por turma) ficam em índices do banco, porque
-as duas aplicações escrevem nas mesmas coleções. O diagrama de arquitetura detalhado é tratado na
-issue #73 e ainda não existe no repositório.
+as duas aplicações escrevem nas mesmas coleções. O [fluxo de check-in por QR Code e som](docs/arquitetura.md#fluxo-do-check-in)
+mostra a validação, a persistência e a atualização do painel, com as partes ainda pendentes nos apps.
 
 ## Estrutura do repositório
 
@@ -115,6 +102,10 @@ Com o ambiente no ar, crie um professor e dois alunos (senha `demo12345`, só pa
 O script é idempotente. Ele cria `professor@demo.br` (professor), `ana@demo.br` e `bruno@demo.br`
 (alunos). Se o e-mail do professor não estiver em `PROFESSORES_PERMITIDOS`, o script falha com
 essa mensagem.
+
+Para a apresentação, `./infra/dados-demo.sh` cria também 60 alunos, duas turmas com mais de 30
+alunos cada, salas e aulas passadas com presenças nos três modos, para o dashboard ter dados. Detalhes
+em [infra/README.md](infra/README.md#dados-de-demonstração-dashboard-e-apresentação).
 
 ### Endereços
 
@@ -199,19 +190,22 @@ Somente documentos que existem no repositório:
 | Documento | Conteúdo |
 |---|---|
 | [docs/protocolo-v1.md](docs/protocolo-v1.md) | Protocolo WebSocket entre os apps e o servidor de sessão, pela ponte (revisado em 04/11/2026) |
+| [docs/testes-validacao.md](docs/testes-validacao.md) | Testes JUnit das regras e relatório de cobertura |
 | [docs/servidor-modelo-socket.md](docs/servidor-modelo-socket.md) | Servidor de sessão no modelo por sockets e a ponte WebSocket↔TCP |
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
+| [docs/arquitetura.md](docs/arquitetura.md) | Diagramas de arquitetura e check-in, imagens para slides e fontes editáveis |
 | [docs/stack-apps.md](docs/stack-apps.md) | Decisões de stack das aplicações web |
+| [docs/plano-teste-carga.md](docs/plano-teste-carga.md) | Cenário JMeter para 15 salas × 70 alunos e critérios de aprovação |
+| [docs/https-celulares.md](docs/https-celulares.md) | HTTPS e diagnóstico de permissões nos celulares |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
+| [docs/roteiro-demonstracao.md](docs/roteiro-demonstracao.md) | Roteiro cronometrado, preparação e plano B da demonstração |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
 | [infra/README.md](infra/README.md) | Ambiente Docker, MongoDB, rotas do Nginx e tolerância a falha |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits e pull requests |
-
-Diagrama de arquitetura: pendente (issue #73).
 
 ## Fluxo de trabalho
 
