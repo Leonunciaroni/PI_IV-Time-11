@@ -97,14 +97,12 @@ function CanalDaChamada({
                 Canal: {nomesModos[turma.chamadaAberta!.modo]}
               </h2>
               <p className="mt-5 text-sm leading-relaxed text-slate-600">
-                {modo === "QRCODE"
-                  ? "Esta chamada usa o QR Code exibido pelo professor."
-                  : "Esta chamada usa o sinal sonoro emitido pelo professor."}
+                Esta chamada usa o sinal sonoro emitido pelo professor.
               </p>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                A captura e a confirmação de presença serão disponibilizadas na
-                etapa de check-in. Acessar esta página ainda não registra sua
-                presença.
+                A confirmação por som ainda não está disponível. Peça ao professor
+                uma chamada por QR Code ou chamada clássica. Acessar esta página
+                não registra sua presença.
               </p>
             </>
           ) : (

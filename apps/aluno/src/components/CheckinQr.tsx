@@ -278,8 +278,14 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
         </>
       )}
       <Link
+        href={`/historico?turmaId=${encodeURIComponent(turma.id)}`}
+        className="mt-6 mr-5 inline-flex min-h-11 items-center text-sm font-semibold text-[#5040e8] hover:underline"
+      >
+        Ver histórico desta turma
+      </Link>
+      <Link
         href="/"
-        className="mt-6 inline-flex text-sm font-semibold text-[#5040e8] hover:underline"
+        className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-[#5040e8] hover:underline"
       >
         Voltar ao início
       </Link>
