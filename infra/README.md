@@ -42,8 +42,8 @@ O script cria as contas de `usuarios-demo.sh` e mais 60 alunos (`aluno01@demo.br
 | Presenças | Nos três modos: `MANUAL` na clássica (com algumas desmarcadas), `QRCODE` com coordenadas dentro do raio e `SOM`, as duas com `dispositivoId`. Uns poucos alunos faltam de propósito e ficam abaixo de 75% |
 
 As aulas e presenças vão direto no banco porque a API não abre aulas (quem abre é o servidor de
-sessão, ao vivo). O script é idempotente: contas que já existem são mantidas, turmas e salas são
-encontradas pelo nome, matrículas não se repetem, e uma turma que já tem aula encerrada não ganha
+sessão, ao vivo). O script é idempotente: contas que já existem são mantidas, as
+turmas são encontradas pelo nome e pela disciplina (outras turmas do professor não são alteradas) e as salas pelo nome, as matrículas não se repetem e uma turma que já tem aula encerrada não ganha
 aulas novas. Para gerar as aulas de novo, com as datas recalculadas a partir de hoje, apague os
 volumes (`docker compose down -v`) e rode de novo.
 

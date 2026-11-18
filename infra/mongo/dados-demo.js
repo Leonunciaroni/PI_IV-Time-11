@@ -2,7 +2,7 @@
 // encerradas e presenças nos três modos. Chamado por infra/dados-demo.sh, depois que as contas já
 // foram criadas pela API (a senha precisa do hash BCrypt da API).
 //
-// Idempotente: turmas e salas são encontradas pelo nome, matrículas pelo par turma + aluno, e as
+// Idempotente: turmas são encontradas pelo nome e pela disciplina, salas pelo nome, matrículas pelo par turma + aluno, e as
 // aulas só são criadas na turma que ainda não tem nenhuma aula encerrada.
 //
 // As aulas e presenças vão direto no banco porque a API não abre nem encerra aulas: isso é feito
@@ -144,7 +144,7 @@ print(`salas      ${SALAS.length}`);
 
 for (const turma of TURMAS) {
   const documento = db.turmas.findOneAndUpdate(
-    { professorId, nome: turma.nome },
+    { professorId, nome: turma.nome, disciplina: turma.disciplina },
     {
       $setOnInsert: {
         nome: turma.nome,
