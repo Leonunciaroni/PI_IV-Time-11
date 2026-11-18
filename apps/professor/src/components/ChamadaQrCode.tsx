@@ -3,17 +3,13 @@
 import { useCallback, useMemo } from "react";
 import type { ChamadaGuardada } from "@/lib/chamadas";
 import type { PresenteAoVivo } from "@/lib/presencas";
-import type { OrigemPresenca } from "@/lib/protocolo";
 import { desenharQr } from "@/lib/qr";
 import { conteudoQr } from "@/lib/totp";
 import { useCodigoRotativo } from "@/lib/useCodigoRotativo";
 import type { ClienteSessao } from "@/lib/ws";
+import { PainelAoVivo } from "./PainelAoVivo";
 import { Botao } from "./ui/Botao";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
-
-const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-const NOME_DA_ORIGEM: Record<OrigemPresenca, string> = { QRCODE: "QR", SOM: "Som", MANUAL: "Manual" };
 
 interface ChamadaQrCodeProps {
   chamada: ChamadaGuardada;
@@ -73,34 +69,17 @@ export function ChamadaQrCode({ chamada, cliente, presentes, carregado }: Chamad
         <MensagemDeErro>{desenho ? erro : null}</MensagemDeErro>
       </section>
 
-      <aside aria-labelledby="titulo-presentes" className="flex w-full flex-col gap-3 lg:w-80">
-        <h2 id="titulo-presentes" className="flex items-center gap-2 font-semibold">
-          <span aria-hidden="true" className="size-2 rounded-full bg-sucesso" />
-          Presentes (ao vivo)
-        </h2>
-        {presentes.length === 0 ? (
-          <p role="status" className="text-sm opacity-70">
-            {carregado
-              ? "Os alunos aparecem aqui conforme registram presença pelo código."
-              : "Carregando os presentes..."}
-          </p>
-        ) : (
-          <ol className="border-t border-borda-suave">
-            {presentes.map((presenca) => (
-              <li key={presenca.alunoId} className="flex items-baseline gap-3 border-b border-borda-suave py-2">
-                <span className="font-mono text-sm opacity-70">{hora.format(presenca.registradoEm)}</span>
-                <span className="min-w-0 flex-1">{presenca.nome}</span>
-                <span className="text-xs opacity-60">{NOME_DA_ORIGEM[presenca.origem]}</span>
-              </li>
-            ))}
-          </ol>
-        )}
+      <PainelAoVivo
+        presentes={presentes}
+        carregado={carregado}
+        vazio="Os alunos aparecem aqui conforme registram presença pelo código."
+      >
         {/* O protocolo v1 ainda não tem troca de modo (#49); encerrar e abrir outra criaria duas aulas */}
         <Botao variante="secundario" disabled>
           Trocar para clássica
         </Botao>
         <p className="-mt-1 text-sm opacity-70">A troca de modo ainda não está disponível: depende da #49.</p>
-      </aside>
+      </PainelAoVivo>
     </div>
   );
 }

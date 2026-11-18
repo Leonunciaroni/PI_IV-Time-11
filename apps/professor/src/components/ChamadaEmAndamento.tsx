@@ -13,6 +13,7 @@ import { descreverConexao, useClienteSessao } from "@/lib/useClienteSessao";
 import { ErroSessao } from "@/lib/ws";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { ChamadaQrCode } from "./ChamadaQrCode";
+import { ChamadaSom } from "./ChamadaSom";
 import { ListaDeChamada } from "./ListaDeChamada";
 import { Botao } from "./ui/Botao";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
@@ -22,7 +23,7 @@ const NOME_DO_MODO: Record<ModoChamada, string> = { CLASSICA: "Chamada clássica
 
 const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-/** Chamada aberta: cabeçalho com contador e encerrar; a lista da clássica (P6) ou o QR (P7). */
+/** Chamada aberta: cabeçalho com contador e encerrar; a lista da clássica (P6), o QR (P7) ou o som (P8). */
 export function ChamadaEmAndamento() {
   const { id, sessaoId } = useParams<{ id: string; sessaoId: string }>();
   const turma = useRecurso<Turma>(`/api/turmas/${id}`);
@@ -117,7 +118,8 @@ export function ChamadaEmAndamento() {
 
         const eClassica = chamada.modo === "CLASSICA";
         const eQr = chamada.modo === "QRCODE";
-        // Na QR os totais vêm do servidor; na clássica, das marcações do servidor entre os alunos da
+        const eSom = chamada.modo === "SOM";
+        // Na QR e no som os totais vêm do servidor; na clássica, das marcações do servidor entre os alunos da
         // lista (com o toque ainda sem resposta), para o contador bater com o que está marcado
         const contagem = eClassica
           ? classica.alunos.situacao === "pronto" && aoVivo.carregado
@@ -128,7 +130,7 @@ export function ChamadaEmAndamento() {
             : null;
 
         return (
-          <main className={`mx-auto flex w-full flex-1 flex-col gap-4 px-6 pb-6 ${eQr ? "max-w-5xl" : "max-w-3xl"}`}>
+          <main className={`mx-auto flex w-full flex-1 flex-col gap-4 px-6 pb-6 ${eQr || eSom ? "max-w-5xl" : "max-w-3xl"}`}>
             <div className="sticky top-0 z-10 -mx-6 flex flex-col gap-3 border-b border-borda-suave bg-background px-6 pt-6 pb-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -193,6 +195,9 @@ export function ChamadaEmAndamento() {
             )}
             {eQr && (
               <ChamadaQrCode chamada={chamada} cliente={cliente} presentes={aoVivo.presentes} carregado={aoVivo.carregado} />
+            )}
+            {eSom && (
+              <ChamadaSom chamada={chamada} cliente={cliente} presentes={aoVivo.presentes} carregado={aoVivo.carregado} />
             )}
           </main>
         );
