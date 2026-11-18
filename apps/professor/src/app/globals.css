@@ -50,6 +50,18 @@
   }
 }
 
+/*
+ * Foco de teclado igual em todo o app. O contorno padrão do navegador some sobre o azul dos
+ * botões; este só aparece com teclado (:focus-visible), então o clique não muda nada.
+ * Os campos de texto têm o próprio destaque (Campo.tsx).
+ */
+@layer base {
+  :where(a, button, summary, input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 2px solid var(--primaria);
+    outline-offset: 2px;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
