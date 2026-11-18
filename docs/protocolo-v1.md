@@ -11,7 +11,7 @@ mudança neste documento deve ser refletida nelas no mesmo pull request.
 
 | Item | Valor |
 |---|---|
-| URL | `ws(s)://<host>/ws` (o Nginx encaminha para o servidor de sessão) |
+| URL | `ws(s)://<host>/ws` (o Nginx encaminha para a ponte, que fala com o servidor de sessão; ver `ponte/`) |
 | Codificação | Texto UTF-8; cada frame contém **exatamente uma** mensagem JSON |
 | Versão | `1`, informada no campo `v` de toda mensagem |
 | Autenticação | JWT emitido pela API, enviado na mensagem `auth` (seção 4.1) |
@@ -19,7 +19,7 @@ mudança neste documento deve ser refletida nelas no mesmo pull request.
 
 O token **não** é enviado na URL, para não aparecer em logs do Nginx e do navegador.
 
-Limites do servidor (valores fixos na implementação, não fazem parte da mensagem em si; o cliente
+Limites da ponte (valores fixos na implementação, não fazem parte da mensagem em si; o cliente
 deve respeitá-los):
 
 - Frames de até 16 KiB. Frames binários são recusados com `erro` `MENSAGEM_INVALIDA`, sem `ref`.
@@ -61,6 +61,8 @@ Regras gerais:
   permitem correlacionar a mensagem.
 - `v` ausente ou não inteiro é `MENSAGEM_INVALIDA`; `v` inteiro diferente de `1` é
   `VERSAO_NAO_SUPORTADA`, seguido de fechamento 4002.
+- Quem valida o frame é a ponte, antes de encaminhar o pedido ao servidor de sessão. O servidor só
+  recebe comunicados já montados (docs/servidor-modelo-socket.md, seção 6).
 
 ## 3. Ciclo de vida da conexão
 
@@ -387,14 +389,17 @@ O `sessaoId` do QR Code é o mesmo `sessaoId` do `checkin`: 24 caracteres hexade
 
 ## 8. Códigos de fechamento do WebSocket
 
-| Código | Significado |
-|---|---|
-| `1000` | Encerramento normal, ou conexão sem tráfego por 60 s (inatividade). |
-| `1001` | Servidor reiniciando. É enviado a todas as conexões no desligamento gracioso (SIGTERM); o cliente deve reconectar com backoff. |
-| `4001` | Autenticação ausente (prazo de 5 s) ou inválida (`AUTH_INVALIDA`). |
-| `4002` | Versão de protocolo não suportada. |
-| `4003` | Token JWT expirou durante a conexão. |
-| `4008` | Violação de política: limite de mensagens excedido repetidamente (seção 1), ou mais de 64 mensagens pendentes. |
+| Código | Significado | Quem emite |
+|---|---|---|
+| `1000` | Encerramento normal, ou conexão sem tráfego por 60 s (inatividade). | O servidor de sessão fecha por inatividade. A ponte usa `1000` quando o servidor fecha a conexão depois de 60 s sem frames do navegador. |
+| `1001` | Servidor reiniciando. É enviado a todas as conexões no desligamento gracioso (SIGTERM); o cliente deve reconectar com backoff. | A ponte, ao receber `ComunicadoDeDesligamento` do servidor de sessão, ao perder o servidor depois de autenticado, ou no SIGTERM da própria ponte. |
+| `4001` | Autenticação ausente (prazo de 5 s) ou inválida (`AUTH_INVALIDA`). | A ponte, no prazo, depois do `erro` `AUTH_INVALIDA` do servidor e na queda antes de `auth.ok`. |
+| `4002` | Versão de protocolo não suportada. | A ponte. |
+| `4003` | Token JWT expirou durante a conexão. | O servidor de sessão fecha no fim do token; a ponte usa `4003` quando o `expiraEm` do `auth.ok` já passou. |
+| `4008` | Violação de política: limite de mensagens excedido repetidamente (seção 1), ou mais de 64 mensagens pendentes. | A ponte, pelos próprios limites ou pelo `LIMITE_EXCEDIDO` repetido do servidor. |
+
+Os fechamentos `1000` e `4003` quando o servidor cai são deduzidos pela ponte, porque o TCP não
+transporta código. A regra completa está em `docs/servidor-modelo-socket.md`, seção 6.
 
 Ao receber `1001` ou uma queda de rede, o cliente reconecta com backoff exponencial
 (1 s, 2 s, 4 s… até 30 s), envia `auth` novamente e, se o professor estava acompanhando uma sessão,
@@ -430,3 +435,4 @@ Exemplo ilustrativo: os valores de `token` e de horário não correspondem a uma
 | 1 | 04/10/2026 | Versão inicial. |
 | 1 | 20/10/2026 | Regras de `sessao.abrir` e `sessao.encerrar` e tempo limite da sessão (seções 4.3 e 4.4). Sem mudança de formato. |
 | 1 | 04/11/2026 | Revisão contra o servidor de `develop`: limites do servidor (seção 1), ordem de validação de `sessao.abrir`, `presenca.marcar` e `checkin`, situação de `sessao.acompanhar` e dos eventos (PR #96), detalhes do TOTP (seção 5.3), códigos de erro e de fechamento (seções 7 e 8). Após o merge da PR #96, `sessao.acompanhar` e os eventos da seção 5.2 foram documentados como implementados, com a ordem de validação e o comportamento do acompanhante ao desconectar. Sem mudança de formato. |
+| 1 | 08/11/2026 | Etapa 2 do servidor no modelo por sockets: a ponte WebSocket ↔ TCP (`ponte/`) passa a validar os frames e a emitir os fechamentos desta seção. Sem mudança de formato (campos, tipos e códigos). |

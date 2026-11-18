@@ -32,7 +32,8 @@ mesma origem (`http://<host>:8088`).
 
 - **Contexto seguro:** câmera, microfone e geolocalização só funcionam em `https://` ou em
   `localhost`. Para testar em celulares na rede local é necessário HTTPS (certificado local ou
-  túnel). Isso será tratado junto ao modo QR Code (Semana 5).
+  túnel). O perfil `https` do Compose fornece um túnel temporário e uma página de
+  diagnóstico; veja [HTTPS para celulares](https-celulares.md).
 - **Áudio:** navegadores só liberam o `AudioContext` após um gesto do usuário (toque em botão).
   As telas de emissão e captação começam com um botão explícito.
 - **Microfone no iOS:** o Safari aplica filtros de voz por padrão; a captação deve pedir

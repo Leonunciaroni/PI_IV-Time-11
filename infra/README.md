@@ -1,7 +1,8 @@
 # Infraestrutura
 
-Sobe todo o ambiente com um comando: MongoDB em replica set (3 nós), API, servidor de sessão,
-aplicações do professor e do aluno e Nginx como balanceador com suporte a WebSocket.
+Sobe todo o ambiente com um comando: MongoDB em replica set (3 nós), API, servidor de sessão (TCP,
+sem porta publicada), ponte WebSocket, aplicações do professor e do aluno e Nginx como balanceador com
+suporte a WebSocket.
 
 ## Subir
 
@@ -14,6 +15,25 @@ docker compose ps
 
 O Nginx fica em `http://localhost:8088` (porta configurável em `NGINX_PORTA`).
 
+## HTTPS para celulares
+
+Com o `.env` configurado, habilite o túnel opcional para testar câmera, microfone
+e localização no celular:
+
+```bash
+docker compose --profile https up -d --build
+docker compose logs -f tunel
+```
+
+Abra no celular o endereço `https://...trycloudflare.com` dos logs, acrescentando
+`/professor`, `/aluno` ou `/teste-celular/` para verificar as permissões. O túnel
+requer Internet e só é iniciado ao solicitar o perfil `https` ou o serviço `tunel`.
+Para encerrá-lo, use `docker compose stop tunel`.
+
+Veja o [roteiro completo e o registro de validação](../docs/https-celulares.md).
+
+## Contas de demonstração
+
 Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-mail do professor,
 `professor@demo.br`, precisa estar em `PROFESSORES_PERMITIDOS` (já está no `.env.example`):
 
@@ -24,7 +44,7 @@ Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-ma
 | Rota no Nginx | Destino |
 |---|---|
 | `/api/...` | API REST (Spring Boot, porta 8080) |
-| `/ws` | Servidor de sessão (WebSocket, porta 8081) |
+| `/ws` | Ponte WebSocket (porta 8082), que fala com o servidor de sessão por TCP (porta 8081, rede interna) |
 | `/professor` | Aplicação do professor (Next.js, porta 3000) |
 | `/aluno` | Aplicação do aluno (Next.js, porta 3001); `/` redireciona para cá |
 | `/nginx-health` | Verificação do próprio Nginx |
@@ -50,18 +70,19 @@ JWT_SECRET=<mesmo do .env> java -jar api/target/api.jar
 ```
 
 ```bash
-docker compose stop sessao
-./mvnw -pl sessao -am package -DskipTests
-JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar   # usa o MongoDB em localhost:27017
+docker compose stop sessao ponte
+./mvnw -pl ponte -am package -DskipTests                                  # gera sessao/target e ponte/target
+JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar 8081       # servidor de sessão (TCP), MongoDB em localhost:27017
+SESSAO_HOST=localhost java -jar ponte/target/ponte.jar 8082              # ponte (WebSocket), ligada ao servidor local
 ```
 
 O Nginx continua apontando para os nomes dos serviços no Docker; para testar pelo Nginx com o
-processo local, acesse a API direto em `http://localhost:8080` e o WebSocket em `ws://localhost:8081`.
+processo local, acesse a API direto em `http://localhost:8080` e a ponte em `ws://localhost:8082`.
 
 ## Tolerância a falha
 
 ```bash
-docker compose up -d --scale api=2 --scale sessao=2   # duas réplicas de cada atrás do Nginx
+docker compose up -d --scale api=2 --scale sessao=2 --scale ponte=2   # duas réplicas de cada atrás do Nginx
 docker compose stop mongo1                  # força nova eleição; mongo2 ou mongo3 assume
 docker compose start mongo1
 ```
@@ -70,6 +91,9 @@ O Nginx resolve os nomes dos serviços dinamicamente (`server ... resolve`), ent
 ou derrubadas entram e saem do balanceamento sem reiniciar o Nginx.
 
 ### Cenários executados
+
+Os resultados abaixo foram medidos com o servidor WebSocket anterior, antes da ponte. Ainda não foram
+repetidos com a ponte: é preciso rodar o script de novo.
 
 Script: `node infra/teste-tolerancia.mjs <sessao|api|mongo>` (Node 22+, Docker CLI). Ele cria uma
 turma, 20 alunos e uma sessão `CLASSICA` próprios em cada execução, abre WebSocket pelo Nginx e
@@ -90,8 +114,9 @@ Ambiente: Docker Desktop no macOS, Compose v5.1.4, `docker compose up -d --build
 | Presenças confirmadas durante a parada | 151 de 152; 1 falha `sem conexão` enquanto o professor reconectava |
 | Maior intervalo sem confirmação | 521 ms |
 
-Os alunos conectados à outra réplica não foram afetados. Confirmado: o servidor fecha com `1001`
-quando recebe SIGTERM, porque o shutdown hook chama `ServidorSessao.encerrar`.
+Os alunos conectados à outra réplica não foram afetados. Confirmado com o servidor anterior: ele
+fechava com `1001` no SIGTERM. Com a ponte, o `1001` vem da ponte: o servidor envia
+`ComunicadoDeDesligamento` e a ponte fecha o WebSocket (`docs/servidor-modelo-socket.md`, seção 6.4).
 
 Uma execução anterior ficou com o laço do professor parado: só 15 marcações em 40 s, nenhuma
 confirmada depois da parada. O mesmo cenário, repetido, funcionou como descrito acima. Não encontrei

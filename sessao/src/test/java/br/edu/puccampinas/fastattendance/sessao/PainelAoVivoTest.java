@@ -1,15 +1,27 @@
 package br.edu.puccampinas.fastattendance.sessao;
 
+import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDePresencaAtualizada;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeSessaoEncerrada;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAcompanharSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresenca;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAcompanharSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeMarcarPresenca;
+import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
+import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
-import br.edu.puccampinas.fastattendance.sessao.servidor.ServidorSessao;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -23,12 +35,11 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class PainelAoVivoTest {
 
-    private static final String SEGREDO = "segredo-dos-testes-com-mais-de-32-bytes-0123456789";
-    private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final String SEGREDO = ServidorDeTeste.SEGREDO;
 
     private final JwtService jwt = new JwtService(SEGREDO, Duration.ofHours(1));
     private final List<ClienteTeste> clientes = new ArrayList<>();
-    private final List<ServidorSessao> servidores = new ArrayList<>();
+    private final List<ServidorDeTeste> servidores = new ArrayList<>();
 
     private String professorId;
     private String turmaId;
@@ -53,8 +64,8 @@ class PainelAoVivoTest {
     @AfterEach
     void parar() throws Exception {
         clientes.forEach(ClienteTeste::close);
-        for (ServidorSessao servidor : servidores) {
-            servidor.encerrar(1_000);
+        for (ServidorDeTeste servidor : servidores) {
+            servidor.close();
         }
     }
 
@@ -64,26 +75,23 @@ class PainelAoVivoTest {
     void acompanharDevolveSessaoEstadoComOsPresentesAtuais() throws Exception {
         ClienteTeste professor = professor(porta(0));
         String sessaoId = abrirSessao(professor);
-        professor.enviar(marcar(sessaoId, ana, true));
-        professor.proxima();
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, ana, true));
+        professor.proximo(RespostaDeMarcarPresenca.class);
 
         ClienteTeste acompanhante = professor(porta(0));
-        acompanhante.enviar(mensagem("sessao.acompanhar", "c1", "{\"sessaoId\":\"%s\"}".formatted(sessaoId)));
+        acompanhante.enviar(new PedidoDeAcompanharSessao(sessaoId));
 
         // Um evento da marcação acima pode chegar antes da resposta: ignora-se até sessao.estado
-        JsonNode resposta = aguardarTipo(acompanhante, "sessao.estado");
-        assertEquals("c1", resposta.get("ref").stringValue());
-        JsonNode dados = resposta.get("dados");
-        assertEquals(sessaoId, dados.get("sessaoId").stringValue());
-        assertEquals("CLASSICA", dados.get("modo").stringValue());
-        assertTrue(dados.get("abertaEm").longValue() > 0);
-        assertEquals(3, dados.get("totalMatriculados").intValue());
-        JsonNode presentes = dados.get("presentes");
-        assertEquals(1, presentes.size());
-        assertEquals(ana, presentes.get(0).get("alunoId").stringValue());
-        assertEquals("Ana Souza", presentes.get(0).get("nome").stringValue());
-        assertEquals("MANUAL", presentes.get(0).get("origem").stringValue());
-        assertTrue(presentes.get(0).get("registradoEm").longValue() > 0);
+        RespostaDeAcompanharSessao resposta = aguardarTipo(acompanhante, RespostaDeAcompanharSessao.class);
+        assertEquals(sessaoId, resposta.getSessaoId());
+        assertEquals(ModoChamada.CLASSICA, resposta.getModo());
+        assertTrue(resposta.getAbertaEm() > 0);
+        assertEquals(3, resposta.getTotalMatriculados());
+        assertEquals(1, resposta.getPresentes().size());
+        assertEquals(ana, resposta.getPresentes().get(0).getAlunoId());
+        assertEquals("Ana Souza", resposta.getPresentes().get(0).getNome());
+        assertEquals("MANUAL", resposta.getPresentes().get(0).getOrigem().name());
+        assertTrue(resposta.getPresentes().get(0).getRegistradoEm() > 0);
     }
 
     @Test
@@ -92,35 +100,34 @@ class PainelAoVivoTest {
         ClienteTeste aluno = autenticado(porta(0), ana, Papel.ALUNO);
         ClienteTeste outroProfessor = autenticado(porta(0), new ObjectId().toHexString(), Papel.PROFESSOR);
 
-        aluno.enviar(mensagem("sessao.acompanhar", "c1", "{\"sessaoId\":\"%s\"}".formatted(sessaoId)));
-        assertErro(aluno.proxima(), "PERMISSAO_NEGADA");
+        aluno.enviar(new PedidoDeAcompanharSessao(sessaoId));
+        aluno.proximoErro(CodigoErro.PERMISSAO_NEGADA);
 
-        outroProfessor.enviar(mensagem("sessao.acompanhar", "c1", "{\"sessaoId\":\"%s\"}".formatted(sessaoId)));
-        assertErro(outroProfessor.proxima(), "PERMISSAO_NEGADA");
+        outroProfessor.enviar(new PedidoDeAcompanharSessao(sessaoId));
+        outroProfessor.proximoErro(CodigoErro.PERMISSAO_NEGADA);
     }
 
     @Test
     void acompanharRecusaSessaoInexistenteEEncerrada() throws Exception {
         ClienteTeste professor = professor(porta(0));
-        professor.enviar(mensagem("sessao.acompanhar", "c1",
-                "{\"sessaoId\":\"%s\"}".formatted(new ObjectId().toHexString())));
-        assertErro(professor.proxima(), "SESSAO_NAO_ENCONTRADA");
+        professor.enviar(new PedidoDeAcompanharSessao(new ObjectId().toHexString()));
+        professor.proximoErro(CodigoErro.SESSAO_NAO_ENCONTRADA);
 
         String sessaoId = abrirSessao(professor);
-        professor.enviar(mensagem("sessao.encerrar", "e1", "{\"sessaoId\":\"" + sessaoId + "\"}"));
-        professor.proxima();
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professor.proximo(RespostaDeEncerrarSessao.class);
 
-        professor.enviar(mensagem("sessao.acompanhar", "c2", "{\"sessaoId\":\"%s\"}".formatted(sessaoId)));
-        assertErro(professor.proxima(), "SESSAO_ENCERRADA");
+        professor.enviar(new PedidoDeAcompanharSessao(sessaoId));
+        professor.proximoErro(CodigoErro.SESSAO_ENCERRADA);
     }
 
     @Test
     void acompanharExigeOSessaoId() throws Exception {
         ClienteTeste professor = professor(porta(0));
 
-        professor.enviar(mensagem("sessao.acompanhar", "c1", "{}"));
+        professor.enviar(new PedidoDeAcompanharSessao(null));
 
-        assertErro(professor.proxima(), "MENSAGEM_INVALIDA");
+        professor.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
     }
 
     // ---- presenca.atualizada ----
@@ -132,21 +139,18 @@ class PainelAoVivoTest {
         ClienteTeste acompanhante = professor(porta(0));
         acompanhar(acompanhante, sessaoId);
 
-        professor.enviar(marcar(sessaoId, ana, true));
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, ana, true));
 
-        // A resposta ao professor que marcou tem ref; o evento aos acompanhantes não tem
-        assertEquals("m1", ler(professor.proxima()).get("ref").stringValue());
-        JsonNode evento = ler(acompanhante.proxima());
-        assertEquals("presenca.atualizada", evento.get("tipo").stringValue(), evento.toString());
-        assertNull(evento.get("ref"));
-        JsonNode dados = evento.get("dados");
-        assertEquals(sessaoId, dados.get("sessaoId").stringValue());
-        assertEquals(ana, dados.get("alunoId").stringValue());
-        assertEquals("Ana Souza", dados.get("nomeAluno").stringValue());
-        assertTrue(dados.get("presente").booleanValue());
-        assertEquals("MANUAL", dados.get("origem").stringValue());
-        assertEquals(1, dados.get("totalPresentes").intValue());
-        assertEquals(3, dados.get("totalMatriculados").intValue());
+        // A resposta ao professor que marcou é de outra classe; o evento vai ao acompanhante
+        professor.proximo(RespostaDeMarcarPresenca.class);
+        EventoDePresencaAtualizada evento = acompanhante.proximo(EventoDePresencaAtualizada.class);
+        assertEquals(sessaoId, evento.getSessaoId());
+        assertEquals(ana, evento.getAlunoId());
+        assertEquals("Ana Souza", evento.getNomeAluno());
+        assertTrue(evento.isPresente());
+        assertEquals("MANUAL", evento.getOrigem().name());
+        assertEquals(1, evento.getTotalPresentes());
+        assertEquals(3, evento.getTotalMatriculados());
     }
 
     @Test
@@ -156,16 +160,16 @@ class PainelAoVivoTest {
         ClienteTeste acompanhante = professor(porta(0));
         acompanhar(acompanhante, sessaoId);
 
-        professor.enviar(marcar(sessaoId, ana, true));
-        professor.proxima();
-        assertTrue(aguardarTipo(acompanhante, "presenca.atualizada").get("dados").get("presente").booleanValue());
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, ana, true));
+        professor.proximo(RespostaDeMarcarPresenca.class);
+        assertTrue(aguardarTipo(acompanhante, EventoDePresencaAtualizada.class).isPresente());
 
-        professor.enviar(marcar(sessaoId, ana, false));
-        professor.proxima();
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, ana, false));
+        professor.proximo(RespostaDeMarcarPresenca.class);
 
-        JsonNode dados = aguardarTipo(acompanhante, "presenca.atualizada").get("dados");
-        assertFalse(dados.get("presente").booleanValue());
-        assertEquals(0, dados.get("totalPresentes").intValue());
+        EventoDePresencaAtualizada evento = aguardarTipo(acompanhante, EventoDePresencaAtualizada.class);
+        assertFalse(evento.isPresente());
+        assertEquals(0, evento.getTotalPresentes());
     }
 
     @Test
@@ -175,81 +179,78 @@ class PainelAoVivoTest {
         ClienteTeste naoAcompanha = professor(porta(0));
         ClienteTeste aluno = autenticado(porta(0), ana, Papel.ALUNO);
 
-        professor.enviar(marcar(sessaoId, ana, true));
-        professor.proxima();
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, ana, true));
+        professor.proximo(RespostaDeMarcarPresenca.class);
 
         assertNull(naoAcompanha.aguardar(500));
-        assertNull(aluno.aguardar(0));
+        assertNull(aluno.aguardar(200));
     }
 
     @Test
     void encerramentoEnviaSessaoEncerradaAoAcompanhante() throws Exception {
         ClienteTeste professor = professor(porta(0));
         String sessaoId = abrirSessao(professor);
-        professor.enviar(marcar(sessaoId, carla, true));
-        professor.proxima();
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, carla, true));
+        professor.proximo(RespostaDeMarcarPresenca.class);
         ClienteTeste acompanhante = professor(porta(0));
         acompanhar(acompanhante, sessaoId);
 
-        professor.enviar(mensagem("sessao.encerrar", "e1", "{\"sessaoId\":\"" + sessaoId + "\"}"));
-        professor.proxima();
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professor.proximo(RespostaDeEncerrarSessao.class);
 
-        JsonNode evento = aguardarTipo(acompanhante, "sessao.encerrada");
-        assertNull(evento.get("ref"));
-        assertEquals("PROFESSOR", evento.get("dados").get("motivo").stringValue());
-        assertEquals(1, evento.get("dados").get("totalPresentes").intValue());
+        EventoDeSessaoEncerrada evento = aguardarTipo(acompanhante, EventoDeSessaoEncerrada.class);
+        assertEquals("PROFESSOR", evento.getMotivo().name());
+        assertEquals(1, evento.getTotalPresentes());
     }
 
     // ---- Duas réplicas do servidor de sessão ----
 
     @Test
     void presencaGravadaNaReplicaAChegaAoProfessorNaReplicaB() throws Exception {
-        ServidorSessao replicaB = iniciarServidor();
+        ServidorDeTeste replicaB = iniciarServidor();
         servidores.add(replicaB);
         int portaA = porta(0);
-        int portaB = replicaB.getPort();
+        int portaB = replicaB.porta();
 
         ClienteTeste professorA = professor(portaA);
         String sessaoId = abrirSessao(professorA);
         ClienteTeste acompanhanteB = professor(portaB);
         acompanhar(acompanhanteB, sessaoId);
 
-        professorA.enviar(marcar(sessaoId, bruno, true));
-        assertEquals("m1", ler(professorA.proxima()).get("ref").stringValue());
+        professorA.enviar(new PedidoDeMarcarPresenca(sessaoId, bruno, true));
+        professorA.proximo(RespostaDeMarcarPresenca.class);
 
-        JsonNode evento = ler(acompanhanteB.proxima());
-        assertEquals("presenca.atualizada", evento.get("tipo").stringValue(), evento.toString());
-        assertEquals(bruno, evento.get("dados").get("alunoId").stringValue());
-        assertEquals(1, evento.get("dados").get("totalPresentes").intValue());
+        EventoDePresencaAtualizada evento = acompanhanteB.proximo(EventoDePresencaAtualizada.class);
+        assertEquals(bruno, evento.getAlunoId());
+        assertEquals(1, evento.getTotalPresentes());
         // Uma única entrega: a réplica B não repete o evento
         assertNull(acompanhanteB.aguardar(500));
     }
 
     @Test
     void encerramentoFeitoNaReplicaAAvisaAcompanhanteNaReplicaB() throws Exception {
-        ServidorSessao replicaB = iniciarServidor();
+        ServidorDeTeste replicaB = iniciarServidor();
         servidores.add(replicaB);
 
         ClienteTeste professorA = professor(porta(0));
         String sessaoId = abrirSessao(professorA);
-        ClienteTeste acompanhanteB = professor(replicaB.getPort());
+        ClienteTeste acompanhanteB = professor(replicaB.porta());
         acompanhar(acompanhanteB, sessaoId);
 
-        professorA.enviar(mensagem("sessao.encerrar", "e1", "{\"sessaoId\":\"" + sessaoId + "\"}"));
-        professorA.proxima();
+        professorA.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professorA.proximo(RespostaDeEncerrarSessao.class);
 
-        assertEquals("sessao.encerrada", aguardarTipo(acompanhanteB, "sessao.encerrada").get("tipo").stringValue());
+        aguardarTipo(acompanhanteB, EventoDeSessaoEncerrada.class);
     }
 
     // ---- Apoio ----
 
-    private ServidorSessao iniciarServidor() throws Exception {
-        return SessaoApplication.iniciar(new Configuracao(0, SEGREDO, MongoDeTeste.uri(),
-                Duration.ofSeconds(5), Duration.ofSeconds(60), Duration.ofHours(4)));
+    private ServidorDeTeste iniciarServidor() throws Exception {
+        return new ServidorDeTeste(Duration.ofSeconds(5), Duration.ofSeconds(60));
     }
 
     private int porta(int indice) {
-        return servidores.get(indice).getPort();
+        return servidores.get(indice).porta();
     }
 
     private ClienteTeste professor(int porta) throws Exception {
@@ -260,32 +261,29 @@ class PainelAoVivoTest {
         ClienteTeste cliente = new ClienteTeste(porta);
         clientes.add(cliente);
         String token = jwt.emitir(usuarioId, "Usuário", papel).token();
-        cliente.enviar(mensagem("auth", "a", "{\"token\":\"" + token + "\"}"));
-        assertEquals("auth.ok", ler(cliente.proxima()).get("tipo").stringValue());
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
         return cliente;
     }
 
     private void acompanhar(ClienteTeste cliente, String sessaoId) throws Exception {
-        cliente.enviar(mensagem("sessao.acompanhar", "c0", "{\"sessaoId\":\"%s\"}".formatted(sessaoId)));
-        assertEquals("sessao.estado", aguardarTipo(cliente, "sessao.estado").get("tipo").stringValue());
+        cliente.enviar(new PedidoDeAcompanharSessao(sessaoId));
+        aguardarTipo(cliente, RespostaDeAcompanharSessao.class);
     }
 
-    /** Lê as mensagens até chegar a do tipo esperado; eventos que chegam antes da resposta são ignorados. */
-    private static JsonNode aguardarTipo(ClienteTeste cliente, String tipo) throws Exception {
+    /** Lê os comunicados até chegar ao tipo esperado; eventos que chegam antes da resposta são ignorados. */
+    private static <T extends Comunicado> T aguardarTipo(ClienteTeste cliente, Class<T> tipo) {
         while (true) {
-            JsonNode mensagem = ler(cliente.proxima());
-            if (tipo.equals(mensagem.get("tipo").stringValue())) {
-                return mensagem;
+            Comunicado recebido = cliente.proximo();
+            if (tipo.isInstance(recebido)) {
+                return tipo.cast(recebido);
             }
         }
     }
 
     private String abrirSessao(ClienteTeste professor) throws Exception {
-        professor.enviar(mensagem("sessao.abrir", "s1",
-                "{\"turmaId\":\"%s\",\"modo\":\"CLASSICA\"}".formatted(turmaId)));
-        JsonNode resposta = ler(professor.proxima());
-        assertEquals("sessao.aberta", resposta.get("tipo").stringValue(), resposta.toString());
-        return resposta.get("dados").get("sessaoId").stringValue();
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.CLASSICA, null));
+        return professor.proximo(RespostaDeAbrirSessao.class).getSessaoId();
     }
 
     private static String aluno(String nome) {
@@ -296,25 +294,5 @@ class PainelAoVivoTest {
         ObjectId id = new ObjectId();
         MongoDeTeste.banco().getCollection(colecao).insertOne(documento.append("_id", id));
         return id.toHexString();
-    }
-
-    private static String marcar(String sessaoId, String alunoId, boolean presente) {
-        return mensagem("presenca.marcar", "m1",
-                "{\"sessaoId\":\"%s\",\"alunoId\":\"%s\",\"presente\":%s}".formatted(sessaoId, alunoId, presente));
-    }
-
-    private static String mensagem(String tipo, String id, String dados) {
-        return "{\"v\":1,\"tipo\":\"%s\",\"id\":\"%s\",\"ts\":%d,\"dados\":%s}"
-                .formatted(tipo, id, System.currentTimeMillis(), dados);
-    }
-
-    private static JsonNode ler(String texto) {
-        return JSON.readTree(texto);
-    }
-
-    private static void assertErro(String texto, String codigoEsperado) {
-        JsonNode resposta = ler(texto);
-        assertEquals("erro", resposta.get("tipo").stringValue(), texto);
-        assertEquals(codigoEsperado, resposta.get("dados").get("codigo").stringValue(), texto);
     }
 }
