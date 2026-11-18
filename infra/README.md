@@ -47,7 +47,8 @@ encontradas pelo nome, matrículas não se repetem, e uma turma que já tem aula
 aulas novas. Para gerar as aulas de novo, com as datas recalculadas a partir de hoje, apague os
 volumes (`docker compose down -v`) e rode de novo.
 
-A URI do banco usada dentro do container pode ser trocada pela variável `MONGO_URI`.
+Com o banco autenticado (#54), o script usa o usuário da aplicação (`MONGO_APP_USUARIO` e
+`MONGO_APP_SENHA` do container `mongo1`). A URI pode ser trocada pela variável `MONGO_URI`.
 
 | Rota no Nginx | Destino |
 |---|---|

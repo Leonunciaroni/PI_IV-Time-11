@@ -12,7 +12,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 BASE="${1:-http://localhost:8088}"
 SENHA="demo12345"
-MONGO_URI="${MONGO_URI:-mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0}"
+# Vazio: a URI é montada dentro do mongo1, com o usuário da aplicação se o banco tiver autenticação (#54)
+MONGO_URI="${MONGO_URI:-}"
 
 ./usuarios-demo.sh "$BASE"
 echo
@@ -54,7 +55,12 @@ echo "alunos     $criadas criados, $existentes já existiam (aluno01@demo.br ...
 docker compose cp mongo/dados-demo.js mongo1:/tmp/dados-demo.js >/dev/null 2>&1 ||
   { echo "erro: não foi possível copiar o script para o mongo1 (o Compose está rodando?)" >&2; exit 1; }
 # Caminho dentro do sh -c: o Git Bash do Windows converteria um argumento /tmp/... para C:/...
-docker compose exec -T mongo1 sh -c 'mongosh "$1" --quiet /tmp/dados-demo.js' sh "$MONGO_URI"
+# Sem MONGO_URI, usa MONGO_APP_USUARIO/MONGO_APP_SENHA do container quando existem (banco com senha)
+docker compose exec -T mongo1 sh -c '
+  credencial=""
+  [ -n "${MONGO_APP_SENHA:-}" ] && credencial="$MONGO_APP_USUARIO:$MONGO_APP_SENHA@"
+  uri="${1:-mongodb://${credencial}mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0}"
+  exec mongosh "$uri" --quiet /tmp/dados-demo.js' sh "$MONGO_URI"
 
 echo
 echo "Senha de todas as contas: $SENHA"
