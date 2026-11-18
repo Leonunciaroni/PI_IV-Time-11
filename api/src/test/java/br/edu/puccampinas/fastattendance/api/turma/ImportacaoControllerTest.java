@@ -139,6 +139,22 @@ class ImportacaoControllerTest {
     }
 
     @Test
+    void csvComAspasForaDoLugarOuArquivoBinarioRetorna400() throws Exception {
+        importar(professor, turma.id(), "nome,email,matricula\n\"Ana\" Souza,ana@puc.br,24001234\n")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(LeitorCsvAlunos.ARQUIVO_ILEGIVEL));
+
+        // Começo de um PNG, com aspas no meio dos bytes
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', '"', 'I', '"', 'H', 0, 0, ',', 'x'};
+        mvc.perform(multipart("/api/turmas/" + turma.id() + "/importacao")
+                        .file(new MockMultipartFile("arquivo", "foto.png", "image/png", png))
+                        .header("Authorization", bearer(professor)))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0, matriculas.countByTurmaId(turma.id()));
+    }
+
+    @Test
     void semArquivoRetornaErro() throws Exception {
         mvc.perform(multipart("/api/turmas/" + turma.id() + "/importacao")
                         .header("Authorization", bearer(professor)))

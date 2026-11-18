@@ -68,6 +68,14 @@ class LeitorCsvAlunosTest {
     }
 
     @Test
+    void aspaSoltaNoMeioDoCampoViraErroDeRequisicao() {
+        RequisicaoInvalidaException erro = assertThrows(RequisicaoInvalidaException.class,
+                () -> ler("nome,email,matricula\nAna \"Aninha\" Souza,ana@demo.br,24001234\n\"Bia\" Lima,bia@puc.br,1\n"));
+
+        assertEquals(LeitorCsvAlunos.ARQUIVO_ILEGIVEL, erro.getMessage());
+    }
+
+    @Test
     void rejeitaArquivoComLinhasDemais() {
         StringBuilder texto = new StringBuilder("nome,email,matricula\n");
         for (int i = 0; i <= LeitorCsvAlunos.MAXIMO_LINHAS; i++) {
