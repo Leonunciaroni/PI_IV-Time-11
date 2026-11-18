@@ -10,6 +10,7 @@ import {
   lerSessao,
   type Sessao,
 } from "@/lib/sessao";
+import { SimboloLogo } from "./ui/Logo";
 
 /** Renderiza o conteúdo apenas com sessão válida; caso contrário, envia para o login. */
 export function AreaAutenticada({
@@ -33,29 +34,24 @@ export function AreaAutenticada({
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-[#f8fafc] text-[#172033]">
-      <header className="border-b border-[#e2e8f0] bg-white px-5 py-4 sm:px-10">
+    <div className="flex flex-1 flex-col bg-background text-foreground">
+      <header className="border-b border-borda bg-superficie px-5 py-4 sm:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <Link href="/" aria-label="Fast Attendance — início do aluno" className="flex items-center gap-3 rounded-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5040e8]">
-            <span
-              aria-hidden="true"
-              className="flex size-10 items-center justify-center rounded-xl bg-[#5040e8] text-xl text-white"
-            >
-              ✓
-            </span>
+          <Link href="/" aria-label="Fast Attendance — início do aluno" className="flex items-center gap-3 rounded-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-marca">
+            <SimboloLogo className="h-9 w-auto" />
             <span>
               Fast Attendance
-              <span className="block text-xs font-normal tracking-normal text-slate-500">
+              <span className="block text-xs font-normal tracking-normal text-suave">
                 Área do aluno
               </span>
             </span>
           </Link>
           <div className="flex items-center gap-3 text-sm">
-            <Link href="/perfil" className="font-medium text-[#5040e8] hover:underline">Perfil</Link>
+            <Link href="/perfil" className="font-medium text-marca hover:underline">Perfil</Link>
             <span className="hidden sm:inline">{sessao.usuario.nome}</span>
             <button
               onClick={sair}
-              className="rounded-lg border border-[#e2e8f0] px-4 py-2 font-medium hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#5040e8]"
+              className="rounded-lg border border-borda px-4 py-2 font-medium hover:bg-superficie-suave focus-visible:outline-2 focus-visible:outline-marca"
             >
               Sair
             </button>

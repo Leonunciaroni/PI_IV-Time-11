@@ -14,7 +14,7 @@ import type { TurmaDoAluno } from "@/lib/tipos";
 
 type Etapa = "pronto" | "preparando" | "escutando" | "enviando" | "erro" | "sucesso";
 const terminal = new Set(["CHAMADA_INDISPONIVEL", "SESSAO_ENCERRADA", "SESSAO_NAO_ENCONTRADA", "ALUNO_NAO_MATRICULADO", "PERMISSAO_NEGADA", "MODO_INCOMPATIVEL", "PRESENCA_DUPLICADA", "DISPOSITIVO_JA_UTILIZADO", "VERSAO_NAO_SUPORTADA"]);
-const botao = "min-h-11 rounded-lg bg-[#5040e8] px-5 py-3 text-sm font-semibold text-white hover:bg-[#4332cd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5040e8] disabled:cursor-not-allowed disabled:opacity-50";
+const botao = "min-h-11 rounded-lg bg-[#3b2db5] px-5 py-3 text-sm font-semibold text-white hover:bg-[#2f2491] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca disabled:cursor-not-allowed disabled:opacity-50";
 
 export function CheckinSom({ turma, token }: { turma: TurmaDoAluno; token: string }) {
   const { cliente, estado } = useClienteSessao();
@@ -115,11 +115,11 @@ export function CheckinSom({ turma, token }: { turma: TurmaDoAluno; token: strin
     sucesso: "Presença confirmada",
   };
   return (
-    <section aria-label="Check-in por som" className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
+    <section aria-label="Check-in por som" className="mt-6 rounded-2xl border border-borda bg-superficie p-5 sm:p-7">
       <h1 className="text-2xl font-bold">{etapa === "sucesso" ? "Presença confirmada" : "Confirmar presença por som"}</h1>
-      <p className="mt-2 text-sm text-slate-500">{turma.disciplina} · {turma.nome}</p>
+      <p className="mt-2 text-sm text-suave">{turma.disciplina} · {turma.nome}</p>
       {resultado && etapa === "sucesso" ? (
-        <div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900">
+        <div role="status" className="mt-6 rounded-xl border border-sucesso-borda bg-sucesso-fundo p-5 text-sucesso-texto">
           <p className="font-semibold">Sua presença foi registrada por som.</p>
           <p className="mt-2 text-sm">Confirmada pelo servidor em {new Date(resultado.registradoEm).toLocaleString("pt-BR")}.</p>
         </div>
@@ -132,18 +132,18 @@ export function CheckinSom({ turma, token }: { turma: TurmaDoAluno; token: strin
             <p role="status" className="mt-4 font-semibold">{texto[etapa]}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">Mantenha o aparelho desbloqueado e esta tela aberta, próximo ao som do professor.</p>
           </div>
-          {falha && <div role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800">
+          {falha && <div role="alert" className="mt-5 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm leading-relaxed text-perigo-texto">
             <p className="font-semibold">{falha.codigo === "PRESENCA_DUPLICADA" ? "Presença já registrada" : "Não foi possível confirmar"}</p>
             <p className="mt-1">{falha.mensagem}</p>
           </div>}
-          {falhaLeitor && <div role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {falhaLeitor && <div role="alert" className="mt-5 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto">
             <p>Não foi possível carregar o leitor de som. Verifique sua conexão e recarregue a página.</p>
             <button type="button" onClick={() => window.location.reload()} className={`${botao} mt-3`}>Recarregar página</button>
           </div>}
-          <p role="status" className="mt-4 text-sm text-slate-600">{descreverConexao(estado)}</p>
-          <p className="mt-3 text-xs leading-relaxed text-slate-500">O áudio é processado neste aparelho e não é gravado nem enviado ao servidor. Somente o código recebido e a identificação da chamada e do aparelho são enviados para confirmar a presença.</p>
+          <p role="status" className="mt-4 text-sm text-suave">{descreverConexao(estado)}</p>
+          <p className="mt-3 text-xs leading-relaxed text-suave">O áudio é processado neste aparelho e não é gravado nem enviado ao servidor. Somente o código recebido e a identificação da chamada e do aparelho são enviados para confirmar a presença.</p>
           <div className="mt-6">
-            {emAndamento ? <button type="button" onClick={cancelar} disabled={etapa === "enviando"} className="min-h-11 rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold disabled:opacity-50">
+            {emAndamento ? <button type="button" onClick={cancelar} disabled={etapa === "enviando"} className="min-h-11 rounded-lg border border-borda-forte px-5 py-3 text-sm font-semibold disabled:opacity-50">
               {etapa === "enviando" ? "Confirmando presença..." : "Cancelar escuta"}
             </button> : !terminal.has(falha?.codigo ?? "") && <button type="button" onClick={() => void iniciar()} disabled={!fabrica || falhaLeitor || estado !== "pronto"} className={botao}>
               {!fabrica && !falhaLeitor ? "Carregando leitor de som..." : etapa === "erro" ? "Escutar novamente" : "Iniciar escuta"}
@@ -151,11 +151,11 @@ export function CheckinSom({ turma, token }: { turma: TurmaDoAluno; token: strin
           </div>
         </>
       )}
-      <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-[#5040e8]">
+      <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-marca">
         <Link href={`/historico?turmaId=${encodeURIComponent(turma.id)}`} className="inline-flex min-h-11 items-center hover:underline">Ver histórico desta turma</Link>
         <Link href="/" className="inline-flex min-h-11 items-center hover:underline">Voltar ao início</Link>
       </div>
-      <p className="mt-3 text-xs text-slate-500">O histórico mostra as presenças após o professor encerrar a chamada.</p>
+      <p className="mt-3 text-xs text-suave">O histórico mostra as presenças após o professor encerrar a chamada.</p>
     </section>
   );
 }
