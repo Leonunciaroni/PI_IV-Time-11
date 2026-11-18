@@ -67,6 +67,20 @@ class ChamadaPonteTest extends CenarioDePonte {
     }
 
     @Test
+    void chamadaEmLoteSemExcecoesMarcaTodosERespondeLoteOk() throws Exception {
+        ClienteNavegador professor = professor();
+        Sessao sessao = abrirSessao(professor, "CLASSICA", null);
+
+        professor.enviar(frame("presenca.marcar_lote", "l2", "{\"sessaoId\":\"" + sessao.id()
+                + "\",\"presente\":true}"));
+
+        var resposta = professor.proximo("presenca.lote_ok");
+        assertEquals("l2", resposta.get("ref").stringValue());
+        assertEquals(2, resposta.get("dados").get("totalPresentes").intValue());
+        assertEquals(2, resposta.get("dados").get("totalMatriculados").intValue());
+    }
+
+    @Test
     void encerrarRespondeSessaoEncerradaComRefETotalDePresentes() throws Exception {
         ClienteNavegador professor = professor();
         Sessao sessao = abrirSessao(professor, "CLASSICA", null);
