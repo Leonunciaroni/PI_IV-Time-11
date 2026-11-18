@@ -116,6 +116,10 @@ O script é idempotente. Ele cria `professor@demo.br` (professor), `ana@demo.br`
 (alunos). Se o e-mail do professor não estiver em `PROFESSORES_PERMITIDOS`, o script falha com
 essa mensagem.
 
+Para a apresentação, `./infra/dados-demo.sh` cria também 60 alunos, duas turmas com mais de 30
+alunos cada, salas e aulas passadas com presenças nos três modos, para o dashboard ter dados. Detalhes
+em [infra/README.md](infra/README.md#dados-de-demonstração-dashboard-e-apresentação).
+
 ### Endereços
 
 | Endereço | O que é |

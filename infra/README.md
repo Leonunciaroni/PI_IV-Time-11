@@ -22,6 +22,33 @@ Contas de demonstração (um professor e dois alunos, senha `demo12345`). O e-ma
 ./usuarios-demo.sh
 ```
 
+### Dados de demonstração (dashboard e apresentação)
+
+Para o dashboard ter números que pareçam reais, rode, com o Compose no ar:
+
+```bash
+./dados-demo.sh            # ou ./dados-demo.sh http://localhost:<NGINX_PORTA>
+```
+
+O script cria as contas de `usuarios-demo.sh` e mais 60 alunos (`aluno01@demo.br` a
+`aluno60@demo.br`, matrícula `24100001` a `24100060`), todos com a senha `demo12345`, pela API. Depois,
+`mongo/dados-demo.js` grava direto no banco, pelo `mongosh` do `mongo1`:
+
+| O quê | Conteúdo |
+|---|---|
+| Turmas do `professor@demo.br` | Engenharia de Software I · Turma A (Seg 19:00, 32 alunos, com Ana e Bruno) e Estrutura de Dados · Turma B (Qua 21:00, 31 alunos, com Ana) |
+| Salas | H15 - Sala 203 (raio 60 m) e H15 - Laboratório 4 (raio 40 m), com coordenadas do campus I |
+| Aulas encerradas | 12 na Turma A (Clássica 2 · QR Code 7 · Som 3) e 10 na Turma B, uma por semana até a última antes de hoje, no dia e horário da turma |
+| Presenças | Nos três modos: `MANUAL` na clássica (com algumas desmarcadas), `QRCODE` com coordenadas dentro do raio e `SOM`, as duas com `dispositivoId`. Uns poucos alunos faltam de propósito e ficam abaixo de 75% |
+
+As aulas e presenças vão direto no banco porque a API não abre aulas (quem abre é o servidor de
+sessão, ao vivo). O script é idempotente: contas que já existem são mantidas, turmas e salas são
+encontradas pelo nome, matrículas não se repetem, e uma turma que já tem aula encerrada não ganha
+aulas novas. Para gerar as aulas de novo, com as datas recalculadas a partir de hoje, apague os
+volumes (`docker compose down -v`) e rode de novo.
+
+A URI do banco usada dentro do container pode ser trocada pela variável `MONGO_URI`.
+
 | Rota no Nginx | Destino |
 |---|---|
 | `/api/...` | API REST (Spring Boot, porta 8080) |
