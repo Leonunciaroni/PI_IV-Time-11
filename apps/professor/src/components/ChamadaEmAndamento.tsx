@@ -8,8 +8,8 @@ import type { ModoChamada, SessaoEncerrada } from "@/lib/protocolo";
 import { useRecurso } from "@/lib/recurso";
 import type { Turma } from "@/lib/tipos";
 import { useChamadaClassica } from "@/lib/useChamadaClassica";
+import { useAcompanharSessao } from "@/lib/useAcompanharSessao";
 import { descreverConexao, useClienteSessao } from "@/lib/useClienteSessao";
-import { usePresencasAoVivo } from "@/lib/usePresencasAoVivo";
 import { ErroSessao } from "@/lib/ws";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { ChamadaQrCode } from "./ChamadaQrCode";
@@ -22,7 +22,7 @@ const NOME_DO_MODO: Record<ModoChamada, string> = { CLASSICA: "Chamada clássica
 
 const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-/** Chamada aberta: cabeçalho com contador e encerrar; a lista da clássica (P6). O QR (P7) entra aqui. */
+/** Chamada aberta: cabeçalho com contador e encerrar; a lista da clássica (P6) ou o QR (P7). */
 export function ChamadaEmAndamento() {
   const { id, sessaoId } = useParams<{ id: string; sessaoId: string }>();
   const turma = useRecurso<Turma>(`/api/turmas/${id}`);
@@ -32,11 +32,17 @@ export function ChamadaEmAndamento() {
   const [encerrada, setEncerrada] = useState<SessaoEncerrada | null>(null);
   const [encerradaSemResumo, setEncerradaSemResumo] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const classica = useChamadaClassica(sessaoId, id, cliente, (mensagem) => {
+  const aoVivo = useAcompanharSessao(cliente, sessaoId);
+  const classica = useChamadaClassica(sessaoId, id, cliente, aoVivo, (mensagem) => {
     esquecerChamada(sessaoId);
     setEncerradaSemResumo(mensagem);
   });
-  const aoVivo = usePresencasAoVivo(cliente, sessaoId);
+  // O acompanhar respondeu que a sessão acabou ou não existe (ex.: encerrada por tempo com a aba fechada)
+  const fimSemResumo = encerradaSemResumo ?? aoVivo.encerrada;
+
+  useEffect(() => {
+    if (aoVivo.encerrada) esquecerChamada(sessaoId);
+  }, [aoVivo.encerrada, sessaoId]);
 
   // O servidor avisa todos os conectados quando a sessão termina (inclusive por tempo limite)
   useEffect(
@@ -97,13 +103,11 @@ export function ChamadaEmAndamento() {
           );
         }
 
-        if (encerradaSemResumo || !chamada) {
+        if (fimSemResumo || !chamada) {
           return (
             <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-6">
-              <h1 className="text-xl font-semibold">
-                {encerradaSemResumo ?? "Chamada não encontrada neste navegador"}
-              </h1>
-              {!encerradaSemResumo && (
+              <h1 className="text-xl font-semibold">{fimSemResumo ?? "Chamada não encontrada neste navegador"}</h1>
+              {!fimSemResumo && (
                 <p className="text-sm opacity-70">Ela pode ter sido encerrada ou aberta em outro navegador ou aparelho.</p>
               )}
               {voltar}
@@ -113,10 +117,15 @@ export function ChamadaEmAndamento() {
 
         const eClassica = chamada.modo === "CLASSICA";
         const eQr = chamada.modo === "QRCODE";
-        const contagem =
-          classica.alunos.situacao !== "pronto"
-            ? null
-            : { presentes: eClassica ? classica.presentes : aoVivo.length, total: classica.total };
+        // Na QR os totais vêm do servidor; na clássica, das marcações do servidor entre os alunos da
+        // lista (com o toque ainda sem resposta), para o contador bater com o que está marcado
+        const contagem = eClassica
+          ? classica.alunos.situacao === "pronto" && aoVivo.carregado
+            ? { presentes: classica.presentes, total: classica.total }
+            : null
+          : aoVivo.totalMatriculados !== null
+            ? { presentes: aoVivo.totalPresentes, total: aoVivo.totalMatriculados }
+            : null;
 
         return (
           <main className={`mx-auto flex w-full flex-1 flex-col gap-4 px-6 pb-6 ${eQr ? "max-w-5xl" : "max-w-3xl"}`}>
@@ -167,7 +176,7 @@ export function ChamadaEmAndamento() {
                   </div>
                 </section>
               )}
-              <MensagemDeErro>{erro ?? classica.erro}</MensagemDeErro>
+              <MensagemDeErro>{erro ?? classica.erro ?? aoVivo.erro}</MensagemDeErro>
             </div>
 
             {eClassica && (
@@ -175,13 +184,16 @@ export function ChamadaEmAndamento() {
                 turmaId={id}
                 alunos={classica.alunos}
                 marcacoes={classica.marcacoes}
-                habilitada={estado === "pronto"}
+                // Até o estado chegar não se sabe quem está presente: um toque poderia inverter errado
+                habilitada={estado === "pronto" && aoVivo.carregado}
                 emLote={classica.emLote}
                 alternar={classica.alternar}
                 marcarLote={classica.marcarLote}
               />
             )}
-            {eQr && <ChamadaQrCode chamada={chamada} cliente={cliente} presentes={aoVivo} />}
+            {eQr && (
+              <ChamadaQrCode chamada={chamada} cliente={cliente} presentes={aoVivo.presentes} carregado={aoVivo.carregado} />
+            )}
           </main>
         );
       }}

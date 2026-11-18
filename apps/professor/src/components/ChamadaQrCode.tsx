@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo } from "react";
 import type { ChamadaGuardada } from "@/lib/chamadas";
-import type { PresencaAtualizada } from "@/lib/protocolo";
+import type { PresenteAoVivo } from "@/lib/presencas";
+import type { OrigemPresenca } from "@/lib/protocolo";
 import { desenharQr } from "@/lib/qr";
 import { conteudoQr } from "@/lib/totp";
 import { useCodigoRotativo } from "@/lib/useCodigoRotativo";
@@ -12,15 +13,19 @@ import { MensagemDeErro } from "./ui/MensagemDeErro";
 
 const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
+const NOME_DA_ORIGEM: Record<OrigemPresenca, string> = { QRCODE: "QR", SOM: "Som", MANUAL: "Manual" };
+
 interface ChamadaQrCodeProps {
   chamada: ChamadaGuardada;
   cliente: ClienteSessao;
-  /** Presenças recebidas do servidor nesta tela, da mais recente para a mais antiga. */
-  presentes: PresencaAtualizada[];
+  /** Presentes segundo o servidor (estado e eventos), do mais recente para o mais antigo. */
+  presentes: PresenteAoVivo[];
+  /** O estado da sessão já chegou do servidor. */
+  carregado: boolean;
 }
 
 /** QR Code rotativo (P7): projetado para a turma, com o tempo até o próximo código. */
-export function ChamadaQrCode({ chamada, cliente, presentes }: ChamadaQrCodeProps) {
+export function ChamadaQrCode({ chamada, cliente, presentes, carregado }: ChamadaQrCodeProps) {
   const diferenca = useCallback(() => cliente.diferencaRelogioMs, [cliente]);
   const { token, restanteMs, periodoMs, erro } = useCodigoRotativo(chamada.totp, diferenca);
   const desenho = useMemo(() => (token ? desenharQr(conteudoQr(chamada.sessaoId, token)) : null), [chamada.sessaoId, token]);
@@ -74,13 +79,18 @@ export function ChamadaQrCode({ chamada, cliente, presentes }: ChamadaQrCodeProp
           Presentes (ao vivo)
         </h2>
         {presentes.length === 0 ? (
-          <p className="text-sm opacity-70">Os alunos aparecem aqui conforme registram presença pelo código.</p>
+          <p role="status" className="text-sm opacity-70">
+            {carregado
+              ? "Os alunos aparecem aqui conforme registram presença pelo código."
+              : "Carregando os presentes..."}
+          </p>
         ) : (
           <ol className="border-t border-borda-suave">
             {presentes.map((presenca) => (
-              <li key={presenca.alunoId} className="flex gap-3 border-b border-borda-suave py-2">
+              <li key={presenca.alunoId} className="flex items-baseline gap-3 border-b border-borda-suave py-2">
                 <span className="font-mono text-sm opacity-70">{hora.format(presenca.registradoEm)}</span>
-                <span>{presenca.nomeAluno}</span>
+                <span className="min-w-0 flex-1">{presenca.nome}</span>
+                <span className="text-xs opacity-60">{NOME_DA_ORIGEM[presenca.origem]}</span>
               </li>
             ))}
           </ol>
@@ -89,7 +99,7 @@ export function ChamadaQrCode({ chamada, cliente, presentes }: ChamadaQrCodeProp
         <Botao variante="secundario" disabled>
           Trocar para clássica
         </Botao>
-        <p className="-mt-1 text-sm opacity-70">A troca de modo ainda não está disponível.</p>
+        <p className="-mt-1 text-sm opacity-70">A troca de modo ainda não está disponível: depende da #49.</p>
       </aside>
     </div>
   );

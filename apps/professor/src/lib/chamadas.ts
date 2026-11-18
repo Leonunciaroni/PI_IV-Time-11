@@ -1,7 +1,7 @@
-// Chamadas abertas neste navegador. O servidor ainda não devolve o estado de uma sessão aberta
-// (sessao.acompanhar, #30), então é daqui que a tela retoma uma chamada depois de recarregar.
+// Chamadas abertas neste navegador: modo, TOTP e sala, para retomar a tela depois de recarregar.
+// Quem está presente vem do servidor (sessao.acompanhar), não daqui. O sessao.estado não traz o
+// segredo TOTP, então o QR de uma chamada só pode ser retomado no navegador que a abriu.
 
-import type { Marcacoes } from "./presencas";
 import type { SessaoAberta } from "./protocolo";
 
 export interface ChamadaGuardada extends SessaoAberta {
@@ -10,7 +10,6 @@ export interface ChamadaGuardada extends SessaoAberta {
 
 const PREFIXO = "fa.professor.chamada.";
 const DA_TURMA = "fa.professor.chamada-da-turma.";
-const MARCACOES = "fa.professor.marcacoes.";
 const ULTIMA_SALA = "fa.professor.ultima-sala";
 
 // Janela privada ou dados do site bloqueados: o acesso lança, e a tela segue sem guardar nada
@@ -71,25 +70,8 @@ export function chamadaDaTurma(turmaId: string, armazenamento = armazenamentoPad
 export function esquecerChamada(sessaoId: string, armazenamento = armazenamentoPadrao()): void {
   const chamada = lerChamada(sessaoId, armazenamento);
   remover(PREFIXO + sessaoId, armazenamento);
-  remover(MARCACOES + sessaoId, armazenamento);
   if (chamada && ler(DA_TURMA + chamada.turmaId, armazenamento) === sessaoId) {
     remover(DA_TURMA + chamada.turmaId, armazenamento);
-  }
-}
-
-/** Presenças marcadas na chamada clássica, para a lista voltar igual depois de recarregar. */
-export function guardarMarcacoes(sessaoId: string, marcacoes: Marcacoes, armazenamento = armazenamentoPadrao()): void {
-  gravar(MARCACOES + sessaoId, JSON.stringify(marcacoes), armazenamento);
-}
-
-export function lerMarcacoes(sessaoId: string, armazenamento = armazenamentoPadrao()): Marcacoes {
-  const bruto = ler(MARCACOES + sessaoId, armazenamento);
-  if (!bruto) return {};
-  try {
-    const marcacoes = JSON.parse(bruto) as unknown;
-    return marcacoes && typeof marcacoes === "object" ? (marcacoes as Marcacoes) : {};
-  } catch {
-    return {};
   }
 }
 
