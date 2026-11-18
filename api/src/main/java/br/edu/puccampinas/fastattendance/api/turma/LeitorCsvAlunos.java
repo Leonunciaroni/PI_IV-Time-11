@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -24,6 +25,9 @@ public class LeitorCsvAlunos {
 
     /** Limite de linhas por arquivo, para uma importação não prender a API. */
     public static final int MAXIMO_LINHAS = 2000;
+
+    static final String ARQUIVO_ILEGIVEL =
+            "Não foi possível ler o arquivo como CSV. Confira as aspas e o separador.";
 
     /** Uma linha lida do arquivo; {@code numero} é a posição no arquivo, contando o cabeçalho como 1. */
     public record LinhaAluno(int numero, String nome, String email, String matricula) {
@@ -65,8 +69,9 @@ public class LeitorCsvAlunos {
                         valor(registro, colunaMatricula)));
             }
             return linhas;
-        } catch (IOException | IllegalArgumentException e) {
-            throw new RequisicaoInvalidaException("O arquivo não é um CSV válido.");
+        } catch (IOException | UncheckedIOException | IllegalArgumentException e) {
+            // Aspas fora do lugar fazem o parser lançar UncheckedIOException ao ler os registros
+            throw new RequisicaoInvalidaException(ARQUIVO_ILEGIVEL);
         }
     }
 
