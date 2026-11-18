@@ -168,10 +168,13 @@ Números do dashboard de frequência da turma (tela P9). Só entram no cálculo 
 | Frequência da aula | Presentes ÷ alunos matriculados hoje. Quem não tem registro conta como ausente, e a presença desmarcada (`presente: false`) não conta. |
 | Frequência do aluno | Aulas com presença ÷ aulas dadas. |
 | Frequência média | Média dos percentuais das aulas. |
+| Alunos | Todos os matriculados, com qualquer percentual, em ordem alfabética de nome. |
 | Abaixo do mínimo | Aluno com menos de 75% (exatamente 75% não entra), do menor para o maior percentual. |
 | Uso por modo | Número de aulas dadas em cada modo; os três modos sempre aparecem, mesmo com zero. |
 
 Os percentuais têm uma casa decimal. Turma sem aulas ou sem alunos devolve zeros e listas vazias.
+Sem aulas encerradas, cada aluno de `alunos` vem com `aulas: 0` e `percentual: 0.0`: use `aulas`
+(ou `aulasDadas`) igual a zero para mostrar "sem dados" em vez de 0%.
 
 ### `GET /api/turmas/{id}/frequencia/{alunoId}`
 
@@ -213,6 +216,12 @@ O e-mail do aluno não é exposto ao professor.
     { "sessaoId": "66f1d0aa...", "data": "2026-10-19T22:00:00Z", "modo": "QRCODE",
       "presentes": 27, "matriculados": 30, "percentual": 90.0 }
   ],
+  "alunos": [
+    { "alunoId": "66f1b9aa...", "nome": "Ana Souza", "matricula": "24001234",
+      "presencas": 12, "aulas": 12, "percentual": 100.0 },
+    { "alunoId": "66f1b9ff...", "nome": "Bruno Lima", "matricula": "24005678",
+      "presencas": 8, "aulas": 12, "percentual": 66.7 }
+  ],
   "abaixoDoMinimo": [
     { "alunoId": "66f1b9ff...", "nome": "Bruno Lima", "matricula": "24005678",
       "presencas": 8, "aulas": 12, "percentual": 66.7 }
@@ -221,7 +230,8 @@ O e-mail do aluno não é exposto ao professor.
 }
 ```
 
-`aulas` vem em ordem cronológica e `data` é a abertura da aula.
+`aulas` vem em ordem cronológica e `data` é a abertura da aula. `alunos` traz todos os matriculados,
+no mesmo formato de `abaixoDoMinimo`, em ordem alfabética.
 
 ## `HistoricoResponse`
 
