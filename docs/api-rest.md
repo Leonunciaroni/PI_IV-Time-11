@@ -186,7 +186,10 @@ e a matrícula do arquivo precisa ser a cadastrada. Resposta `200`:
 e-mail repetido no arquivo, aluno não cadastrado (inclui e-mail de professor) e matrícula que não
 confere. Uma linha rejeitada não impede as demais. É idempotente: quem já está na turma conta em
 `jaMatriculados`. Arquivo ausente, vazio, sem as colunas ou com mais de 2000 linhas responde `400`;
-turma inexistente ou de outro professor, `404`.
+turma inexistente ou de outro professor, `404`. Um arquivo que não dá para ler como CSV (aspas fora
+do lugar, como em `Ana "Aninha" Souza`, ou um arquivo binário) também responde `400`, com
+`"Não foi possível ler o arquivo como CSV. Confira as aspas e o separador."`. Nenhum aluno do
+arquivo é importado nesse caso.
 
 ### `GET /api/turmas/{id}/estatisticas`
 
