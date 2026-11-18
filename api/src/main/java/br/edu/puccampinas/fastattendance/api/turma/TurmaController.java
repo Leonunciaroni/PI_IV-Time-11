@@ -4,6 +4,7 @@ import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,5 +63,13 @@ public class TurmaController {
                                         @PathVariable String id,
                                         @Valid @RequestBody MatriculaRequest requisicao) {
         return turmas.matricular(professor.id(), id, requisicao);
+    }
+
+    @DeleteMapping("/{id}/matriculas/{alunoId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removerMatricula(@AuthenticationPrincipal UsuarioAutenticado professor,
+                                 @PathVariable String id,
+                                 @PathVariable String alunoId) {
+        turmas.removerMatricula(professor.id(), id, alunoId);
     }
 }
