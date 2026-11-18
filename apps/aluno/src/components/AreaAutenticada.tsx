@@ -3,6 +3,7 @@
 import { use, useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { browser } from "react-dom";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   assinarSessao,
   encerrarSessao,
@@ -50,6 +51,7 @@ export function AreaAutenticada({
             </span>
           </span>
           <div className="flex items-center gap-3 text-sm">
+            <Link href="/perfil" className="font-medium text-[#5040e8] hover:underline">Perfil</Link>
             <span className="hidden sm:inline">{sessao.usuario.nome}</span>
             <button
               onClick={sair}

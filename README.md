@@ -193,6 +193,7 @@ Somente documentos que existem no repositório:
 | [docs/protocolo-v1.md](docs/protocolo-v1.md) | Protocolo WebSocket entre os apps e o servidor de sessão, pela ponte (revisado em 04/11/2026) |
 | [docs/testes-validacao.md](docs/testes-validacao.md) | Testes JUnit das regras e relatório de cobertura |
 | [docs/servidor-modelo-socket.md](docs/servidor-modelo-socket.md) | Servidor de sessão no modelo por sockets e a ponte WebSocket↔TCP |
+| [docs/perfil.md](docs/perfil.md) | Edição de perfil e troca de senha nos dois apps |
 | [docs/api-rest.md](docs/api-rest.md) | Endpoints REST |
 | [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Coleções, índices do MongoDB e observações de LGPD |
 | [docs/arquitetura.md](docs/arquitetura.md) | Diagramas de arquitetura e check-in, imagens para slides e fontes editáveis |
