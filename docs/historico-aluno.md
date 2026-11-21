@@ -15,8 +15,13 @@ matrículas, mostra um estado vazio. Um id de turma que não está na lista do a
 da consulta do histórico. Erros têm botão para tentar novamente; `401` encerra a sessão local e
 leva ao login. Pedidos pendentes são cancelados ao mudar a turma ou sair da rota.
 
-O visual segue o cadastro docente e A2: roxo, azul escuro e fundo claro. A tabela se adapta ao
-celular, mantém cabeçalhos semânticos e não exige rolagem horizontal a 390 px.
+O resumo fica num bloco roxo, a cor da logo do aluno. Abaixo do mínimo, o bloco fica laranja e
+mostra o aviso “Cuidado: sua frequência está abaixo do mínimo de 75%.” em vermelho. Em dia, o bloco
+continua roxo e mostra o selo “Frequência em dia (mínimo de 75%).” em verde. Sem aulas encerradas,
+não há selo. Os textos dizem o mesmo que as cores.
+
+O visual segue o do app do professor, com tema claro e escuro. A tabela se adapta ao celular,
+mantém cabeçalhos semânticos e não exige rolagem horizontal a 390 px.
 
 ## Validação
 
