@@ -215,7 +215,8 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
                       >
                         <div
                           style={{ width: `${turma.percentual}%` }}
-                          className={`h-full rounded-full ${turma.abaixoDoMinimo ? "bg-amber-500" : "bg-marca"}`}
+                          // Laranja abaixo do mínimo e verde em dia; sem aulas encerradas a barra fica vazia
+                          className={`h-full rounded-full ${turma.abaixoDoMinimo ? "bg-amber-500" : "bg-emerald-600"}`}
                         />
                       </div>
                       <p

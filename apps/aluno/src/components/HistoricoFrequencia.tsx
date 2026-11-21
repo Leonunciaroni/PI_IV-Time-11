@@ -218,14 +218,14 @@ function DetalhesHistorico({
   const aulas = [...dados.aulas].sort(
     (a, b) => Date.parse(b.data) - Date.parse(a.data),
   );
-  // Vermelho quando a frequência está abaixo do mínimo; o aviso em texto abaixo diz o mesmo.
-  // O tom de vermelho é o mais claro em que o rosa claro e o amarelo do aviso ainda passam de 4,5:1.
-  const textoSuave = dados.abaixoDoMinimo ? "text-red-100" : "text-violet-200";
+  // Abaixo do mínimo, o bloco fica no mesmo laranja da barra de frequência do início; sobre o
+  // laranja, o texto é marrom escuro para ter contraste. O aviso em texto diz o mesmo que a cor.
+  const textoSuave = dados.abaixoDoMinimo ? "text-amber-950/80" : "text-violet-200";
   return (
     <>
       <section
         aria-label="Resumo de frequência"
-        className={`mb-6 rounded-2xl p-6 text-white sm:p-8 ${dados.abaixoDoMinimo ? "bg-[#cf0a0a]" : "bg-[#3b2db5]"}`}
+        className={`mb-6 rounded-2xl p-6 sm:p-8 ${dados.abaixoDoMinimo ? "bg-amber-500 text-amber-950" : "bg-[#3b2db5] text-white"}`}
       >
         <p className={`text-sm ${textoSuave}`}>{turma.nome}</p>
         <h2 className="mt-1 text-xl font-semibold sm:text-2xl">
@@ -252,8 +252,16 @@ function DetalhesHistorico({
           </dl>
         </div>
         {dados.abaixoDoMinimo && (
-          <p className="mt-5 text-sm text-amber-200">
-            Sua frequência está abaixo do mínimo de {dados.minimo}%.
+          // Selo claro com texto vermelho: vermelho direto sobre o laranja não teria contraste
+          <p className="mt-5 inline-block rounded-lg bg-white px-3 py-2 text-sm text-red-700 shadow-sm">
+            <strong className="font-bold">Cuidado:</strong> sua frequência está abaixo do mínimo de{" "}
+            {dados.minimo}%.
+          </p>
+        )}
+        {!dados.abaixoDoMinimo && dados.aulasDadas > 0 && (
+          // Mesmo formato do aviso de cuidado, em verde; sem aulas encerradas não há o que dizer
+          <p className="mt-5 inline-block rounded-lg bg-white px-3 py-2 text-sm text-emerald-700 shadow-sm">
+            <strong className="font-bold">Frequência em dia</strong> (mínimo de {dados.minimo}%).
           </p>
         )}
       </section>
