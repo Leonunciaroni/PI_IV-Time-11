@@ -4,12 +4,7 @@ import { use, useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { browser } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  assinarSessao,
-  encerrarSessao,
-  lerSessao,
-  type Sessao,
-} from "@/lib/sessao";
+import { assinarSessao, lerSessao, type Sessao } from "@/lib/sessao";
 import { SimboloLogo } from "./ui/Logo";
 
 /** Renderiza o conteúdo apenas com sessão válida; caso contrário, envia para o login. */
@@ -26,12 +21,8 @@ export function AreaAutenticada({
     if (!sessao) router.replace("/login");
   }, [sessao, router]);
 
+  // Sair fica no perfil (Perfil.tsx); a mudança de sessão faz o efeito acima redirecionar
   if (!sessao) return null;
-
-  // A mudança de sessão faz o efeito acima redirecionar para o login
-  function sair() {
-    encerrarSessao();
-  }
 
   return (
     <div className="flex flex-1 flex-col bg-background text-foreground">
@@ -46,16 +37,15 @@ export function AreaAutenticada({
               </span>
             </span>
           </Link>
-          <div className="flex items-center gap-3 text-sm">
-            <Link href="/perfil" className="font-medium text-marca hover:underline">Perfil</Link>
-            <span className="hidden sm:inline">{sessao.usuario.nome}</span>
-            <button
-              onClick={sair}
-              className="rounded-lg border border-borda px-4 py-2 font-medium hover:bg-superficie-suave focus-visible:outline-2 focus-visible:outline-marca"
-            >
-              Sair
-            </button>
-          </div>
+          {/* O nome leva ao perfil, onde fica o botão de sair; no celular ele também aparece,
+              porque é o único caminho até lá */}
+          <Link
+            href="/perfil"
+            aria-label={`${sessao.usuario.nome}, meu perfil`}
+            className="max-w-40 truncate rounded text-sm font-medium transition-colors hover:text-marca focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca sm:max-w-none"
+          >
+            {sessao.usuario.nome}
+          </Link>
         </div>
       </header>
       {children(sessao)}

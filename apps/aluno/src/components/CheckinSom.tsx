@@ -115,11 +115,11 @@ export function CheckinSom({ turma, token }: { turma: TurmaDoAluno; token: strin
     sucesso: "Presença confirmada",
   };
   return (
-    <section aria-label="Check-in por som" className="mt-6 rounded-2xl border border-borda bg-superficie p-5 sm:p-7">
+    <section aria-label="Check-in por som" className="mt-6 rounded-xl border border-borda bg-superficie p-5 sm:p-7">
       <h1 className="text-2xl font-bold">{etapa === "sucesso" ? "Presença confirmada" : "Confirmar presença por som"}</h1>
-      <p className="mt-2 text-sm text-suave">{turma.disciplina} · {turma.nome}</p>
+      <p className="mt-2 text-sm text-suave">{turma.disciplina} ({turma.nome})</p>
       {resultado && etapa === "sucesso" ? (
-        <div role="status" className="mt-6 rounded-xl border border-sucesso-borda bg-sucesso-fundo p-5 text-sucesso-texto">
+        <div role="status" className="mt-6 rounded-lg border border-sucesso-borda bg-sucesso-fundo p-5 text-sucesso-texto">
           <p className="font-semibold">Sua presença foi registrada por som.</p>
           <p className="mt-2 text-sm">Confirmada pelo servidor em {new Date(resultado.registradoEm).toLocaleString("pt-BR")}.</p>
         </div>
@@ -132,11 +132,11 @@ export function CheckinSom({ turma, token }: { turma: TurmaDoAluno; token: strin
             <p role="status" className="mt-4 font-semibold">{texto[etapa]}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">Mantenha o aparelho desbloqueado e esta tela aberta, próximo ao som do professor.</p>
           </div>
-          {falha && <div role="alert" className="mt-5 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm leading-relaxed text-perigo-texto">
+          {falha && <div role="alert" className="mt-5 rounded-lg border border-perigo-borda bg-perigo-fundo p-4 text-sm leading-relaxed text-perigo-texto">
             <p className="font-semibold">{falha.codigo === "PRESENCA_DUPLICADA" ? "Presença já registrada" : "Não foi possível confirmar"}</p>
             <p className="mt-1">{falha.mensagem}</p>
           </div>}
-          {falhaLeitor && <div role="alert" className="mt-5 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto">
+          {falhaLeitor && <div role="alert" className="mt-5 rounded-lg border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto">
             <p>Não foi possível carregar o leitor de som. Verifique sua conexão e recarregue a página.</p>
             <button type="button" onClick={() => window.location.reload()} className={`${botao} mt-3`}>Recarregar página</button>
           </div>}

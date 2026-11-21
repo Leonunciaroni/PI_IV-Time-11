@@ -51,7 +51,8 @@
   --color-atencao-fundo: var(--atencao-fundo);
   --color-atencao-borda: var(--atencao-borda);
   --color-atencao-texto: var(--atencao-texto);
-  --font-sans: var(--font-geist-sans);
+  /* Algarismos da Geist; o resto vem da Atkinson Hyperlegible Next (as duas em layout.tsx) */
+  --font-sans: var(--font-digitos), var(--font-atkinson);
   --font-mono: var(--font-geist-mono);
 }
 

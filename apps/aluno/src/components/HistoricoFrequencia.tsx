@@ -73,20 +73,14 @@ function HistoricoDoAluno({
         ← Voltar ao início
       </Link>
       <header className="mb-8 mt-6">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-marca">
-          Sua jornada em sala
-        </p>
         <h1 className="text-3xl font-bold tracking-tight">
           Histórico de frequência
         </h1>
-        <p className="mt-2 text-sm text-suave">
-          Consulte suas presenças e o modo de chamada de cada aula.
-        </p>
       </header>
       {erro ? (
         <div
           role="alert"
-          className="rounded-xl border border-perigo-borda bg-perigo-fundo p-5 text-sm text-perigo-texto"
+          className="rounded-lg border border-perigo-borda bg-perigo-fundo p-5 text-sm text-perigo-texto"
         >
           <p>{erro}</p>
           <button
@@ -109,7 +103,7 @@ function HistoricoDoAluno({
           Carregando suas turmas...
         </p>
       ) : turmas.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-borda-forte bg-superficie p-8 text-center">
+        <div className="rounded-xl border border-dashed border-borda-forte bg-superficie p-8 text-center">
           <h2 className="font-semibold">
             Você ainda não está em nenhuma turma
           </h2>
@@ -143,7 +137,7 @@ function HistoricoDoAluno({
             )}
             {turmas.map((turma) => (
               <option key={turma.id} value={turma.id}>
-                {turma.disciplina} · {turma.nome}
+                {turma.disciplina} ({turma.nome})
               </option>
             ))}
           </select>
@@ -157,7 +151,7 @@ function HistoricoDoAluno({
           ) : (
             <p
               role="alert"
-              className="rounded-xl border border-atencao-borda bg-atencao-fundo p-5 text-sm text-atencao-texto"
+              className="rounded-lg border border-atencao-borda bg-atencao-fundo p-5 text-sm text-atencao-texto"
             >
               Esta turma não está disponível para sua conta. Escolha uma das
               suas turmas acima.
@@ -196,7 +190,7 @@ function DetalhesHistorico({
     return (
       <div
         role="alert"
-        className="rounded-xl border border-perigo-borda bg-perigo-fundo p-5 text-sm text-perigo-texto"
+        className="rounded-lg border border-perigo-borda bg-perigo-fundo p-5 text-sm text-perigo-texto"
       >
         <p>{erro}</p>
         <button
@@ -264,7 +258,7 @@ function DetalhesHistorico({
         )}
       </section>
       {!aulas.length ? (
-        <section className="rounded-2xl border border-borda bg-superficie p-8 text-center">
+        <section className="rounded-xl border border-borda bg-superficie p-8 text-center">
           <h2 className="font-semibold">Nenhuma aula encerrada nesta turma</h2>
           <p className="mt-2 text-sm text-suave">
             As presenças aparecerão após o encerramento da primeira chamada.
@@ -273,14 +267,16 @@ function DetalhesHistorico({
       ) : (
         <section
           aria-labelledby="titulo-aulas"
-          className="overflow-hidden rounded-2xl border border-borda bg-superficie"
+          className="overflow-hidden rounded-xl border border-borda bg-superficie"
         >
-          <h2
-            id="titulo-aulas"
-            className="border-b border-borda px-5 py-4 text-lg font-semibold"
-          >
-            Aulas da turma
-          </h2>
+          <div className="border-b border-borda px-5 py-4">
+            <h2 id="titulo-aulas" className="text-lg font-semibold">
+              Aulas da turma
+            </h2>
+            <p className="mt-1 text-sm text-suave">
+              Sem registro de presença, a aula conta como ausência.
+            </p>
+          </div>
           <table className="w-full table-fixed text-left text-sm">
             <caption className="sr-only">
               Todas as aulas encerradas, da mais recente para a mais antiga, com
@@ -329,10 +325,6 @@ function DetalhesHistorico({
           </table>
         </section>
       )}
-      <p className="mt-6 text-center text-xs leading-relaxed text-suave">
-        A frequência considera somente aulas encerradas. Sem registro de
-        presença, a aula conta como ausência.
-      </p>
     </>
   );
 }

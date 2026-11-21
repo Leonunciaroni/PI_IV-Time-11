@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AreaAutenticada } from "./AreaAutenticada";
 import { editarPerfil, ErroPerfil, validarSenha, type AlteracaoPerfil } from "@/lib/perfil";
-import { atualizarUsuario, type Sessao } from "@/lib/sessao";
+import { atualizarUsuario, encerrarSessao, type Sessao } from "@/lib/sessao";
 
 const campo = "mt-2 w-full min-w-0 rounded-lg border border-borda bg-superficie-suave px-3 py-3 text-base text-foreground outline-none focus:border-marca focus:ring-2 focus:ring-marca/20";
 const botao = "min-h-11 rounded-lg bg-[#3b2db5] px-5 py-3 text-sm font-semibold text-white hover:bg-[#2f2491] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca disabled:opacity-50";
@@ -98,11 +98,21 @@ function FormularioPerfil({ sessao }: { sessao: Sessao }) {
     <main className="w-full flex-1 bg-background px-5 py-8 text-foreground sm:px-10">
       <div className="mx-auto max-w-2xl">
         <Link href="/" className="text-sm font-semibold text-marca hover:underline">← Voltar ao início</Link>
-        <h1 className="mt-6 text-3xl font-bold tracking-tight">Meu perfil</h1>
-        <p className="mt-2 text-sm text-suave">Atualize seus dados e mantenha sua conta segura.</p>
-        <p role="alert" className={erro ? "mt-5 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto" : "sr-only"}>{erro}</p>
-        <p role="status" className={sucesso ? "mt-5 rounded-xl border border-sucesso-borda bg-sucesso-fundo p-4 text-sm text-sucesso-texto" : "sr-only"}>{sucesso}</p>
-        <form onSubmit={salvarDados} aria-busy={enviando} className="mt-6 rounded-2xl border border-borda bg-superficie p-5 sm:p-7">
+        {/* Sair fica só aqui, e não no cabeçalho, para ninguém sair da conta sem querer */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Meu perfil</h1>
+          {/* A mudança de sessão faz a área autenticada redirecionar para o login */}
+          <button
+            type="button"
+            onClick={() => encerrarSessao()}
+            className="min-h-11 rounded-lg border border-borda-forte bg-superficie px-4 py-2 text-sm font-medium hover:bg-superficie-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca"
+          >
+            Sair da conta
+          </button>
+        </div>
+        <p role="alert" className={erro ? "mt-5 rounded-lg border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto" : "sr-only"}>{erro}</p>
+        <p role="status" className={sucesso ? "mt-5 rounded-lg border border-sucesso-borda bg-sucesso-fundo p-4 text-sm text-sucesso-texto" : "sr-only"}>{sucesso}</p>
+        <form onSubmit={salvarDados} aria-busy={enviando} className="mt-6 rounded-xl border border-borda bg-superficie p-5 sm:p-7">
           <fieldset disabled={enviando} className="min-w-0 space-y-5">
             <legend className="mb-5 text-lg font-semibold">Dados pessoais</legend>
             <div className="text-sm font-medium"><label htmlFor="perfil-nome">Nome completo</label>
@@ -117,7 +127,7 @@ function FormularioPerfil({ sessao }: { sessao: Sessao }) {
             <button type="submit" className={botao}>{enviando ? "Salvando..." : "Salvar alterações"}</button>
           </fieldset>
         </form>
-        <form ref={senha} onSubmit={salvarSenha} aria-busy={enviando} className="mt-6 rounded-2xl border border-borda bg-superficie p-5 sm:p-7">
+        <form ref={senha} onSubmit={salvarSenha} aria-busy={enviando} className="mt-6 rounded-xl border border-borda bg-superficie p-5 sm:p-7">
           <fieldset disabled={enviando} className="min-w-0 space-y-5">
             <legend className="mb-5 text-lg font-semibold">Alterar senha</legend>
             <div className="text-sm font-medium"><label htmlFor="perfil-senha-atual">Senha atual</label>

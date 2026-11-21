@@ -86,7 +86,7 @@ function CanalDaChamada({
       ) : turma?.chamadaAberta?.modo === "SOM" ? (
         <CheckinSom turma={turma} token={token} />
       ) : (
-        <section className="mt-6 rounded-2xl border border-borda bg-superficie p-6">
+        <section className="mt-6 rounded-xl border border-borda bg-superficie p-6">
           <h1 className="text-2xl font-bold">Confirmar presença</h1>
           {erro ? (
             <p role="alert" className="mt-4 text-sm text-perigo-texto">

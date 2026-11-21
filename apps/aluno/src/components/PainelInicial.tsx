@@ -23,9 +23,6 @@ export function PainelInicial() {
 function InicioDoAluno({ sessao }: { sessao: Sessao }) {
   const [turmas, setTurmas] = useState<TurmaDoAluno[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [versao, setVersao] = useState(0);
-  const [atualizando, setAtualizando] = useState(false);
-  const [atualizadoEm, setAtualizadoEm] = useState<string | null>(null);
 
   useEffect(() => {
     const controle = new AbortController();
@@ -41,12 +38,6 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
         if (controle.signal.aborted) return;
         setTurmas(resposta);
         setErro(null);
-        setAtualizadoEm(
-          new Date().toLocaleTimeString("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        );
       } catch (e) {
         if (controle.signal.aborted) return;
         if (e instanceof ErroApi && e.status === 401) {
@@ -60,7 +51,6 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
         );
       } finally {
         buscando = false;
-        if (!controle.signal.aborted) setAtualizando(false);
       }
     }
     void carregar();
@@ -71,54 +61,28 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
       window.clearInterval(intervalo);
       document.removeEventListener("visibilitychange", carregar);
     };
-  }, [sessao.token, versao]);
+  }, [sessao.token]);
 
   const abertas = turmas?.filter((turma) => turma.chamadaAberta) ?? [];
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-10 sm:py-10">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-marca">
-            Seu espaço de aprendizagem
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Olá, {sessao.usuario.nome.split(" ")[0]}!
-          </h1>
-          <p className="mt-2 text-sm text-suave">
-            Acompanhe suas turmas e fique por dentro das chamadas.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-suave">
-            {atualizadoEm && `Atualizado às ${atualizadoEm}`}
-          </span>
-          <button
-            type="button"
-            className="rounded-lg border border-borda bg-superficie px-4 py-2.5 text-sm font-medium hover:bg-superficie-suave disabled:opacity-50"
-            disabled={atualizando}
-            onClick={() => {
-              setAtualizando(true);
-              setVersao((valor) => valor + 1);
-            }}
-          >
-            {atualizando ? "Atualizando..." : "Atualizar"}
-          </button>
-        </div>
-      </div>
+      <h1 className="mb-8 text-3xl font-bold tracking-tight">
+        Chamadas e frequência
+      </h1>
       {erro && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto"
+          className="mb-6 rounded-lg border border-perigo-borda bg-perigo-fundo p-4 text-sm text-perigo-texto"
         >
           {erro}{" "}
           {turmas &&
-            "Os dados abaixo são da última atualização. Atualize antes de confirmar presença."}
+            "Os dados abaixo são da última atualização. A página tenta de novo a cada 20 segundos."}
         </div>
       )}
       {!turmas && !erro && (
         <p
           role="status"
-          className="rounded-2xl border border-borda bg-superficie p-8 text-suave"
+          className="rounded-xl border border-borda bg-superficie p-8 text-suave"
         >
           Carregando suas turmas e chamadas...
         </p>
@@ -177,7 +141,7 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
                       ) : (
                         <p className="mt-4 text-sm leading-relaxed text-violet-200">
                           {erro
-                            ? "Atualize os dados para verificar esta chamada."
+                            ? "Aguarde a próxima atualização para verificar esta chamada."
                             : "A presença será registrada pelo professor. Aguarde a chamada do seu nome."}
                         </p>
                       )}
@@ -188,16 +152,16 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
             )}
           </section>
           <section aria-labelledby="titulo-turmas">
-            <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="mb-5 flex items-baseline justify-between gap-3">
               <h2 id="titulo-turmas" className="text-xl font-bold">
                 Minhas turmas
               </h2>
-              <span className="rounded-full bg-marca/10 px-3 py-1 text-xs font-semibold text-marca">
+              <span className="text-sm text-suave">
                 {turmas.length} {turmas.length === 1 ? "turma" : "turmas"}
               </span>
             </div>
             {turmas.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-borda-forte bg-superficie p-8 text-center">
+              <div className="rounded-xl border border-dashed border-borda-forte bg-superficie p-8 text-center">
                 <h3 className="font-semibold">
                   Você ainda não está em nenhuma turma
                 </h3>
@@ -206,32 +170,26 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-5 md:grid-cols-2">
+              // Uma turma por linha, com espaço entre elas: no desktop, a frequência ocupa a coluna da
+              // direita e o link fica embaixo dos dados da turma, sem mudar a ordem de leitura.
+              <div className="flex flex-col gap-3">
                 {turmas.map((turma) => (
                   <article
                     key={turma.id}
-                    className="rounded-2xl border border-borda bg-superficie p-6"
+                    className="grid gap-x-10 rounded-xl border border-borda bg-superficie p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] sm:px-6"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-medium text-marca">
-                          {turma.nome}
-                        </p>
-                        <h3 className="mt-1 text-lg font-semibold">
-                          {turma.disciplina}
-                        </h3>
-                        <p className="mt-2 text-sm text-suave">
-                          {turma.horarioPadrao || "Horário não informado"}
-                        </p>
-                      </div>
-                      <span
-                        aria-hidden="true"
-                        className="rounded-xl bg-marca/10 p-3 text-marca"
-                      >
-                        ▤
-                      </span>
+                    <div>
+                      <p className="text-sm font-semibold text-marca">
+                        {turma.nome}
+                      </p>
+                      <h3 className="mt-1 text-xl font-semibold">
+                        {turma.disciplina}
+                      </h3>
+                      <p className="mt-1 text-sm text-suave">
+                        {turma.horarioPadrao || "Horário não informado"}
+                      </p>
                     </div>
-                    <div className="mt-6 border-t border-borda pt-5">
+                    <div className="mt-4 sm:row-span-2 sm:mt-0 sm:self-center">
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="text-sm text-suave">
                           Sua frequência
@@ -270,7 +228,7 @@ function InicioDoAluno({ sessao }: { sessao: Sessao }) {
                     </div>
                     <Link
                       href={`/historico?turmaId=${encodeURIComponent(turma.id)}`}
-                      className="mt-5 inline-flex text-sm font-semibold text-marca hover:underline"
+                      className="mt-4 justify-self-start text-sm font-semibold text-marca hover:underline sm:mt-3"
                     >
                       Ver histórico
                     </Link>

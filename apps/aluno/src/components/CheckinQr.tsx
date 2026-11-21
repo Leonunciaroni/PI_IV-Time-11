@@ -161,19 +161,19 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
   const podeTentar = !semNovaTentativa.has(falha?.codigo ?? "");
   return (
     <section
-      className="mt-6 rounded-2xl border border-borda bg-superficie p-5 sm:p-7"
+      className="mt-6 rounded-xl border border-borda bg-superficie p-5 sm:p-7"
       aria-label="Leitura do QR Code"
     >
       <h1 className="text-2xl font-bold">
         {etapa === "sucesso" ? "Presença confirmada" : "Confirmar presença"}
       </h1>
       <p className="mt-2 text-sm text-suave">
-        {turma.disciplina} · {turma.nome}
+        {turma.disciplina} ({turma.nome})
       </p>
       {etapa === "sucesso" && resultado ? (
         <div
           role="status"
-          className="mt-6 rounded-xl border border-sucesso-borda bg-sucesso-fundo p-5 text-sucesso-texto"
+          className="mt-6 rounded-lg border border-sucesso-borda bg-sucesso-fundo p-5 text-sucesso-texto"
         >
           <p className="font-semibold">
             Sua presença foi registrada por QR Code.
@@ -210,7 +210,7 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
           {falha && (
             <div
               role="alert"
-              className="mt-5 rounded-xl border border-perigo-borda bg-perigo-fundo p-4 text-sm leading-relaxed text-perigo-texto"
+              className="mt-5 rounded-lg border border-perigo-borda bg-perigo-fundo p-4 text-sm leading-relaxed text-perigo-texto"
             >
               <p className="font-semibold">
                 {falha.codigo === "PRESENCA_DUPLICADA"
@@ -231,7 +231,7 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
           </p>
           {precisao !== null && !falha && (
             <p className="mt-2 text-xs text-suave">
-              Localização obtida · precisão aproximada de {Math.round(precisao)}{" "}
+              Localização obtida, com precisão aproximada de {Math.round(precisao)}{" "}
               m.
             </p>
           )}
