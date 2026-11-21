@@ -48,7 +48,7 @@ bateria, acesso à rede e legibilidade do QR antes de iniciar o cronômetro.
 |---|---|---|
 | 00:00–00:40 | Leonardo / Guilherme e Lucas | Apresentar o problema da chamada manual. Entrar no professor (P1 → P2) e na Ana (A1 → A2). Mostrar a turma e a frequência. |
 | 00:40–02:00 | Leonardo / Guilherme | Abrir a turma e uma chamada **Clássica** (P3 → P5 → P6). Marcar todos e desmarcar Bruno, deixando Ana presente. Mostrar a contagem e encerrar. |
-| 02:00–04:00 | João Pedro / Guilherme e Lucas | Abrir **QR Code**, selecionar a sala (P5 → P7). Na Ana, atualizar o início e escolher Confirmar presença (A2 → A3). Liberar localização e câmera, ler o QR e mostrar A3b com confirmação e horário. O professor confere Ana no painel. |
+| 02:00–04:00 | João Pedro / Guilherme e Lucas | Abrir **QR Code**, selecionar a sala (P5 → P7). Na Ana, recarregar o início (ou esperar a atualização automática, em até 20 s) e escolher Confirmar presença (A2 → A3). Liberar localização e câmera, ler o QR e mostrar A3b com confirmação e horário. O professor confere Ana no painel. |
 | 04:00–04:40 | João Pedro / Lucas e Guilherme | Tentar novamente a mesma presença e mostrar a recusa de duplicidade, sem aumentar o contador. Explicar matrícula, token, raio e dispositivo. Encerrar a chamada. |
 | 04:40–05:50 | João Pedro / Guilherme e Lucas | **Bloco condicionado ao modem:** abrir Som (P8), tocar Iniciar emissão; na Ana iniciar escuta (A3), captar e conferir confirmação e painel. Encerrar. Se a dependência estiver pendente, usar a fala e o plano B abaixo. |
 | 05:50–07:10 | Leonardo / Lucas e Guilherme | Abrir o histórico do aluno (A4), conferir cada aula, modo e presença. Mostrar o dashboard P9 quando a tela da #43 estiver integrada; conferir percentual e distribuição por modo. |
