@@ -6,7 +6,8 @@ foi ajustado: a área do aluno oferece somente login para contas existentes.
 ## Acesso e separação
 
 - Aluno: `/aluno/login`, sem tela ou link de cadastro.
-- Professor: `/professor/cadastro`, a partir do link na tela de login.
+- Professor: `/professor/cadastro`, acessível só pelo endereço direto. A tela de login não tem
+  mais link para o cadastro, porque a conta do professor vem da instituição.
 - O app do professor envia o papel fixo `PROFESSOR` para `POST /api/auth/registro`.
 - O cadastro do professor depende da lista `PROFESSORES_PERMITIDOS`,
   validada pela API. Ela aceita e-mails completos ou domínios iniciados por `@`; vazia,

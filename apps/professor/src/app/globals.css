@@ -63,7 +63,8 @@
   --color-realce: var(--realce);
   --radius-controle: var(--raio-controle);
   --radius-cartao: var(--raio-cartao);
-  --font-sans: var(--font-geist-sans);
+  /* Algarismos da Geist; as letras vêm da Atkinson Hyperlegible Next (as duas em layout.tsx) */
+  --font-sans: var(--font-digitos), var(--font-atkinson);
   --font-mono: var(--font-geist-mono);
 }
 

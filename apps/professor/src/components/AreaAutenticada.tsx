@@ -4,8 +4,8 @@ import { use, useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { browser } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { assinarSessao, encerrarSessao, lerSessao, type Sessao } from "@/lib/sessao";
-import { alvoDeToque, botaoSecundario } from "./ui/estilos";
+import { assinarSessao, lerSessao, type Sessao } from "@/lib/sessao";
+import { alvoDeToque } from "./ui/estilos";
 import { Logo } from "./ui/Logo";
 
 /** Renderiza o conteúdo apenas com sessão válida; caso contrário, envia para o login. */
@@ -18,12 +18,8 @@ export function AreaAutenticada({ children }: { children: (sessao: Sessao) => Re
     if (!sessao) router.replace("/login");
   }, [sessao, router]);
 
+  // Sair fica no perfil (Perfil.tsx); a mudança de sessão faz o efeito acima redirecionar
   if (!sessao) return null;
-
-  // A mudança de sessão faz o efeito acima redirecionar para o login
-  function sair() {
-    encerrarSessao();
-  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -32,17 +28,18 @@ export function AreaAutenticada({ children }: { children: (sessao: Sessao) => Re
           <Logo />
         </Link>
         <div className="flex items-center gap-3 text-sm whitespace-nowrap">
-          <Link href="/perfil" className={`${alvoDeToque} text-base font-medium underline-offset-4 transition hover:text-link-hover hover:underline max-sm:px-1`}>
-            Perfil
-          </Link>
           <Link href="/salas" className={`${alvoDeToque} text-base font-medium underline-offset-4 transition hover:text-link-hover hover:underline max-sm:px-1`}>
             Salas
           </Link>
-          {/* Em telas estreitas o nome sai, para o cabeçalho caber numa linha */}
-          <span className="hidden sm:inline">{sessao.usuario.nome}</span>
-          <button onClick={sair} className={`${botaoSecundario} px-3 py-1`}>
-            Sair
-          </button>
+          {/* O nome leva ao perfil, onde fica o botão de sair; no celular ele também aparece,
+              porque é o único caminho até lá */}
+          <Link
+            href="/perfil"
+            aria-label={`${sessao.usuario.nome}, meu perfil`}
+            className={`${alvoDeToque} max-w-40 truncate rounded text-base font-medium transition-colors hover:text-primaria-texto max-sm:px-1 sm:max-w-none`}
+          >
+            {sessao.usuario.nome}
+          </Link>
         </div>
       </header>
       {children(sessao)}

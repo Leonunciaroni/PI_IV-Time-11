@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { FormularioLogin } from "@/components/FormularioLogin";
 import { Logo } from "@/components/ui/Logo";
@@ -23,13 +22,8 @@ export default function PaginaLogin() {
           <FormularioLogin />
         </Suspense>
 
-        <p className="text-center text-sm">
-          Não tem uma conta?{" "}
-          <Link href="/cadastro" className="font-semibold text-blue-600 underline dark:text-blue-400">
-            Cadastre-se como professor
-          </Link>
-        </p>
-
+        {/* Sem link para /cadastro: a conta do professor vem da instituição. A tela continua
+            no app, acessível só pelo endereço direto. */}
         <p className="text-center text-sm text-suave">
           É aluno?{" "}
           <a href="/aluno" className="underline">
