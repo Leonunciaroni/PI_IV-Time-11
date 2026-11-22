@@ -9,7 +9,7 @@ import {
   type EntradaAoVivo,
   type PresenteAoVivo,
 } from "./presencas";
-import type { PresencaAtualizada, SessaoEstado } from "./protocolo";
+import type { ModoChamada, PresencaAtualizada, SessaoEstado, SessaoModoAlterado } from "./protocolo";
 import { ErroSessao, type ClienteSessao, type EstadoConexao } from "./ws";
 
 /** O pedaço do ClienteSessao que o acompanhamento usa; nos testes, um cliente simulado. */
@@ -26,6 +26,13 @@ export interface SituacaoAoVivo {
   /** Mensagem quando o servidor responde que a sessão foi encerrada ou não existe. */
   encerrada: string | null;
   erro: string | null;
+  /** Modo segundo o servidor (estado e sessao.modo_alterado); null até chegar o primeiro. */
+  modo: ModoChamada | null;
+  /**
+   * Sala segundo a última troca de modo recebida; undefined quando não houve troca nesta tela (o
+   * sessao.estado não traz a sala), null quando a sessão ficou sem sala.
+   */
+  salaId: string | null | undefined;
 }
 
 const SESSAO_ACABOU = new Set(["SESSAO_ENCERRADA", "SESSAO_NAO_ENCONTRADA"]);
@@ -36,6 +43,15 @@ export class AcompanhamentoSessao {
   private erro: string | null = null;
   /** Muda a cada pedido e a cada queda: resposta de pedido antigo ou de conexão que caiu é ignorada. */
   private geracao = 0;
+  private modo: ModoChamada | null = null;
+  private salaId: string | null | undefined = undefined;
+  /**
+   * Troca de modo recebida enquanto um sessao.acompanhar espera resposta. O servidor inscreve antes
+   * de ler o estado, então a troca pode chegar antes de um estado que ainda traz o modo antigo: ela é
+   * reaplicada sobre o estado, como os eventos de presença (juntarPresencasAoVivo).
+   */
+  private trocaDesdeOPedido: SessaoModoAlterado | null = null;
+  private pedidoPendente = false;
   private foto: SituacaoAoVivo;
   private readonly ouvintes = new Set<() => void>();
 
@@ -64,11 +80,15 @@ export class AcompanhamentoSessao {
     const pararEventos = this.cliente.aoEvento<PresencaAtualizada>("presenca.atualizada", (presenca) =>
       this.registrar(presenca),
     );
+    const pararTrocas = this.cliente.aoEvento<SessaoModoAlterado>("sessao.modo_alterado", (troca) =>
+      this.registrarTroca(troca),
+    );
     const pararConexao = this.cliente.aoMudarEstado((estado) => this.aoMudarConexao(estado));
     if (this.cliente.estado === "pronto") void this.acompanhar();
     return () => {
       this.geracao++;
       pararEventos();
+      pararTrocas();
       pararConexao();
     };
   }
@@ -77,6 +97,15 @@ export class AcompanhamentoSessao {
   registrar(presenca: PresencaAtualizada): void {
     if (presenca.sessaoId !== this.sessaoId) return;
     this.juntar({ tipo: "evento", evento: presenca });
+  }
+
+  /** Evento sessao.modo_alterado, ou a resposta de sessao.trocar_modo, que tem os mesmos campos. */
+  registrarTroca(troca: SessaoModoAlterado): void {
+    if (troca.sessaoId !== this.sessaoId) return;
+    this.modo = troca.modo;
+    this.salaId = troca.salaId;
+    if (this.pedidoPendente) this.trocaDesdeOPedido = troca;
+    this.notificar();
   }
 
   /** Pede o estado de novo (ex.: depois de um lote); resolve quando ele chega ou o pedido falha. */
@@ -92,14 +121,24 @@ export class AcompanhamentoSessao {
 
   private async acompanhar(): Promise<void> {
     const geracao = ++this.geracao;
+    this.pedidoPendente = true;
+    this.trocaDesdeOPedido = null;
     this.juntar({ tipo: "pedido" });
     try {
       const estado = await this.cliente.requisitar<SessaoEstado>("sessao.acompanhar", { sessaoId: this.sessaoId });
       if (geracao !== this.geracao || estado.sessaoId !== this.sessaoId) return;
       this.erro = null;
+      // Uma troca chegada durante o pedido é mais nova que o modo lido pelo servidor, ou igual a ele.
+      // O campo pode ter mudado durante o await (registrarTroca), por isso a leitura explícita.
+      const trocaRecebida = this.trocaDesdeOPedido as SessaoModoAlterado | null;
+      this.modo = trocaRecebida?.modo ?? estado.modo;
+      this.pedidoPendente = false;
+      this.trocaDesdeOPedido = null;
       this.juntar({ tipo: "estado", estado });
     } catch (e) {
       if (geracao !== this.geracao) return;
+      this.pedidoPendente = false;
+      this.trocaDesdeOPedido = null;
       if (e instanceof ErroSessao && SESSAO_ACABOU.has(e.codigo)) this.encerrada = e.message;
       else this.erro = e instanceof ErroSessao ? e.message : "Erro inesperado. Tente novamente.";
       this.notificar();
@@ -126,6 +165,8 @@ export class AcompanhamentoSessao {
       carregado: this.presencas.carregado,
       encerrada: this.encerrada,
       erro: this.erro,
+      modo: this.modo,
+      salaId: this.salaId,
     };
   }
 }

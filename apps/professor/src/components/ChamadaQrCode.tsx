@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import type { ChamadaGuardada } from "@/lib/chamadas";
 import type { PresenteAoVivo } from "@/lib/presencas";
 import { desenharQr } from "@/lib/qr";
@@ -8,7 +8,6 @@ import { conteudoQr } from "@/lib/totp";
 import { useCodigoRotativo } from "@/lib/useCodigoRotativo";
 import type { ClienteSessao } from "@/lib/ws";
 import { PainelAoVivo } from "./PainelAoVivo";
-import { Botao } from "./ui/Botao";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
 
 interface ChamadaQrCodeProps {
@@ -18,10 +17,12 @@ interface ChamadaQrCodeProps {
   presentes: PresenteAoVivo[];
   /** O estado da sessão já chegou do servidor. */
   carregado: boolean;
+  /** Botões "Trocar para…" (#49), embaixo da lista de presentes. */
+  troca?: ReactNode;
 }
 
 /** QR Code rotativo (P7): projetado para a turma, com o tempo até o próximo código. */
-export function ChamadaQrCode({ chamada, cliente, presentes, carregado }: ChamadaQrCodeProps) {
+export function ChamadaQrCode({ chamada, cliente, presentes, carregado, troca }: ChamadaQrCodeProps) {
   const diferenca = useCallback(() => cliente.diferencaRelogioMs, [cliente]);
   const { token, restanteMs, periodoMs, erro } = useCodigoRotativo(chamada.totp, diferenca);
   const desenho = useMemo(() => (token ? desenharQr(conteudoQr(chamada.sessaoId, token)) : null), [chamada.sessaoId, token]);
@@ -69,16 +70,8 @@ export function ChamadaQrCode({ chamada, cliente, presentes, carregado }: Chamad
         <MensagemDeErro>{desenho ? erro : null}</MensagemDeErro>
       </section>
 
-      <PainelAoVivo
-        presentes={presentes}
-        carregado={carregado}
-        vazio="Nenhum aluno registrou presença ainda."
-      >
-        {/* O protocolo v1 ainda não tem troca de modo (#49); encerrar e abrir outra criaria duas aulas */}
-        <Botao variante="secundario" disabled>
-          Trocar para clássica
-        </Botao>
-        <p className="-mt-1 text-sm text-suave">A troca de modo ainda não está disponível: depende da #49.</p>
+      <PainelAoVivo presentes={presentes} carregado={carregado} vazio="Nenhum aluno registrou presença ainda.">
+        {troca}
       </PainelAoVivo>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { AcompanhamentoSessao, type SituacaoAoVivo } from "./acompanhamento";
-import type { PresencaAtualizada } from "./protocolo";
+import type { PresencaAtualizada, SessaoModoAlterado } from "./protocolo";
 import type { ClienteSessao } from "./ws";
 
 export interface AoVivo extends SituacaoAoVivo {
@@ -8,6 +8,8 @@ export interface AoVivo extends SituacaoAoVivo {
   registrar: (presenca: PresencaAtualizada) => void;
   /** Pede o estado de novo; resolve quando ele chega ou o pedido falha. */
   recarregar: () => Promise<void>;
+  /** Aplica a resposta de sessao.trocar_modo, sem esperar o evento (#49). */
+  registrarTroca: (troca: SessaoModoAlterado) => void;
 }
 
 /**
@@ -30,6 +32,7 @@ export function useAcompanharSessao(cliente: ClienteSessao, sessaoId: string): A
       ...situacao,
       registrar: (presenca: PresencaAtualizada) => acompanhamento.registrar(presenca),
       recarregar: () => acompanhamento.recarregar(),
+      registrarTroca: (troca: SessaoModoAlterado) => acompanhamento.registrarTroca(troca),
     }),
     [situacao, acompanhamento],
   );

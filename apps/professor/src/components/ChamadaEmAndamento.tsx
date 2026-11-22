@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { esquecerChamada, lerChamada } from "@/lib/chamadas";
-import type { ModoChamada, SessaoEncerrada } from "@/lib/protocolo";
+import { esquecerChamada, guardarChamada, guardarUltimaSala, lerChamada, type ChamadaGuardada } from "@/lib/chamadas";
+import type { ModoChamada, SessaoEncerrada, SessaoModoAlterado } from "@/lib/protocolo";
 import { useRecurso } from "@/lib/recurso";
 import type { Turma } from "@/lib/tipos";
+import { aplicarModo } from "@/lib/trocaDeModo";
 import { useChamadaClassica } from "@/lib/useChamadaClassica";
 import { useAcompanharSessao } from "@/lib/useAcompanharSessao";
 import { descreverConexao, useClienteSessao } from "@/lib/useClienteSessao";
@@ -15,6 +16,7 @@ import { AreaAutenticada } from "./AreaAutenticada";
 import { ChamadaQrCode } from "./ChamadaQrCode";
 import { ChamadaSom } from "./ChamadaSom";
 import { ListaDeChamada } from "./ListaDeChamada";
+import { TrocaDeModo, type ResultadoDaTroca } from "./TrocaDeModo";
 import { Botao } from "./ui/Botao";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
 import { botaoPrincipal } from "./ui/estilos";
@@ -56,6 +58,49 @@ export function ChamadaEmAndamento() {
     [cliente, sessaoId],
   );
 
+  /**
+   * Chamada guardada com o modo segundo o servidor: a resposta da troca, o evento de outra aba ou o
+   * estado depois de uma reconexão. A tela usa este valor, e não só o do navegador, para trocar de modo
+   * na hora; a gravação no navegador vem logo depois, no efeito abaixo.
+   */
+  function comModoDoServidor(guardada: ChamadaGuardada | null): ChamadaGuardada | null {
+    if (!guardada || !aoVivo.modo) return guardada;
+    const salaId = aoVivo.salaId === undefined ? (guardada.salaId ?? null) : aoVivo.salaId;
+    if (aoVivo.modo === guardada.modo && (salaId ?? undefined) === guardada.salaId) return guardada;
+    return aplicarModo(guardada, { modo: aoVivo.modo, salaId });
+  }
+
+  // Guarda o modo novo no navegador, para recarregar a página já no modo certo
+  useEffect(() => {
+    const guardada = lerChamada(sessaoId);
+    if (!guardada || !aoVivo.modo) return;
+    const atual = comModoDoServidor(guardada);
+    if (atual && atual !== guardada) guardarChamada(atual);
+    // comModoDoServidor só depende do que está nesta lista
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aoVivo.modo, aoVivo.salaId, sessaoId]);
+
+  /** Pede a troca de modo ao servidor (#49); a tela muda pela resposta, sem esperar o evento. */
+  async function trocarModo(destino: ModoChamada, salaId?: string): Promise<ResultadoDaTroca> {
+    try {
+      const resposta = await cliente.requisitar<SessaoModoAlterado>("sessao.trocar_modo", {
+        sessaoId,
+        modo: destino,
+        ...(salaId ? { salaId } : {}),
+      });
+      aoVivo.registrarTroca(resposta);
+      if (resposta.salaId) guardarUltimaSala(resposta.salaId);
+      return { ok: true };
+    } catch (e) {
+      if (e instanceof ErroSessao && e.codigo === "SESSAO_ENCERRADA") {
+        esquecerChamada(sessaoId);
+        setEncerradaSemResumo(e.message);
+        return { ok: true };
+      }
+      return { ok: false, erro: e instanceof ErroSessao ? e.message : "Erro inesperado. Tente novamente." };
+    }
+  }
+
   async function encerrar() {
     setErro(null);
     setEncerrando(true);
@@ -79,7 +124,7 @@ export function ChamadaEmAndamento() {
   return (
     <AreaAutenticada>
       {() => {
-        const chamada = lerChamada(sessaoId);
+        const chamada = comModoDoServidor(lerChamada(sessaoId));
         const titulo = turma.situacao === "pronto" ? `${turma.dados.disciplina} · ${turma.dados.nome}` : "Turma";
         const voltar = (
           <Link href={`/turmas/${id}`} className={`${botaoPrincipal} self-start px-4 py-2`}>
@@ -128,6 +173,16 @@ export function ChamadaEmAndamento() {
           : aoVivo.totalMatriculados !== null
             ? { presentes: aoVivo.totalPresentes, total: aoVivo.totalMatriculados }
             : null;
+        // A key reinicia a confirmação quando o modo muda (por esta aba ou por outra)
+        const troca = (
+          <TrocaDeModo
+            key={chamada.modo}
+            modoAtual={chamada.modo}
+            salaDaChamada={chamada.salaId}
+            conectado={estado === "pronto"}
+            trocar={trocarModo}
+          />
+        );
 
         return (
           <main className={`mx-auto flex w-full flex-1 flex-col gap-4 px-6 pb-6 ${eQr || eSom ? "max-w-5xl" : "max-w-3xl"}`}>
@@ -194,10 +249,22 @@ export function ChamadaEmAndamento() {
               />
             )}
             {eQr && (
-              <ChamadaQrCode chamada={chamada} cliente={cliente} presentes={aoVivo.presentes} carregado={aoVivo.carregado} />
+              <ChamadaQrCode
+                chamada={chamada}
+                cliente={cliente}
+                presentes={aoVivo.presentes}
+                carregado={aoVivo.carregado}
+                troca={troca}
+              />
             )}
             {eSom && (
-              <ChamadaSom chamada={chamada} cliente={cliente} presentes={aoVivo.presentes} carregado={aoVivo.carregado} />
+              <ChamadaSom
+                chamada={chamada}
+                cliente={cliente}
+                presentes={aoVivo.presentes}
+                carregado={aoVivo.carregado}
+                troca={troca}
+              />
             )}
           </main>
         );
