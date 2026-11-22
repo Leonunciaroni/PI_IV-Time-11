@@ -1,8 +1,8 @@
 # Revisão das telas do aluno — issue #77
 
 Revisão do início A2, check-in A3, resultado A3b e histórico A4 contra
-[os wireframes](wireframes.md). Mantém o visual do cadastro docente: roxo,
-azul escuro, fundo claro e cartões brancos.
+[os wireframes](wireframes.md). O visual segue o do app do professor, no roxo da logo do aluno,
+com tema claro e escuro (ver [inicio-aluno.md](inicio-aluno.md)).
 
 ## Ajustes
 
@@ -21,7 +21,7 @@ Com os serviços rodando e Ana matriculada em uma turma:
 |---|---|
 | A2, sem matrículas | Estado vazio com orientação para procurar o professor. |
 | A2, turmas e chamada | Disciplina, modo, percentual e atalho para o canal da sessão correta. Falha de atualização não permite confirmar usando dados antigos. |
-| A2, falha e nova tentativa | Mensagem em português; Atualizar recupera a lista sem recarregar a aplicação inteira. |
+| A2, falha e nova tentativa | Mensagem em português avisando a nova tentativa; a atualização automática seguinte (até 20 s) recupera a lista sem recarregar a aplicação inteira. |
 | A3 QR | Localizando → leitura da câmera → envio → resultado. Uma leitura gera no máximo um envio. |
 | A3 QR, permissões | Câmera ou GPS negados exibem orientação; não enviam presença. Cancelar libera as tracks de vídeo. |
 | A3 QR, recusas | Duplicidade, fora do raio e QR de outra sessão têm mensagens distintas. Não mostram sucesso e não repetem o envio automaticamente. |

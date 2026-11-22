@@ -78,7 +78,7 @@ function CanalDaChamada({
   }, [token, turmaId, sessaoId, modo]);
   return (
     <main className="mx-auto w-full max-w-xl px-5 py-10">
-      <Link href="/" className="text-sm font-semibold text-[#5040e8]">
+      <Link href="/" className="text-sm font-semibold text-marca">
         ← Voltar ao início
       </Link>
       {turma?.chamadaAberta?.modo === "QRCODE" ? (
@@ -86,14 +86,14 @@ function CanalDaChamada({
       ) : turma?.chamadaAberta?.modo === "SOM" ? (
         <CheckinSom turma={turma} token={token} />
       ) : (
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+        <section className="mt-6 rounded-xl border border-borda bg-superficie p-6">
           <h1 className="text-2xl font-bold">Confirmar presença</h1>
           {erro ? (
-            <p role="alert" className="mt-4 text-sm text-red-700">
+            <p role="alert" className="mt-4 text-sm text-perigo-texto">
               {erro}
             </p>
           ) : (
-            <p role="status" className="mt-4 text-sm text-slate-500">
+            <p role="status" className="mt-4 text-sm text-suave">
               Verificando chamada aberta...
             </p>
           )}
