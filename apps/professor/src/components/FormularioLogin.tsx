@@ -7,6 +7,7 @@ import { ErroApi, login } from "@/lib/api";
 import { assinarSessao, lerSessao, salvarSessao } from "@/lib/sessao";
 import { Botao } from "./ui/Botao";
 import { Campo } from "./ui/Campo";
+import { CampoSenha } from "./ui/CampoSenha";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
 
 export function FormularioLogin() {
@@ -66,9 +67,8 @@ export function FormularioLogin() {
         onChange={(e) => setEmail(e.target.value)}
       />
 
-      <Campo
+      <CampoSenha
         rotulo="Senha"
-        type="password"
         name="senha"
         autoComplete="current-password"
         required
