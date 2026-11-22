@@ -5,7 +5,7 @@
 | Frente | E — Áudio e Infraestrutura |
 | Semana | 2 (04/10 a 11/10/2026) |
 | Ferramenta | [`spikes/audio-ultrassom/`](../../spikes/audio-ultrassom/) |
-| Situação | **Ferramenta pronta; amostras recebidas; critério de isolamento falhou na coleta atual** |
+| Situação | **Amostras registradas; validação ampla adiada como melhoria futura** |
 
 ## Objetivo
 
@@ -104,10 +104,22 @@ audibilidade não identifica quantos integrantes avaliaram. A medição na sala
 vizinha falhou no nível usado, confirmado pelo responsável. Repetir após registrar
 o volume e também medir a 10–12 m com conversa em pelo menos quatro modelos.
 
-## Decisão
+## Decisão para esta entrega
 
-Não aprovada na coleta atual: houve detecção na sala vizinha com a porta fechada.
-Ainda não há dados suficientes para escolher uma faixa de pelo menos 1 kHz,
-definir o volume de referência ou declarar modelos reprovados. Repetir os testes
-de isolamento em volumes registrados e completar as condições da issue antes de
-fechar a decisão.
+A validação ampla não foi aprovada: houve detecção em 13 de 14 leituras na sala
+vizinha, com a porta fechada. Para cumprir o prazo acadêmico atual, a issue #13 foi
+encerrada como não planejada nesta entrega, sem declarar que os critérios técnicos
+foram atingidos. O check-in por som permanece opcional; o QR Code continua como
+alternativa quando o alcance ou o isolamento acústico não forem adequados.
+
+## Melhorias futuras
+
+- Repetir os testes com volume do sistema e da página anotados e emissor
+  identificado; reduzir o volume e procurar um ponto que mantenha o alcance sem
+  detecção na sala vizinha.
+- Medir 1, 3, 6 e 10–12 m em silêncio e com conversa, incluindo quatro ou mais
+  celulares a 10–12 m, além da sala vizinha e do corredor.
+- Registrar taxa de amostragem, navegador e modelo por receptor, autoteste por
+  navegador e avaliação de audibilidade por integrante.
+- Investigar leituras com SNR acima de 15 dB marcadas como `detectou = não` e
+  escolher uma faixa de pelo menos 1 kHz somente após repetir os resultados.
