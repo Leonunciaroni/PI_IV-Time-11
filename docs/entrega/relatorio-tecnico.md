@@ -55,7 +55,7 @@ Na validação funcional de 22/11/2026, o Redmi Note 14 com Chrome confirmou con
 
 - As medições de alcance, ruído de sala e compatibilidade entre modelos de telefone ainda estão pendentes nas issues [#13](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/13), [#26](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/26), [#33](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/33) e [#47](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/47). O teste funcional não comprova alcance acústico.
 - A carga de 15 salas por 70 alunos e a validação inferior a um segundo ainda não foram aceitas; acompanhe a [issue #52](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/52).
-- O checklist final de entrega e a publicação do tag ainda dependem da integração dos documentos e do snapshot combinado pela equipe.
+- O checklist de entrega e o tag `semana-7` acompanham o snapshot integrado em `develop`; as medições acústicas e de carga seguem pendentes.
 
 ## Referências
 
