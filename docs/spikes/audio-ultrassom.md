@@ -63,6 +63,8 @@ os rótulos de aparelho Redmi 14 e iPhone 12, 13, 14 e 15. A coluna `audivel` es
 como `Não` em todas as linhas. O CSV não registra navegador, taxa de amostragem,
 emissor, volume do sistema ou volume da página.
 
+Nas células abaixo, cada leitura está no formato frequência : SNR (dB) : detecção.
+
 | Receptor (rótulo do CSV) | 3 m | 6 m | 9 m | 12 m |
 |---|---|---|---|---|
 | Redmi 14 | 18 kHz: 51,0 dB, sim; 19,75 kHz: 47,8 dB, sim; 20 kHz: 45,1 dB, não | 18,5 kHz: 20,9 dB, sim | 18 kHz: 31,7 dB, sim; 18,75/19,25/20 kHz: não | 19,5 kHz: 37,1 dB, sim |
