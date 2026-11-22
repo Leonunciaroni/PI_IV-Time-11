@@ -1,6 +1,7 @@
 package br.edu.puccampinas.fastattendance.sessao.chamada;
 
 import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeModoAlterado;
 import br.edu.puccampinas.fastattendance.common.comunicado.EventoDePresencaAtualizada;
 import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeSessaoEncerrada;
 import br.edu.puccampinas.fastattendance.common.comunicado.PresenteResumo;
@@ -107,6 +108,24 @@ public final class PainelAoVivo {
                 MotivoEncerramento.valueOf(sessao.getString("motivoEncerramento")),
                 sessao.getDate("encerradaEm").getTime(),
                 sessoes.totalPresentes(sessaoId));
+        enviar(destinos, evento);
+    }
+
+    /**
+     * Chamado pelo observador quando o modo de uma sessão aberta muda ({@code sessao.trocar_modo}).
+     * Os acompanhantes continuam registrados: a sessão segue aberta, só que em outro modo.
+     */
+    void modoAlterado(Document sessao) {
+        String sessaoId = sessao.getObjectId("_id").toHexString();
+        Set<Parceiro> destinos = acompanhantes.getOrDefault(sessaoId, Set.of());
+        if (destinos.isEmpty()) {
+            return;
+        }
+        EventoDeModoAlterado evento = new EventoDeModoAlterado(
+                sessaoId,
+                ModoChamada.valueOf(sessao.getString("modo")),
+                sessao.getString("salaId"),
+                ServicoDeSessoes.momentoDoModo(sessao));
         enviar(destinos, evento);
     }
 

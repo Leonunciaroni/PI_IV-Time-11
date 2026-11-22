@@ -10,6 +10,7 @@ import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeEncerrarSessa
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresenca;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresencaEmLote;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDePing;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeTrocarModo;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoParaSair;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDePong;
@@ -245,6 +246,8 @@ public class SupervisoraDeConexao extends Thread
             return this.servicos.sessoes().encerrar (u, p.getSessaoId());
         if (pedido instanceof PedidoDeAcompanharSessao p)
             return this.servicos.painel().acompanhar (this.usuario, u, p.getSessaoId());
+        if (pedido instanceof PedidoDeTrocarModo p)
+            return this.servicos.sessoes().trocarModo (u, p);
         if (pedido instanceof PedidoDeMarcarPresenca p)
             return this.servicos.chamadaClassica().marcar (u, p);
         if (pedido instanceof PedidoDeMarcarPresencaEmLote p)
@@ -261,6 +264,7 @@ public class SupervisoraDeConexao extends Thread
             || comunicado instanceof PedidoDeAbrirSessao
             || comunicado instanceof PedidoDeEncerrarSessao
             || comunicado instanceof PedidoDeAcompanharSessao
+            || comunicado instanceof PedidoDeTrocarModo
             || comunicado instanceof PedidoDeMarcarPresenca
             || comunicado instanceof PedidoDeMarcarPresencaEmLote
             || comunicado instanceof PedidoDeCheckin;
