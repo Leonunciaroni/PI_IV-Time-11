@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AcompanhamentoSessao, type ClienteAcompanhamento } from "./acompanhamento";
-import type { Envelope, PresencaAtualizada, SessaoEstado } from "./protocolo";
+import type { Envelope, PresencaAtualizada, SessaoEstado, SessaoModoAlterado } from "./protocolo";
 import { ClienteSessao, ErroSessao, type EstadoConexao, type SocketSessao } from "./ws";
 
 interface Pedido {
@@ -70,6 +70,10 @@ function evento(alunoId: string, registradoEm: number, { presente = true, sessao
     totalPresentes,
     totalMatriculados: 30,
   };
+}
+
+function troca(modo: SessaoModoAlterado["modo"], salaId: string | null): SessaoModoAlterado {
+  return { sessaoId: "s1", modo, salaId, alteradoEm: 2_000 };
 }
 
 /** Deixa as promessas resolvidas rodarem seus then. */
@@ -213,6 +217,58 @@ describe("AcompanhamentoSessao", () => {
     cliente.emitir("presenca.atualizada", evento("a1", 100));
     expect(avisos).toHaveBeenCalledTimes(1);
     expect(acompanhamento.situacao).not.toBe(antes);
+  });
+
+  it("o modo vem do estado e muda com sessao.modo_alterado desta sessão", async () => {
+    const { cliente, acompanhamento } = iniciado("pronto");
+    expect(acompanhamento.situacao).toMatchObject({ modo: null, salaId: undefined });
+
+    cliente.ultimo().resolver(estado([]));
+    await esperar();
+    expect(acompanhamento.situacao).toMatchObject({ modo: "QRCODE", salaId: undefined });
+
+    cliente.emitir("sessao.modo_alterado", troca("CLASSICA", null));
+    expect(acompanhamento.situacao).toMatchObject({ modo: "CLASSICA", salaId: null });
+
+    cliente.emitir("sessao.modo_alterado", { ...troca("SOM", null), sessaoId: "outra" });
+    expect(acompanhamento.situacao.modo).toBe("CLASSICA");
+  });
+
+  it("troca chegada antes do estado vence o modo antigo que o estado ainda traz", async () => {
+    const { cliente, acompanhamento } = iniciado("pronto");
+    cliente.emitir("sessao.modo_alterado", troca("SOM", null));
+
+    // O servidor leu o estado antes de gravar a troca: ainda diz QRCODE
+    cliente.ultimo().resolver(estado([]));
+    await esperar();
+
+    expect(acompanhamento.situacao.modo).toBe("SOM");
+  });
+
+  it("na reconexão o modo do estado novo vale, sem reaplicar uma troca de antes da queda", async () => {
+    const { cliente, acompanhamento } = iniciado("pronto");
+    cliente.ultimo().resolver(estado([]));
+    await esperar();
+    cliente.emitir("sessao.modo_alterado", troca("SOM", null));
+
+    cliente.mudarEstado("reconectando");
+    cliente.mudarEstado("pronto");
+    // Com a conexão fora, outra aba voltou para a clássica: o estado novo diz isso
+    cliente.ultimo().resolver({ ...estado([]), modo: "CLASSICA" });
+    await esperar();
+
+    expect(acompanhamento.situacao.modo).toBe("CLASSICA");
+  });
+
+  it("a resposta de sessao.trocar_modo entra por registrarTroca e avisa os inscritos", () => {
+    const { acompanhamento } = iniciado("pronto");
+    const avisos = vi.fn();
+    acompanhamento.inscrever(avisos);
+
+    acompanhamento.registrarTroca(troca("QRCODE", "sala-1"));
+
+    expect(acompanhamento.situacao).toMatchObject({ modo: "QRCODE", salaId: "sala-1" });
+    expect(avisos).toHaveBeenCalledTimes(1);
   });
 
   it("depois de parar, ignora eventos, respostas e reconexões", async () => {

@@ -110,6 +110,16 @@ export interface PresenteNaSessao {
 }
 
 /** Resposta de sessao.acompanhar (seções 4.5 e 5.1): o estado atual da sessão aberta. */
+/** Resposta e evento de sessao.trocar_modo (seções 4.9, 5.1 e 5.2). */
+export interface SessaoModoAlterado {
+  sessaoId: string;
+  modo: ModoChamada;
+  /** null quando a sessão não tem sala. */
+  salaId: string | null;
+  /** Última troca ou, sem troca, a abertura. */
+  alteradoEm: number;
+}
+
 export interface SessaoEstado {
   sessaoId: string;
   modo: ModoChamada;
