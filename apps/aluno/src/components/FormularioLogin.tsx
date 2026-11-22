@@ -7,6 +7,7 @@ import { ErroApi, login } from "@/lib/api";
 import { obterDispositivoId } from "@/lib/dispositivo";
 import { assinarSessao, lerSessao, salvarSessao } from "@/lib/sessao";
 import { Campo } from "./ui/Campo";
+import { CampoSenha } from "./ui/CampoSenha";
 
 export function FormularioLogin() {
   use(browser("A sessão do usuário fica no localStorage."));
@@ -61,9 +62,8 @@ export function FormularioLogin() {
         onChange={(e) => setEmail(e.target.value)}
       />
 
-      <Campo
+      <CampoSenha
         rotulo="Senha"
-        type="password"
         name="senha"
         autoComplete="current-password"
         required
