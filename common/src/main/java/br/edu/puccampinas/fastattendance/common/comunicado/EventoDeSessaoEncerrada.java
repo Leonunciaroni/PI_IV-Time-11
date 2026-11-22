@@ -3,7 +3,7 @@ package br.edu.puccampinas.fastattendance.common.comunicado;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.MotivoEncerramento;
 
 /** Servidor -> professor acompanhando (tipo sessao.encerrada, sem ref): sessão encerrada. Não solicitado. */
-public class EventoDeSessaoEncerrada extends Comunicado
+public class EventoDeSessaoEncerrada extends Comunicado implements Evento
 {
     private String sessaoId;
     private MotivoEncerramento motivo;
