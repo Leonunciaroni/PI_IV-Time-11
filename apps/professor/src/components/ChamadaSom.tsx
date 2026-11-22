@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import type { ChamadaGuardada } from "@/lib/chamadas";
 import type { PresenteAoVivo } from "@/lib/presencas";
 import { useEmissorSom, type SituacaoDoSom } from "@/lib/useEmissorSom";
@@ -20,10 +20,12 @@ interface ChamadaSomProps {
   cliente: ClienteSessao;
   presentes: PresenteAoVivo[];
   carregado: boolean;
+  /** Botões "Trocar para…" (#49), embaixo da lista de presentes. */
+  troca?: ReactNode;
 }
 
 /** Emissão do sinal sonoro (P8): o notebook toca o código e o app do aluno capta pelo microfone. */
-export function ChamadaSom({ chamada, cliente, presentes, carregado }: ChamadaSomProps) {
+export function ChamadaSom({ chamada, cliente, presentes, carregado, troca }: ChamadaSomProps) {
   const diferenca = useCallback(() => cliente.diferencaRelogioMs, [cliente]);
   const { situacao, volume, erro, iniciar, pausar, mudarVolume } = useEmissorSom(chamada.totp, diferenca);
   const emitindo = situacao === "emitindo";
@@ -84,14 +86,7 @@ export function ChamadaSom({ chamada, cliente, presentes, carregado }: ChamadaSo
       </section>
 
       <PainelAoVivo presentes={presentes} carregado={carregado} vazio="Nenhum aluno registrou presença ainda.">
-        {/* O protocolo v1 ainda não tem troca de modo (#49); encerrar e abrir outra criaria duas aulas */}
-        <Botao variante="secundario" disabled>
-          Trocar para QR Code
-        </Botao>
-        <Botao variante="secundario" disabled>
-          Trocar para clássica
-        </Botao>
-        <p className="-mt-1 text-sm text-suave">A troca de modo ainda não está disponível: depende da #49.</p>
+        {troca}
       </PainelAoVivo>
     </div>
   );
