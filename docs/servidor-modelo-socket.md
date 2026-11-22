@@ -42,6 +42,7 @@ Pedidos (cliente → servidor). Cada um, exceto `PedidoParaSair`, espera exatame
 | `PedidoDeAbrirSessao` | `sessao.abrir` | `RespostaDeAbrirSessao` (`sessao.aberta`) |
 | `PedidoDeEncerrarSessao` | `sessao.encerrar` | `RespostaDeEncerrarSessao` (`sessao.encerrada`) |
 | `PedidoDeAcompanharSessao` | `sessao.acompanhar` | `RespostaDeAcompanharSessao` (`sessao.estado`) |
+| `PedidoDeTrocarModo` | `sessao.trocar_modo` | `RespostaDeTrocarModo` (`sessao.modo_alterado`) |
 | `PedidoDeMarcarPresenca` | `presenca.marcar` | `RespostaDeMarcarPresenca` (`presenca.atualizada`) |
 | `PedidoDeMarcarPresencaEmLote` | `presenca.marcar_lote` | `RespostaDeMarcarPresencaEmLote` (`presenca.lote_ok`) |
 | `PedidoDeCheckin` | `checkin` | `RespostaDeCheckin` (`checkin.ok`) |
@@ -52,9 +53,10 @@ Respostas e eventos são classes diferentes, mesmo quando têm os mesmos campos:
 | Classe | Tipo no protocolo | Quando é enviada |
 |---|---|---|
 | `Erro` | `erro` | Resposta a qualquer pedido que falhou (campo `codigo`: `CodigoErro`). |
-| `RespostaDeAutenticacao`, `RespostaDePong`, `RespostaDeAbrirSessao`, `RespostaDeEncerrarSessao`, `RespostaDeAcompanharSessao`, `RespostaDeMarcarPresenca`, `RespostaDeMarcarPresencaEmLote`, `RespostaDeCheckin` | `auth.ok`, `pong`, `sessao.aberta`, `sessao.encerrada`, `sessao.estado`, `presenca.atualizada`, `presenca.lote_ok`, `checkin.ok` | Resposta ao pedido correspondente. |
+| `RespostaDeAutenticacao`, `RespostaDePong`, `RespostaDeAbrirSessao`, `RespostaDeEncerrarSessao`, `RespostaDeAcompanharSessao`, `RespostaDeTrocarModo`, `RespostaDeMarcarPresenca`, `RespostaDeMarcarPresencaEmLote`, `RespostaDeCheckin` | `auth.ok`, `pong`, `sessao.aberta`, `sessao.encerrada`, `sessao.estado`, `sessao.modo_alterado`, `presenca.atualizada`, `presenca.lote_ok`, `checkin.ok` | Resposta ao pedido correspondente. |
 | `EventoDePresencaAtualizada` | `presenca.atualizada` (sem `ref`) | Push aos acompanhantes da sessão. Não solicitado. |
 | `EventoDeSessaoEncerrada` | `sessao.encerrada` (sem `ref`) | Push aos acompanhantes da sessão. Não solicitado. |
+| `EventoDeModoAlterado` | `sessao.modo_alterado` (sem `ref`) | Push aos acompanhantes da sessão quando o modo muda. Não solicitado. |
 | `ComunicadoDeDesligamento` | (sem tipo: desligamento do servidor) | Enviado a todas as conexões pelo console `desativar`. Não solicitado. |
 
 ### Regra de correlação: uma resposta por pedido
@@ -63,18 +65,21 @@ Respostas e eventos são classes diferentes, mesmo quando têm os mesmos campos:
 - Para cada pedido que espera resposta, o servidor envia **exatamente uma** mensagem: a resposta de
   sucesso ou um `Erro`. Isso vale também para `LIMITE_EXCEDIDO` e `ERRO_INTERNO`.
 - Eventos (`EventoDe...`) e `ComunicadoDeDesligamento` são não solicitados e nunca contam como resposta.
+  Todo evento implementa a interface `Evento`, que é como a ponte os separa das respostas. Um evento
+  novo precisa implementá-la (o `EventoTest` confere as classes existentes).
 - Por isso o transporte não tem `id` nem `ref`: a correlação é pela ordem. A ponte deve manter a
   fila de pedidos pendentes e atribuir `ref` na ordem de chegada.
 
 ### Lista das classes em `common/comunicado`
 
 `Comunicado`, `ComunicadoDeDesligamento`, `PedidoParaSair`, `PedidoDeAutenticacao`, `PedidoDePing`,
-`PedidoDeAbrirSessao`, `PedidoDeEncerrarSessao`, `PedidoDeAcompanharSessao`,
+`PedidoDeAbrirSessao`, `PedidoDeEncerrarSessao`, `PedidoDeAcompanharSessao`, `PedidoDeTrocarModo`,
 `PedidoDeMarcarPresenca`, `PedidoDeMarcarPresencaEmLote`, `PedidoDeCheckin`,
 `RespostaDeAutenticacao`, `RespostaDePong`, `RespostaDeAbrirSessao`, `RespostaDeEncerrarSessao`,
-`RespostaDeAcompanharSessao`, `RespostaDeMarcarPresenca`, `RespostaDeMarcarPresencaEmLote`,
-`RespostaDeCheckin`, `Erro`, `EventoDePresencaAtualizada`, `EventoDeSessaoEncerrada`, e os valores
-`PresenteResumo` e `ConfiguracaoTotp`.
+`RespostaDeAcompanharSessao`, `RespostaDeTrocarModo`, `RespostaDeMarcarPresenca`,
+`RespostaDeMarcarPresencaEmLote`, `RespostaDeCheckin`, `Erro`, `EventoDePresencaAtualizada`,
+`EventoDeSessaoEncerrada`, `EventoDeModoAlterado`, a interface `Evento` e os valores `PresenteResumo` e
+`ConfiguracaoTotp`.
 
 Os records de `common/protocolo/dados` não foram apagados. Eles definem os campos JSON de cada tipo e
 são usados por `TipoMensagem` e pelo teste `ExemplosDoProtocoloTest`, que confere os exemplos de
@@ -194,7 +199,8 @@ WebSocket recusa o frame antes de a ponte vê-lo e fecha a conexão, como fazia 
   inserção na fila e a escrita no socket saem sob a mesma trava, então a ordem da fila é a ordem em que o
   servidor responde.
 - Cada resposta do servidor (sucesso ou `Erro`) usa a cabeça da fila como `ref`, e sai da fila.
-- Eventos (`EventoDePresencaAtualizada`, `EventoDeSessaoEncerrada`) saem sem `ref` e não tocam na fila.
+- Eventos (todo comunicado que implementa `Evento`: `EventoDePresencaAtualizada`, `EventoDeSessaoEncerrada`
+  e `EventoDeModoAlterado`) saem sem `ref` e não tocam na fila.
 - `ComunicadoDeDesligamento` não tem `ref` e fecha a conexão (6.4).
 - `PedidoParaSair` é enviado só quando o navegador fecha. Não espera resposta.
 - Resposta sem pedido pendente não deveria ocorrer. A ponte envia `ERRO_INTERNO` sem `ref` e segue.
