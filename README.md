@@ -71,6 +71,15 @@ mostra a validação, a persistência e a atualização do painel, com as partes
 
 ### Subir o ambiente
 
+Em uma máquina de teste, clone a branch `develop` e entre no repositório:
+
+```bash
+git clone --branch develop --single-branch https://github.com/Leonunciaroni/PI_IV-Time-11.git
+cd PI_IV-Time-11
+```
+
+No Windows, deixe o Docker Desktop iniciado antes de continuar.
+
 ```bash
 cd infra
 cp .env.example .env          # edite JWT_SECRET (mínimo de 32 bytes)
@@ -210,6 +219,9 @@ Somente documentos que existem no repositório:
 | [docs/historico-aluno.md](docs/historico-aluno.md) | Histórico de frequência do aluno por turma |
 | [docs/audio-modem.md](docs/audio-modem.md) | Emissão do token sonoro |
 | [docs/spikes/audio-ultrassom.md](docs/spikes/audio-ultrassom.md) | Spike do canal sonoro 18–20 kHz |
+| [docs/entrega/relatorio-tecnico.md](docs/entrega/relatorio-tecnico.md) | Relatório técnico do sistema e resultados verificados |
+| [docs/entrega/apresentacao-final.pdf](docs/entrega/apresentacao-final.pdf) | Apresentação do projeto em PDF; fonte HTML ao lado |
+| [docs/entrega/checklist.md](docs/entrega/checklist.md) | Checklist de entrega e evidências da issue #75 |
 | [infra/README.md](infra/README.md) | Ambiente Docker, MongoDB, rotas do Nginx e tolerância a falha |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits e pull requests |
 
