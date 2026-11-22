@@ -4,6 +4,7 @@ import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeCheckin;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresenca;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAbrirSessao;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDePing;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeTrocarModo;
 import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
@@ -157,6 +158,71 @@ class ConversorDeFramesTest {
         assertEquals("a", pedido.getAlunoId());
         assertFalse(pedido.isPresente());
         assertEquals("m", recebido.id());
+    }
+
+    @Test
+    void trocarModoTraduzCamposDoPedido() {
+        ConversorDeFrames.Recebido recebido = conversor.analisar("{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t1\","
+                + "\"dados\":{\"sessaoId\":\"s\",\"modo\":\"QRCODE\",\"salaId\":\"sala\"}}", true);
+        assertEquals(TipoMensagem.SESSAO_TROCAR_MODO, recebido.tipo());
+        assertEquals("t1", recebido.id());
+        PedidoDeTrocarModo pedido = (PedidoDeTrocarModo) recebido.comunicado();
+        assertEquals("s", pedido.getSessaoId());
+        assertEquals(ModoChamada.QRCODE, pedido.getModo());
+        assertEquals("sala", pedido.getSalaId());
+    }
+
+    @Test
+    void trocarModoSemSalaOuComSalaNulaVaiAoServidorSemSala() {
+        for (String dados : new String[]{"{\"sessaoId\":\"s\",\"modo\":\"SOM\"}",
+                "{\"sessaoId\":\"s\",\"modo\":\"SOM\",\"salaId\":null}"}) {
+            PedidoDeTrocarModo pedido = (PedidoDeTrocarModo) conversor.analisar(
+                    "{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t\",\"dados\":" + dados + "}", true).comunicado();
+            assertNull(pedido.getSalaId(), dados);
+            assertEquals(ModoChamada.SOM, pedido.getModo(), dados);
+        }
+    }
+
+    @Test
+    void trocarModoComCamposAusentesVaiAoServidorQueRespondeMensagemInvalida() {
+        // Campos ausentes não são erro da ponte: o servidor confere a ordem das regras (papel antes dos campos)
+        PedidoDeTrocarModo pedido = (PedidoDeTrocarModo) conversor.analisar(
+                "{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t\",\"dados\":{}}", true).comunicado();
+        assertNull(pedido.getSessaoId());
+        assertNull(pedido.getModo());
+    }
+
+    @Test
+    void trocarModoComModoDesconhecidoOuCampoDeTipoErradoEhMensagemInvalidaComRef() {
+        FalhaDeProtocolo modo = falha("{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t2\","
+                + "\"dados\":{\"sessaoId\":\"s\",\"modo\":\"FOTO\"}}", true);
+        assertEquals(CodigoErro.MENSAGEM_INVALIDA, modo.codigo());
+        assertEquals("t2", modo.ref());
+
+        FalhaDeProtocolo sala = falha("{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t3\","
+                + "\"dados\":{\"sessaoId\":\"s\",\"modo\":\"QRCODE\",\"salaId\":42}}", true);
+        assertEquals(CodigoErro.MENSAGEM_INVALIDA, sala.codigo());
+        assertEquals("t3", sala.ref());
+
+        FalhaDeProtocolo sessao = falha("{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t4\","
+                + "\"dados\":{\"sessaoId\":[1],\"modo\":\"SOM\"}}", true);
+        assertEquals(CodigoErro.MENSAGEM_INVALIDA, sessao.codigo());
+    }
+
+    @Test
+    void trocarModoAntesDeAuthEhAuthRequerida() {
+        FalhaDeProtocolo erro = falha("{\"v\":1,\"tipo\":\"sessao.trocar_modo\",\"id\":\"t5\","
+                + "\"dados\":{\"sessaoId\":\"s\",\"modo\":\"SOM\"}}", false);
+        assertEquals(CodigoErro.AUTH_REQUERIDA, erro.codigo());
+        assertEquals("t5", erro.ref());
+    }
+
+    @Test
+    void modoAlteradoEhTipoDoServidorQueOClienteNaoPodeEnviar() {
+        FalhaDeProtocolo erro = falha("{\"v\":1,\"tipo\":\"sessao.modo_alterado\",\"id\":\"x\","
+                + "\"dados\":{\"sessaoId\":\"s\",\"modo\":\"SOM\"}}", true);
+        assertEquals(CodigoErro.MENSAGEM_INVALIDA, erro.codigo());
+        assertEquals("x", erro.ref());
     }
 
     @Test

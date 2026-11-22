@@ -9,6 +9,7 @@ import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeEncerrarSessa
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresenca;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresencaEmLote;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDePing;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeTrocarModo;
 import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
@@ -107,6 +108,8 @@ final class ConversorDeFrames {
                     modo(textoOuNulo(dados, "modo")), textoOuNulo(dados, "salaId"));
             case SESSAO_ENCERRAR -> new PedidoDeEncerrarSessao(textoOuNulo(dados, "sessaoId"));
             case SESSAO_ACOMPANHAR -> new PedidoDeAcompanharSessao(textoOuNulo(dados, "sessaoId"));
+            case SESSAO_TROCAR_MODO -> new PedidoDeTrocarModo(textoOuNulo(dados, "sessaoId"),
+                    modo(textoOuNulo(dados, "modo")), textoOuNulo(dados, "salaId"));
             case PRESENCA_MARCAR -> new PedidoDeMarcarPresenca(textoOuNulo(dados, "sessaoId"),
                     textoOuNulo(dados, "alunoId"), booleano(dados, "presente"));
             case PRESENCA_MARCAR_LOTE -> new PedidoDeMarcarPresencaEmLote(textoOuNulo(dados, "sessaoId"),

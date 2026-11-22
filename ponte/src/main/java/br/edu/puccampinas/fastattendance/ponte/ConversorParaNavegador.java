@@ -3,6 +3,7 @@ package br.edu.puccampinas.fastattendance.ponte;
 import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
 import br.edu.puccampinas.fastattendance.common.comunicado.ConfiguracaoTotp;
 import br.edu.puccampinas.fastattendance.common.comunicado.Erro;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeModoAlterado;
 import br.edu.puccampinas.fastattendance.common.comunicado.EventoDePresencaAtualizada;
 import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeSessaoEncerrada;
 import br.edu.puccampinas.fastattendance.common.comunicado.PresenteResumo;
@@ -14,6 +15,8 @@ import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSes
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeMarcarPresenca;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeMarcarPresencaEmLote;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDePong;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeTrocarModo;
+import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.protocolo.Protocolo;
 import br.edu.puccampinas.fastattendance.common.protocolo.TipoMensagem;
@@ -60,6 +63,12 @@ final class ConversorParaNavegador {
             tipo = TipoMensagem.SESSAO_ENCERRADA.valor();
             dados = mapa("sessaoId", r.getSessaoId(), "motivo", r.getMotivo().name(),
                     "encerradaEm", r.getEncerradaEm(), "totalPresentes", r.getTotalPresentes());
+        } else if (comunicado instanceof RespostaDeTrocarModo r) {
+            tipo = TipoMensagem.SESSAO_MODO_ALTERADO.valor();
+            dados = modoAlterado(r.getSessaoId(), r.getModo(), r.getSalaId(), r.getAlteradoEm());
+        } else if (comunicado instanceof EventoDeModoAlterado r) {
+            tipo = TipoMensagem.SESSAO_MODO_ALTERADO.valor();
+            dados = modoAlterado(r.getSessaoId(), r.getModo(), r.getSalaId(), r.getAlteradoEm());
         } else if (comunicado instanceof RespostaDeAcompanharSessao r) {
             tipo = TipoMensagem.SESSAO_ESTADO.valor();
             dados = mapa("sessaoId", r.getSessaoId(), "modo", r.getModo().name(), "abertaEm", r.getAbertaEm(),
@@ -95,6 +104,11 @@ final class ConversorParaNavegador {
         envelope.put("ts", System.currentTimeMillis());
         envelope.put("dados", dados);
         return json.escrever(envelope);
+    }
+
+    /** {@code salaId} sai como {@code null} quando a sessão não tem sala, para o campo estar sempre presente. */
+    private static Map<String, Object> modoAlterado(String sessaoId, ModoChamada modo, String salaId, long alteradoEm) {
+        return mapa("sessaoId", sessaoId, "modo", modo.name(), "salaId", salaId, "alteradoEm", alteradoEm);
     }
 
     private static Map<String, Object> totp(ConfiguracaoTotp totp) {
