@@ -6,47 +6,100 @@
  * rounded-controle...), nunca cores fixas.
  */
 :root {
-  --background: #ffffff;
+  /* Controles nativos (caixas de seleção, volume, barra de rolagem) seguem o tema do sistema */
+  color-scheme: light dark;
+  --background: var(--color-slate-50);
   --foreground: #171717;
+  /* Texto secundário (horário, contagens, dicas), legível sobre o fundo e os cartões */
+  --texto-suave: var(--color-slate-500);
+  /* Fundo de cartões e do cabeçalho, sobre o fundo da página */
+  --superficie: var(--color-white);
   --primaria: var(--color-blue-600);
   --primaria-forte: var(--color-blue-700);
+  /* Azul para traços e textos pequenos sobre o fundo (no escuro, um tom mais claro) */
+  --primaria-texto: var(--primaria);
+  /* Hover de links de navegação: azul escuro, próximo da cor do texto */
+  --link-hover: var(--color-blue-900);
   --perigo: var(--color-red-600);
+  /* Fundo do botão de perigo: vermelho escuro nos dois temas, para o texto branco ter contraste */
+  --perigo-botao: var(--color-red-600);
   --sucesso: var(--color-green-700);
-  --borda-suave: color-mix(in oklab, var(--color-black) 10%, transparent);
-  --borda: color-mix(in oklab, var(--color-black) 15%, transparent);
-  --borda-forte: color-mix(in oklab, var(--color-black) 20%, transparent);
+  /* Avisos em bloco (sucesso e erro): fundo claro, borda e texto escuro */
+  --sucesso-fundo: var(--color-emerald-100);
+  --sucesso-borda: var(--color-emerald-300);
+  --sucesso-texto: var(--color-emerald-900);
+  --perigo-fundo: var(--color-red-50);
+  --perigo-borda: var(--color-red-200);
+  --perigo-texto: var(--color-red-800);
+  --borda-suave: var(--color-slate-200);
+  --borda: var(--color-slate-200);
+  --borda-forte: var(--color-slate-300);
   --realce: color-mix(in oklab, var(--color-black) 5%, transparent);
-  --raio-controle: 0.375rem;
-  --raio-cartao: 0.5rem;
+  --raio-controle: 0.5rem;
+  --raio-cartao: 1rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-superficie: var(--superficie);
+  --color-suave: var(--texto-suave);
   --color-primaria: var(--primaria);
   --color-primaria-forte: var(--primaria-forte);
+  --color-primaria-texto: var(--primaria-texto);
+  --color-link-hover: var(--link-hover);
   --color-perigo: var(--perigo);
+  --color-perigo-botao: var(--perigo-botao);
   --color-sucesso: var(--sucesso);
+  --color-sucesso-fundo: var(--sucesso-fundo);
+  --color-sucesso-borda: var(--sucesso-borda);
+  --color-sucesso-texto: var(--sucesso-texto);
+  --color-perigo-fundo: var(--perigo-fundo);
+  --color-perigo-borda: var(--perigo-borda);
+  --color-perigo-texto: var(--perigo-texto);
   --color-borda-suave: var(--borda-suave);
   --color-borda: var(--borda);
   --color-borda-forte: var(--borda-forte);
   --color-realce: var(--realce);
   --radius-controle: var(--raio-controle);
   --radius-cartao: var(--raio-cartao);
-  --font-sans: var(--font-geist-sans);
+  /* Algarismos da Geist; as letras vêm da Atkinson Hyperlegible Next (as duas em layout.tsx) */
+  --font-sans: var(--font-digitos), var(--font-atkinson);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: var(--color-slate-950);
     --foreground: #ededed;
+    --superficie: var(--color-slate-900);
+    --texto-suave: var(--color-slate-400);
+    --link-hover: var(--color-blue-200);
+    --primaria-texto: var(--color-blue-400);
     --perigo: var(--color-red-400);
     --sucesso: var(--color-green-400);
-    --borda-suave: color-mix(in oklab, var(--color-white) 15%, transparent);
-    --borda: color-mix(in oklab, var(--color-white) 20%, transparent);
-    --borda-forte: color-mix(in oklab, var(--color-white) 25%, transparent);
+    --sucesso-fundo: color-mix(in oklab, var(--color-emerald-400) 12%, transparent);
+    --sucesso-borda: color-mix(in oklab, var(--color-emerald-400) 30%, transparent);
+    --sucesso-texto: var(--color-emerald-300);
+    --perigo-fundo: color-mix(in oklab, var(--color-red-400) 12%, transparent);
+    --perigo-borda: color-mix(in oklab, var(--color-red-400) 30%, transparent);
+    --perigo-texto: var(--color-red-300);
+    --borda-suave: var(--color-slate-800);
+    --borda: var(--color-slate-800);
+    --borda-forte: var(--color-slate-700);
     --realce: color-mix(in oklab, var(--color-white) 10%, transparent);
+  }
+}
+
+/*
+ * Foco de teclado igual em todo o app. O contorno padrão do navegador some sobre o azul dos
+ * botões; este só aparece com teclado (:focus-visible), então o clique não muda nada.
+ * Os campos de texto têm o próprio destaque (Campo.tsx).
+ */
+@layer base {
+  :where(a, button, summary, input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 2px solid var(--primaria);
+    outline-offset: 2px;
   }
 }
 

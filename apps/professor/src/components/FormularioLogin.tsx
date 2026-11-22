@@ -2,16 +2,18 @@
 
 import { use, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { browser } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ErroApi, login } from "@/lib/api";
 import { assinarSessao, lerSessao, salvarSessao } from "@/lib/sessao";
 import { Botao } from "./ui/Botao";
 import { Campo } from "./ui/Campo";
+import { CampoSenha } from "./ui/CampoSenha";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
 
 export function FormularioLogin() {
   use(browser("A sessão do usuário fica no localStorage."));
   const router = useRouter();
+  const parametros = useSearchParams();
   const jaAutenticado = useSyncExternalStore(assinarSessao, () => lerSessao() !== null, () => false);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -50,6 +52,11 @@ export function FormularioLogin() {
 
   return (
     <form onSubmit={entrar} className="flex flex-col gap-4">
+      {parametros.get("cadastro") === "sucesso" && (
+        <p role="status" className="rounded-md border border-green-600/30 bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
+          Cadastro concluído! Entre com seu e-mail e senha.
+        </p>
+      )}
       <Campo
         rotulo="E-mail"
         type="email"
@@ -60,9 +67,8 @@ export function FormularioLogin() {
         onChange={(e) => setEmail(e.target.value)}
       />
 
-      <Campo
+      <CampoSenha
         rotulo="Senha"
-        type="password"
         name="senha"
         autoComplete="current-password"
         required

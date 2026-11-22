@@ -1,8 +1,9 @@
 # Tela inicial do aluno — issue #25
 
-Rota autenticada `/aluno`, conforme o wireframe A2. A página segue as cores e formas do
-cadastro docente: roxo `#5040e8`, azul escuro `#172033`, fundo claro, bordas suaves e cartões
-arredondados. Em celular, os cartões ficam em uma coluna; no desktop, em duas.
+Rota autenticada `/aluno`, conforme o wireframe A2. As cores vêm das variáveis do `globals.css`,
+com tema claro e escuro: roxo da logo (`#3b2db5`, `#a99cf5` no escuro), fundo quase branco
+levemente roxo e cartões com bordas suaves. As chamadas abertas ficam num bloco no roxo da logo, e
+as turmas aparecem uma por linha, com a frequência à direita no desktop e embaixo no celular.
 
 ## Comportamento
 
@@ -15,19 +16,22 @@ arredondados. Em celular, os cartões ficam em uma coluna; no desktop, em duas.
 - A entrada de check-in verifica novamente a matrícula, o id da chamada e o modo. Se a aula
   encerrou ou mudou de canal, orienta voltar ao início e atualizar.
 - “Ver histórico” abre `/aluno/historico?turmaId=...`, com o percentual e todas as aulas encerradas.
-- Atualiza a cada 20 segundos enquanto a aba está visível, ao retornar à aba ou pelo botão Atualizar.
+- Atualiza a cada 20 segundos enquanto a aba está visível e ao retornar à aba. Não há botão de
+  atualização manual.
 - Cancela pedidos pendentes ao sair da rota; não mostra dados de outra sessão após novo login.
-- Erros permitem tentar novamente. Em atualização malsucedida, identifica os dados antigos e
-  retira os atalhos de confirmação até uma consulta bem-sucedida.
-- Um `401` encerra a sessão local e retorna ao login. Sair mantém o comportamento anterior.
+- Depois de um erro, a próxima atualização automática tenta de novo, e a mensagem avisa isso. Em
+  atualização malsucedida, identifica os dados antigos e retira os atalhos de confirmação até uma
+  consulta bem-sucedida.
+- Um `401` encerra a sessão local e retorna ao login. O nome no cabeçalho leva ao perfil, onde
+  fica o botão de sair.
 - A área do aluno continua sem tela de cadastro.
 
 ## Limite da entrega
 
-Esta é a tela A2 e a passagem para o canal da A3. A `develop` não contém o leitor de QR Code,
-o decodificador de áudio nem o envio de `checkin` por WebSocket. A rota de entrada identifica
-o canal e informa essa pendência; não pede permissões, simula captura ou registra presença.
-Esses recursos pertencem à implementação da etapa de check-in.
+O canal QR Code da A3 agora usa a câmera, obtém a localização e envia `checkin` pelo WebSocket,
+conforme [checkin-qr.md](checkin-qr.md). O sucesso só aparece após a confirmação do servidor.
+O canal de áudio ainda depende da implementação da captura/decodificação do microfone; acessar
+sua página não registra presença. A presença da chamada clássica continua sendo marcada pelo professor.
 
 ## Validação
 
@@ -47,6 +51,6 @@ Com a infraestrutura e as contas de demonstração configuradas conforme o READM
 2. Em `apps/aluno`, execute `npm ci` e `npm run dev`.
 3. Abra `http://localhost:3001/aluno` e entre com uma conta de aluno matriculada.
 4. Abra/encerre uma sessão de uma turma desse aluno pelo servidor de sessão. A2 atualiza
-   automaticamente em até 20 segundos ou imediatamente pelo botão Atualizar.
+   automaticamente em até 20 segundos; para ver na hora, recarregue a página.
 
 As contas e matrículas vêm da API/MongoDB; a tela não usa dados de demonstração fixos.

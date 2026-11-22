@@ -14,6 +14,9 @@ import { MensagemDeErro } from "./ui/MensagemDeErro";
 
 const VAZIO: DadosSala = { nome: "", latitude: "", longitude: "", raioMetros: "30" };
 
+// Ordem dos campos na tela, para focar o primeiro com erro
+const CAMPOS: (keyof DadosSala)[] = ["nome", "latitude", "longitude", "raioMetros"];
+
 const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 6 });
 
 type Aviso = { tipo: "sucesso" | "erro"; texto: string } | null;
@@ -61,6 +64,10 @@ export function Salas() {
     const leitura = lerSala(dados);
     if (!leitura.ok) {
       setErros(leitura.erros);
+      // Leva o foco ao primeiro campo com erro, para quem usa teclado ou leitor de tela
+      const primeiro = CAMPOS.find((campo) => leitura.erros[campo]);
+      const elemento = primeiro && evento.currentTarget.elements.namedItem(primeiro);
+      if (elemento instanceof HTMLInputElement) elemento.focus();
       return;
     }
     setErros({});
@@ -84,7 +91,7 @@ export function Salas() {
         <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-6">
           <div>
             <h1 className="text-xl font-semibold">Salas</h1>
-            <p className="text-sm opacity-70">
+            <p className="text-sm text-suave">
               As salas valem para todos os professores e definem a distância aceita no modo QR Code.
             </p>
           </div>
@@ -97,6 +104,8 @@ export function Salas() {
                 rotulo="Nome"
                 name="nome"
                 placeholder="H15 - Sala 203"
+                required
+                autoComplete="off"
                 value={dados.nome}
                 onChange={(e) => alterar("nome", e.target.value)}
                 erro={erros.nome}
@@ -108,6 +117,8 @@ export function Salas() {
                   name="latitude"
                   inputMode="decimal"
                   placeholder="-22.8337"
+                  required
+                  autoComplete="off"
                   value={dados.latitude}
                   onChange={(e) => alterar("latitude", e.target.value)}
                   erro={erros.latitude}
@@ -117,6 +128,8 @@ export function Salas() {
                   name="longitude"
                   inputMode="decimal"
                   placeholder="-47.0525"
+                  required
+                  autoComplete="off"
                   value={dados.longitude}
                   onChange={(e) => alterar("longitude", e.target.value)}
                   erro={erros.longitude}
@@ -131,6 +144,10 @@ export function Salas() {
                 rotulo="Raio em metros"
                 name="raioMetros"
                 inputMode="decimal"
+                required
+                autoComplete="off"
+                // A dica some enquanto há erro no campo, para não empilhar dois textos
+                dica={erros.raioMetros ? undefined : "Distância máxima aceita entre o aluno e a sala no check-in."}
                 value={dados.raioMetros}
                 onChange={(e) => alterar("raioMetros", e.target.value)}
                 erro={erros.raioMetros}
@@ -158,30 +175,50 @@ export function Salas() {
               )}
               {salas.situacao === "pronto" &&
                 (salas.dados.length === 0 ? (
-                  <p className="text-sm opacity-70">Nenhuma sala cadastrada ainda.</p>
+                  <p className="text-sm text-suave">
+                    Nenhuma sala cadastrada ainda. Use o formulário “Nova sala” para cadastrar a primeira.
+                  </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-md text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-borda-forte">
-                          <th className="py-2 font-semibold">Nome</th>
-                          <th className="py-2 font-semibold">Latitude</th>
-                          <th className="py-2 font-semibold">Longitude</th>
-                          <th className="py-2 text-right font-semibold">Raio</th>
+                  // No celular latitude e longitude dividem uma coluna, para a tabela caber sem rolar de lado
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-borda-forte">
+                        <th scope="col" className="py-2 pr-3 font-semibold">
+                          Nome
+                        </th>
+                        <th scope="col" className="py-2 pr-3 font-semibold sm:hidden">
+                          Coordenadas
+                        </th>
+                        <th scope="col" className="hidden py-2 pr-3 font-semibold sm:table-cell">
+                          Latitude
+                        </th>
+                        <th scope="col" className="hidden py-2 pr-3 font-semibold sm:table-cell">
+                          Longitude
+                        </th>
+                        <th scope="col" className="py-2 text-right font-semibold">
+                          Raio
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {salas.dados.map((sala) => (
+                        <tr key={sala.id} className="border-b border-borda-suave">
+                          <td className="py-2 pr-3 break-words">{sala.nome}</td>
+                          <td className="py-2 pr-3 font-mono text-suave sm:hidden">
+                            <span className="block">{numero.format(sala.latitude)}</span>
+                            <span className="block">{numero.format(sala.longitude)}</span>
+                          </td>
+                          <td className="hidden py-2 pr-3 font-mono text-suave sm:table-cell">
+                            {numero.format(sala.latitude)}
+                          </td>
+                          <td className="hidden py-2 pr-3 font-mono text-suave sm:table-cell">
+                            {numero.format(sala.longitude)}
+                          </td>
+                          <td className="py-2 text-right whitespace-nowrap">{numero.format(sala.raioMetros)} m</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {salas.dados.map((sala) => (
-                          <tr key={sala.id} className="border-b border-borda-suave">
-                            <td className="py-2">{sala.nome}</td>
-                            <td className="py-2 font-mono opacity-70">{numero.format(sala.latitude)}</td>
-                            <td className="py-2 font-mono opacity-70">{numero.format(sala.longitude)}</td>
-                            <td className="py-2 text-right">{numero.format(sala.raioMetros)} m</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 ))}
             </section>
           </div>

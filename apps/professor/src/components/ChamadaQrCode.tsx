@@ -1,26 +1,28 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import type { ChamadaGuardada } from "@/lib/chamadas";
-import type { PresencaAtualizada } from "@/lib/protocolo";
+import type { PresenteAoVivo } from "@/lib/presencas";
 import { desenharQr } from "@/lib/qr";
 import { conteudoQr } from "@/lib/totp";
 import { useCodigoRotativo } from "@/lib/useCodigoRotativo";
 import type { ClienteSessao } from "@/lib/ws";
-import { Botao } from "./ui/Botao";
+import { PainelAoVivo } from "./PainelAoVivo";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
-
-const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 interface ChamadaQrCodeProps {
   chamada: ChamadaGuardada;
   cliente: ClienteSessao;
-  /** Presenças recebidas do servidor nesta tela, da mais recente para a mais antiga. */
-  presentes: PresencaAtualizada[];
+  /** Presentes segundo o servidor (estado e eventos), do mais recente para o mais antigo. */
+  presentes: PresenteAoVivo[];
+  /** O estado da sessão já chegou do servidor. */
+  carregado: boolean;
+  /** Botões "Trocar para…" (#49), embaixo da lista de presentes. */
+  troca?: ReactNode;
 }
 
 /** QR Code rotativo (P7): projetado para a turma, com o tempo até o próximo código. */
-export function ChamadaQrCode({ chamada, cliente, presentes }: ChamadaQrCodeProps) {
+export function ChamadaQrCode({ chamada, cliente, presentes, carregado, troca }: ChamadaQrCodeProps) {
   const diferenca = useCallback(() => cliente.diferencaRelogioMs, [cliente]);
   const { token, restanteMs, periodoMs, erro } = useCodigoRotativo(chamada.totp, diferenca);
   const desenho = useMemo(() => (token ? desenharQr(conteudoQr(chamada.sessaoId, token)) : null), [chamada.sessaoId, token]);
@@ -64,33 +66,13 @@ export function ChamadaQrCode({ chamada, cliente, presentes }: ChamadaQrCodeProp
             <div className="h-full rounded-full bg-primaria" style={{ width: `${(restanteMs / periodoMs) * 100}%` }} />
           </div>
         </div>
-        <p className="text-center opacity-70">Aponte a câmera do app do aluno para o código.</p>
+        <p className="text-center text-suave">Aponte a câmera do app do aluno para o código.</p>
         <MensagemDeErro>{desenho ? erro : null}</MensagemDeErro>
       </section>
 
-      <aside aria-labelledby="titulo-presentes" className="flex w-full flex-col gap-3 lg:w-80">
-        <h2 id="titulo-presentes" className="flex items-center gap-2 font-semibold">
-          <span aria-hidden="true" className="size-2 rounded-full bg-sucesso" />
-          Presentes (ao vivo)
-        </h2>
-        {presentes.length === 0 ? (
-          <p className="text-sm opacity-70">Os alunos aparecem aqui conforme registram presença pelo código.</p>
-        ) : (
-          <ol className="border-t border-borda-suave">
-            {presentes.map((presenca) => (
-              <li key={presenca.alunoId} className="flex gap-3 border-b border-borda-suave py-2">
-                <span className="font-mono text-sm opacity-70">{hora.format(presenca.registradoEm)}</span>
-                <span>{presenca.nomeAluno}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        {/* O protocolo v1 ainda não tem troca de modo (#49); encerrar e abrir outra criaria duas aulas */}
-        <Botao variante="secundario" disabled>
-          Trocar para clássica
-        </Botao>
-        <p className="-mt-1 text-sm opacity-70">A troca de modo ainda não está disponível.</p>
-      </aside>
+      <PainelAoVivo presentes={presentes} carregado={carregado} vazio="Nenhum aluno registrou presença ainda.">
+        {troca}
+      </PainelAoVivo>
     </div>
   );
 }

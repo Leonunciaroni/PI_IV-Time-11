@@ -127,6 +127,17 @@ public class TurmaService {
                 matriculas.countByTurmaId(turma.id()));
     }
 
+    /**
+     * Tira o aluno da turma. As presenças já registradas continuam no banco, mas o aluno deixa de
+     * aparecer na lista e nas estatísticas da turma.
+     */
+    public void removerMatricula(String professorId, String turmaId, String alunoId) {
+        Turma turma = daProfessor(professorId, turmaId);
+        if (matriculas.deleteByTurmaIdAndAlunoId(turma.id(), alunoId) == 0) {
+            throw new RecursoNaoEncontradoException("Matrícula não encontrada");
+        }
+    }
+
     /** A turma de outro professor responde como inexistente, para não revelar que ela existe. */
     private Turma daProfessor(String professorId, String turmaId) {
         return turmas.findByIdAndProfessorId(turmaId, professorId)

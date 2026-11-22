@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -285,6 +286,60 @@ class TurmaControllerTest {
         assertEquals(0, matriculas.countByTurmaId(idDeOutro));
     }
 
+    // ---- Remover matrícula ----
+
+    @Test
+    void removeMatriculaEOAlunoVoltaAEstarEntreOsCandidatos() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        Usuario carla = usuario("Carla Dias", "carla@puc.br", Papel.ALUNO, "24002001");
+        matriculas.insert(new Matricula(null, id, aluno.id(), null));
+        matriculas.insert(new Matricula(null, id, carla.id(), null));
+
+        removerMatricula(professor, id, aluno.id()).andExpect(status().isNoContent());
+
+        assertEquals(1, matriculas.countByTurmaId(id));
+        mvc.perform(get("/api/turmas/" + id + "/alunos").header("Authorization", bearer(professor)))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].nome").value("Carla Dias"));
+        mvc.perform(get("/api/turmas/" + id + "/candidatos").header("Authorization", bearer(professor)))
+                .andExpect(jsonPath("$[0].nome").value("Ana Souza"));
+    }
+
+    @Test
+    void removerAlunoQueNaoEstaNaTurmaResponde404() throws Exception {
+        String id = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+
+        removerMatricula(professor, id, aluno.id())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Matrícula não encontrada"));
+        removerMatricula(professor, id, "nao-existe").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void naoRemoveMatriculaDeTurmaDeOutroProfessor() throws Exception {
+        String idDeOutro = idDe(criarTurma(outroProfessor, "Turma X", "Redes", "Sex 08:00"));
+        matriculas.insert(new Matricula(null, idDeOutro, aluno.id(), null));
+
+        removerMatricula(professor, idDeOutro, aluno.id())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Turma não encontrada"));
+        removerMatricula(aluno, idDeOutro, aluno.id()).andExpect(status().isForbidden());
+        assertEquals(1, matriculas.countByTurmaId(idDeOutro));
+    }
+
+    @Test
+    void removerMatriculaNaoAfetaOutrasTurmasDoAluno() throws Exception {
+        String a = idDe(criarTurma(professor, "Turma A", "Engenharia de Software I", "Seg 19:00"));
+        String b = idDe(criarTurma(professor, "Turma B", "Redes", "Ter 19:00"));
+        matriculas.insert(new Matricula(null, a, aluno.id(), null));
+        matriculas.insert(new Matricula(null, b, aluno.id(), null));
+
+        removerMatricula(professor, a, aluno.id()).andExpect(status().isNoContent());
+
+        assertEquals(0, matriculas.countByTurmaId(a));
+        assertEquals(1, matriculas.countByTurmaId(b));
+    }
+
     // ---- Acesso ----
 
     @Test
@@ -325,6 +380,11 @@ class TurmaControllerTest {
         String lista = Arrays.stream(alunoIds).map(id -> "\"" + id + "\"").collect(Collectors.joining(","));
         return mvc.perform(post("/api/turmas/" + turmaId + "/matriculas").header("Authorization", bearer(dono))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"alunoIds\":[" + lista + "]}"));
+    }
+
+    ResultActions removerMatricula(Usuario dono, String turmaId, String alunoId) throws Exception {
+        return mvc.perform(delete("/api/turmas/" + turmaId + "/matriculas/" + alunoId)
+                .header("Authorization", bearer(dono)));
     }
 
     String idDe(ResultActions resposta) throws Exception {

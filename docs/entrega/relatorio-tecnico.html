@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Fast Attendance — relatório técnico</title>
+  <style>
+    @page { size:A4; margin:19mm 18mm 18mm; }
+    * { box-sizing:border-box; }
+    body { color:#183047; font:11pt/1.5 Arial,Helvetica,sans-serif; margin:0; }
+    h1,h2,h3 { color:#10283f; line-height:1.2; }
+    h1 { font-size:30pt; margin:0 0 10mm; }
+    h2 { font-size:18pt; border-bottom:2px solid #48b7ad; padding-bottom:3mm; margin:0 0 5mm; }
+    h3 { font-size:12.5pt; margin:5mm 0 2mm; }
+    p { margin:0 0 3.5mm; }
+    ul,ol { padding-left:7mm; margin:2mm 0 5mm; }
+    li { margin:0 0 2mm; }
+    table { width:100%; border-collapse:collapse; margin:3mm 0 5mm; font-size:9.5pt; }
+    th { background:#10283f; color:white; text-align:left; }
+    th,td { padding:2.5mm; border:1px solid #c8d5dd; vertical-align:top; }
+    tr:nth-child(even) td { background:#f3f7f9; }
+    .cover { min-height:255mm; display:flex; flex-direction:column; justify-content:center; page-break-after:always; }
+    .eyebrow { color:#1f807c; text-transform:uppercase; letter-spacing:.14em; font-size:10pt; font-weight:bold; }
+    .subtitle { font-size:17pt; max-width:150mm; color:#456174; }
+    .rule { width:28mm; height:2mm; background:#f2c14e; margin:9mm 0; }
+    .meta { color:#607589; font-size:10pt; }
+    .page { page-break-after:always; }
+    .page:last-child { page-break-after:auto; }
+    .note { background:#fff3d2; border-left:4px solid #f2c14e; padding:3mm 4mm; }
+    .diagram { max-width:100%; max-height:125mm; display:block; margin:4mm auto; }
+    a { color:#17677d; text-decoration:none; }
+    .foot { margin-top:9mm; border-top:1px solid #d6e0e5; padding-top:3mm; color:#748795; font-size:9pt; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <p class="eyebrow">Projeto Integrador IV · Time 11 · PUC Campinas</p>
+    <h1>Fast Attendance</h1>
+    <div class="rule"></div>
+    <p class="subtitle">Relatório técnico de arquitetura, funcionamento e validação do sistema de presença.</p>
+    <p class="meta" style="margin-top:16mm">Base avaliada: develop 9946a94<br>Data: 22 de novembro de 2026</p>
+  </div>
+
+  <section class="page">
+    <h2>1. Resumo e objetivo</h2>
+    <p>Fast Attendance é um sistema web de chamada com três formas de confirmar presença: chamada clássica, QR Code rotativo e token transmitido por som. O projeto reúne dois aplicativos web, uma API REST, um serviço de sessão em tempo real, uma ponte WebSocket/TCP, MongoDB em replica set e Nginx. Os serviços de desenvolvimento são iniciados pelo Docker Compose.</p>
+    <p>O objetivo é registrar presenças com acompanhamento em tempo real e permitir que o professor selecione o canal adequado à chamada.</p>
+    <h3>Modos de chamada</h3>
+    <ol>
+      <li><strong>Clássica:</strong> o professor marca a lista individualmente ou em lote.</li>
+      <li><strong>QR Code:</strong> token TOTP rotativo, lido pelo aluno; a localização é comparada ao raio da sala.</li>
+      <li><strong>Som:</strong> token de seis dígitos codificado em FSK, transmitido pelo alto-falante e decodificado no navegador do aluno.</li>
+    </ol>
+    <p>As presenças são gravadas no servidor e o painel do professor acompanha as atualizações por Change Streams do MongoDB.</p>
+    <h3>Limite da validação</h3>
+    <p class="note">O fluxo digital está implementado nos três modos. O alcance do som depende de medições acústicas em aparelhos reais; o requisito de carga de 15 salas por 70 alunos também permanece sem aprovação.</p>
+    <div class="foot">Fast Attendance · Relatório técnico · 2026</div>
+  </section>
+
+  <section class="page">
+    <h2>2. Arquitetura</h2>
+    <img class="diagram" src="../diagramas/arquitetura.svg" alt="Diagrama de arquitetura do Fast Attendance">
+    <table>
+      <thead><tr><th>Componente</th><th>Responsabilidade</th></tr></thead>
+      <tbody>
+        <tr><td>App do professor</td><td>Turmas, salas, chamadas e painel ao vivo.</td></tr>
+        <tr><td>App do aluno</td><td>Chamadas abertas, QR Code, captação sonora e histórico.</td></tr>
+        <tr><td>API REST</td><td>Spring Boot e Java 21: autenticação, cadastros, turmas, matrículas, salas e frequência.</td></tr>
+        <tr><td>Serviços de sessão</td><td>Servidor TCP em Java e ponte WebSocket/TCP para o protocolo do navegador.</td></tr>
+        <tr><td>Persistência e entrada</td><td>MongoDB 8 replica set; Nginx encaminha apps, API e WebSocket.</td></tr>
+      </tbody>
+    </table>
+    <p>O detalhamento está em <a href="../arquitetura.md">docs/arquitetura.md</a>, <a href="../api-rest.md">docs/api-rest.md</a> e <a href="../protocolo-v1.md">docs/protocolo-v1.md</a>.</p>
+    <div class="foot">Fast Attendance · Arquitetura do sistema</div>
+  </section>
+
+  <section class="page">
+    <h2>3. Segurança e dados</h2>
+    <ul>
+      <li>A API autentica usuários com JWT HS256; API e servidor de sessão compartilham o segredo configurado em <code>JWT_SECRET</code>.</li>
+      <li>Tokens TOTP são validados no servidor; a API não devolve o segredo TOTP.</li>
+      <li>O servidor confere token, matrícula e unicidade do check-in por aluno e sessão.</li>
+      <li>A validação geográfica é aplicada ao QR Code; o modo sonoro não usa localização para registrar a presença.</li>
+      <li>O segredo JWT fica em <code>infra/.env</code>, arquivo ignorado pelo Git.</li>
+    </ul>
+    <p>O Compose atual serve para desenvolvimento e demonstração. O MongoDB desse ambiente não exige autenticação e não deve ser exposto como instalação de produção.</p>
+    <h2 style="margin-top:10mm">4. Instalação e validação</h2>
+    <p>Foi feito um clone novo da branch <code>develop</code> (<code>9946a94</code>) em pasta temporária, com `.env` novo e um projeto Compose isolado. `docker compose up -d --build` concluiu e construiu as cinco imagens de aplicação. MongoDB, API, sessão e ponte ficaram saudáveis; Professor, Aluno e Nginx iniciaram.</p>
+    <p>O script `infra/usuarios-demo.sh` criou as contas de demonstração no banco descartável. `/nginx-health`, `/professor` e `/aluno` responderam HTTP 200. Os contêineres e volumes temporários foram removidos após a validação.</p>
+    <p class="note">O teste foi realizado neste notebook, com Docker Desktop e imagens de build já disponíveis. Ele valida um checkout e volumes novos no mesmo computador, mas não substitui a execução em outro computador.</p>
+    <div class="foot">Fast Attendance · Segurança e instalação</div>
+  </section>
+
+  <section class="page">
+    <h2>5. Validação móvel e limitações</h2>
+    <p>Em 22/11/2026, o Redmi Note 14 com Chrome confirmou contexto HTTPS e acesso à câmera, ao microfone e à localização no diagnóstico. O usuário também confirmou que os apps Professor e Aluno abriram no aparelho. Consulte o registro em <a href="../https-celulares.md">docs/https-celulares.md</a> e na <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/40">issue #40</a>.</p>
+    <h3>Validações pendentes</h3>
+    <ul>
+      <li>Medições de alcance, ruído de sala e compatibilidade entre telefones: issues <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/13">#13</a>, <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/26">#26</a>, <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/33">#33</a> e <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/47">#47</a>.</li>
+      <li>Carga de 15 salas por 70 alunos e validação inferior a um segundo: issue <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/52">#52</a>.</li>
+      <li>Checklist, relatório, slides e tag de entrega `semana-7`: issue <a href="https://github.com/Leonunciaroni/PI_IV-Time-11/issues/75">#75</a>.</li>
+    </ul>
+    <p>O teste funcional de instalação e permissões não comprova alcance acústico nem desempenho sob carga. Esses resultados permanecem identificados como pendentes nas respectivas issues.</p>
+    <h2 style="margin-top:10mm">Referências</h2>
+    <p><a href="../../README.md">README</a> · <a href="../../infra/README.md">Infraestrutura</a> · <a href="../roteiro-demonstracao.md">Roteiro de demonstração</a> · <a href="../plano-teste-carga.md">Plano de carga</a></p>
+    <div class="foot">Fast Attendance · Estado técnico em 22/11/2026</div>
+  </section>
+</body>
+</html>

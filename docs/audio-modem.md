@@ -4,10 +4,12 @@
 token de seis dígitos da #26. O emissor da #46 e o receptor de microfone usam esse
 codec sem depender das telas dos apps. Há uma demonstração para testar no navegador.
 
-**Situação:** código e testes digitais disponíveis; transmissão física a 3 m ainda
-pendente. A [#13](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/13) continua
-necessária para escolher a faixa e o volume finais. Os valores abaixo são um perfil
-inicial configurável, sem comprovação de alcance ou audibilidade.
+**Situação:** codificação, decodificação e integração às telas do professor e do
+aluno estão disponíveis. O check-in a 3 m em sala silenciosa foi confirmado em um
+par de aparelhos. O perfil abaixo continua inicial: o spike
+[#13](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/13) ainda precisa
+comparar ambientes, distâncias e aparelhos para definir a faixa e o volume de
+referência da equipe.
 
 ## Enquadramento no ar
 
@@ -91,9 +93,10 @@ await receptor.parar();  // ao encerrar a captura ou desmontar a tela
 
 A parada libera tracks, Worker e contexto; também descarta uma captura concedida
 depois do cancelamento. O chamador deve parar o receptor ao sair da tela.
-`aoToken` entrega o token com CRC válido. O app deve obter a sessão pela API e
-enviar o check-in autenticado do protocolo. A integração às telas é uma etapa
-separada e não foi ativada por este módulo.
+`aoToken` entrega o token com CRC válido. O app obtém a sessão pela API e envia o
+check-in autenticado do protocolo. Este módulo permanece reutilizável; o fluxo das
+telas está integrado em [docs/checkin-som.md](checkin-som.md), com emissão no app
+do professor e recepção no app do aluno.
 
 ## Testar no navegador
 
@@ -124,16 +127,15 @@ Abra no celular o endereço HTTPS dos logs acrescentando `/demo/`. O túnel do C
 da #40 serve os apps; esta demonstração usa seu próprio servidor. O áudio é
 processado localmente, sem gravação ou envio pelo túnel.
 
-### Validação física pendente
+### Validação física e medições restantes
 
-Depois de escolher a faixa com a #13, execute o autoteste em cada navegador e faça
-a recepção a **3 m em sala silenciosa**, com notebook e celular identificados.
-Compare o token recebido com o emitido e registre perfil, volumes do sistema/página,
-taxa de amostragem, sucessos e falhas. Testes digitais não comprovam o caminho físico.
+O critério de recepção a **3 m em sala silenciosa** foi confirmado. O registro
+abaixo comprova somente esta combinação de aparelhos; não substitui o spike #13 nem
+comprova alcance em outros modelos, ambientes ou níveis de ruído.
 
 | Data | Emissor / receptor / navegador | Distância | Perfil / volume | Token esperado / recebido | Resultado |
 |---|---|---|---|---|---|
-| Pendente | — | 3 m | — | — | A medir (#26) |
+| 22/11/2026 | Notebook / Redmi Note 14 (Chrome no receptor; navegador do emissor não informado) | 3 m, sala silenciosa | Padrão: 18.500/19.500 Hz, 20 ms; volumes não informados | Check-in aceito pelo servidor (token numérico não anotado) | Aprovado (#26) |
 
 ## Emissão em loop (#46)
 
@@ -178,9 +180,9 @@ na janela TOTP. O contexto pertence ao chamador, que pode fechá-lo após o fade
 Cada quadro começa e termina com ganho zero, usando rampas lineares de 50 ms.
 A parada mantém o ganho instantâneo antes de reduzi-lo a zero, inclusive durante
 uma rampa. Fontes e ganhos são desconectados ao terminar. O volume padrão é 0,3,
-os 30% usados no [procedimento do spike](spikes/audio-ultrassom.md). As medições
-físicas continuam pendentes: as rampas evitam descontinuidades, mas a audibilidade
-e o alcance precisam ser verificados no hardware da sala.
+os 30% usados no [procedimento do spike](spikes/audio-ultrassom.md). O check-in a
+3 m passou no par notebook/Redmi Note 14; audibilidade, resposta de outros
+aparelhos e volume de referência ainda precisam ser medidos no spike #13.
 
 Verificação automatizada, sem dependências:
 

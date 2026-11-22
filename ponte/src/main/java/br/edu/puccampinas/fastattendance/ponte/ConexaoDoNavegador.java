@@ -3,8 +3,7 @@ package br.edu.puccampinas.fastattendance.ponte;
 import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
 import br.edu.puccampinas.fastattendance.common.comunicado.ComunicadoDeDesligamento;
 import br.edu.puccampinas.fastattendance.common.comunicado.Erro;
-import br.edu.puccampinas.fastattendance.common.comunicado.EventoDePresencaAtualizada;
-import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeSessaoEncerrada;
+import br.edu.puccampinas.fastattendance.common.comunicado.Evento;
 import br.edu.puccampinas.fastattendance.common.comunicado.PedidoParaSair;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
@@ -252,7 +251,8 @@ final class ConexaoDoNavegador {
                     fechar(CodigoFechamento.SERVIDOR_REINICIANDO, "Servidor reiniciando");
                     return;
                 }
-                if (comunicado instanceof EventoDePresencaAtualizada || comunicado instanceof EventoDeSessaoEncerrada) {
+                // Eventos não respondem a pedido: não podem tirar a vez de uma resposta na fila de pendentes
+                if (comunicado instanceof Evento) {
                     enviar(conversorParaNavegador.paraFrame(comunicado, null));
                 } else {
                     tratarResposta(comunicado);

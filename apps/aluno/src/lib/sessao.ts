@@ -78,3 +78,12 @@ export function encerrarSessao(): void {
   localStorage.removeItem(CHAVE);
   notificar();
 }
+
+/** Preserva token e validade; uma resposta atrasada não pode recriar outra sessão. */
+export function atualizarUsuario(usuario: Usuario, tokenEsperado: string): boolean {
+  const atual = lerSessao();
+  if (!atual || atual.token !== tokenEsperado || atual.usuario.id !== usuario.id) return false;
+  localStorage.setItem(CHAVE, JSON.stringify({ ...atual, usuario }));
+  notificar();
+  return true;
+}

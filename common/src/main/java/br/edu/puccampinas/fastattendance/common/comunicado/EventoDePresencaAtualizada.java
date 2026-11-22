@@ -3,7 +3,7 @@ package br.edu.puccampinas.fastattendance.common.comunicado;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 
 /** Servidor -> professor acompanhando (tipo presenca.atualizada, sem ref): presença gravada por qualquer réplica. Não solicitado. */
-public class EventoDePresencaAtualizada extends Comunicado
+public class EventoDePresencaAtualizada extends Comunicado implements Evento
 {
     private String sessaoId;
     private String alunoId;

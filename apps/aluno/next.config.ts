@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   basePath: "/aluno",
   // Gera .next/standalone com server.js para a imagem Docker.
   output: "standalone",
+  // Esconde o botão "N" do Next no canto da tela em `npm run dev`, para capturas e gravações
+  // locais saírem limpas. Os erros de compilação e de execução continuam aparecendo. Em
+  // produção (build e Docker) o indicador nunca aparece.
+  devIndicators: false,
   async redirects() {
     if (process.env.NODE_ENV !== "development") return [];
     return ["/", "/login"].map((caminho) => ({

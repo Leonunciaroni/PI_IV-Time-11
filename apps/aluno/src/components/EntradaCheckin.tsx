@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AreaAutenticada } from "./AreaAutenticada";
-import { ErroApi, listarMinhasTurmas } from "@/lib/api";
-import { nomesModos } from "@/lib/chamadas";
+import { CheckinQr } from "./CheckinQr";
+import { CheckinSom } from "./CheckinSom";
+import { ErroApi, listarMinhasTurmas, listarSessoesAtivas } from "@/lib/api";
 import { encerrarSessao } from "@/lib/sessao";
 import type { TurmaDoAluno } from "@/lib/tipos";
 
@@ -44,8 +45,10 @@ function CanalDaChamada({
   const [erro, setErro] = useState<string | null>(null);
   useEffect(() => {
     const controle = new AbortController();
-    listarMinhasTurmas(token, controle.signal)
-      .then((turmas) => {
+    Promise.all([
+      listarMinhasTurmas(token, controle.signal),
+      modo === "SOM" ? listarSessoesAtivas(token, controle.signal) : Promise.resolve(null),
+    ]).then(([turmas, ativas]) => {
         if (controle.signal.aborted) return;
         const encontrada = turmas.find(
           (t) =>
@@ -53,7 +56,7 @@ function CanalDaChamada({
             t.chamadaAberta?.id === sessaoId &&
             t.chamadaAberta.modo === modo,
         );
-        if (!encontrada || (modo !== "QRCODE" && modo !== "SOM")) {
+        if (!encontrada || (modo !== "QRCODE" && modo !== "SOM") || (ativas !== null && !ativas.some((s) => s.sessaoId === sessaoId && s.turmaId === turmaId && s.modo === "SOM"))) {
           setErro(
             "Esta chamada não está mais disponível neste canal. Volte ao início e atualize suas turmas.",
           );
@@ -75,40 +78,27 @@ function CanalDaChamada({
   }, [token, turmaId, sessaoId, modo]);
   return (
     <main className="mx-auto w-full max-w-xl px-5 py-10">
-      <Link href="/" className="text-sm font-semibold text-[#5040e8]">
+      <Link href="/" className="text-sm font-semibold text-marca">
         ← Voltar ao início
       </Link>
-      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-        <h1 className="text-2xl font-bold">Confirmar presença</h1>
-        {erro ? (
-          <p role="alert" className="mt-4 text-sm text-red-700">
-            {erro}
-          </p>
-        ) : turma ? (
-          <>
-            <p className="mt-3 text-slate-500">
-              {turma.disciplina} · {turma.nome}
+      {turma?.chamadaAberta?.modo === "QRCODE" ? (
+        <CheckinQr turma={turma} />
+      ) : turma?.chamadaAberta?.modo === "SOM" ? (
+        <CheckinSom turma={turma} token={token} />
+      ) : (
+        <section className="mt-6 rounded-xl border border-borda bg-superficie p-6">
+          <h1 className="text-2xl font-bold">Confirmar presença</h1>
+          {erro ? (
+            <p role="alert" className="mt-4 text-sm text-perigo-texto">
+              {erro}
             </p>
-            <h2 className="mt-6 rounded-xl bg-[#172033] p-5 text-lg font-semibold text-white">
-              Canal: {nomesModos[turma.chamadaAberta!.modo]}
-            </h2>
-            <p className="mt-5 text-sm leading-relaxed text-slate-600">
-              {modo === "QRCODE"
-                ? "Esta chamada usa o QR Code exibido pelo professor."
-                : "Esta chamada usa o sinal sonoro emitido pelo professor."}
+          ) : (
+            <p role="status" className="mt-4 text-sm text-suave">
+              Verificando chamada aberta...
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              A captura e a confirmação de presença serão disponibilizadas na
-              etapa de check-in. Acessar esta página ainda não registra sua
-              presença.
-            </p>
-          </>
-        ) : (
-          <p role="status" className="mt-4 text-sm text-slate-500">
-            Verificando chamada aberta...
-          </p>
-        )}
-      </section>
+          )}
+        </section>
+      )}
     </main>
   );
 }

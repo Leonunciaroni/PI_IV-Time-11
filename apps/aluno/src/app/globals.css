@@ -1,21 +1,81 @@
 @import "tailwindcss";
 
+/*
+ * Cores do app, com um valor para o tema claro e outro para o escuro. As telas usam só as
+ * classes geradas a partir delas (bg-superficie, text-suave, border-borda, text-marca...). O
+ * escuro segue os pares do professor (slate-950, slate-900...) no tom roxo da logo do aluno.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Controles nativos (lista de seleção, barra de rolagem) seguem o tema do sistema */
+  color-scheme: light dark;
+  /* Quase branco com um toque de roxo (o par do slate-50 do professor), para os campos brancos aparecerem */
+  --background: oklch(0.984 0.006 290);
+  --foreground: #172033;
+  /* Cartões, cabeçalho e campos, por cima do fundo da página */
+  --superficie: var(--color-white);
+  /* Um degrau abaixo da superfície: campos do perfil, trilho da barra de frequência, hover */
+  --superficie-suave: var(--color-slate-50);
+  /* Texto secundário (horário, dicas, rótulos) */
+  --texto-suave: var(--color-slate-500);
+  --borda: var(--color-slate-200);
+  --borda-forte: var(--color-slate-300);
+  /* Roxo da logo para links, rótulos e foco (no escuro, o lilás do check da logo) */
+  --marca: #3b2db5;
+  /* Avisos em bloco: fundo claro, borda e texto escuro */
+  --perigo-fundo: var(--color-red-50);
+  --perigo-borda: var(--color-red-200);
+  --perigo-texto: var(--color-red-800);
+  --sucesso-fundo: var(--color-emerald-50);
+  --sucesso-borda: var(--color-emerald-200);
+  --sucesso-texto: var(--color-emerald-900);
+  --atencao-fundo: var(--color-amber-50);
+  --atencao-borda: var(--color-amber-200);
+  --atencao-texto: var(--color-amber-900);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-superficie: var(--superficie);
+  --color-superficie-suave: var(--superficie-suave);
+  --color-suave: var(--texto-suave);
+  --color-borda: var(--borda);
+  --color-borda-forte: var(--borda-forte);
+  --color-marca: var(--marca);
+  --color-perigo-fundo: var(--perigo-fundo);
+  --color-perigo-borda: var(--perigo-borda);
+  --color-perigo-texto: var(--perigo-texto);
+  --color-sucesso-fundo: var(--sucesso-fundo);
+  --color-sucesso-borda: var(--sucesso-borda);
+  --color-sucesso-texto: var(--sucesso-texto);
+  --color-atencao-fundo: var(--atencao-fundo);
+  --color-atencao-borda: var(--atencao-borda);
+  --color-atencao-texto: var(--atencao-texto);
+  /* Algarismos da Geist; o resto vem da Atkinson Hyperlegible Next (as duas em layout.tsx) */
+  --font-sans: var(--font-digitos), var(--font-atkinson);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    /* Roxo quase preto: o par do slate-950 (azul quase preto) do professor, no tom da logo do aluno */
+    --background: oklch(0.13 0.045 290);
     --foreground: #ededed;
+    --superficie: oklch(0.208 0.042 290);
+    --superficie-suave: oklch(0.25 0.045 290);
+    --texto-suave: oklch(0.75 0.03 290);
+    --borda: oklch(0.3 0.045 290);
+    --borda-forte: oklch(0.372 0.044 290);
+    --marca: #a99cf5;
+    --perigo-fundo: color-mix(in oklab, var(--color-red-400) 12%, transparent);
+    --perigo-borda: color-mix(in oklab, var(--color-red-400) 30%, transparent);
+    --perigo-texto: var(--color-red-300);
+    --sucesso-fundo: color-mix(in oklab, var(--color-emerald-400) 12%, transparent);
+    --sucesso-borda: color-mix(in oklab, var(--color-emerald-400) 30%, transparent);
+    --sucesso-texto: var(--color-emerald-300);
+    --atencao-fundo: color-mix(in oklab, var(--color-amber-400) 12%, transparent);
+    --atencao-borda: color-mix(in oklab, var(--color-amber-400) 30%, transparent);
+    --atencao-texto: var(--color-amber-200);
   }
 }
 
