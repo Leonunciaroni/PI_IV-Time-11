@@ -2,7 +2,9 @@ package br.edu.puccampinas.fastattendance.ponte;
 
 import br.edu.puccampinas.fastattendance.common.comunicado.ConfiguracaoTotp;
 import br.edu.puccampinas.fastattendance.common.comunicado.Erro;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeModoAlterado;
 import br.edu.puccampinas.fastattendance.common.comunicado.EventoDePresencaAtualizada;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeTrocarModo;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
 import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDePong;
@@ -34,6 +36,31 @@ class ConversorParaNavegadorTest {
         assertTrue(frame.get("ts").longValue() > 0);
         assertTrue(frame.get("dados").isObject());
         assertNull(frame.get("id"));
+    }
+
+    @Test
+    void respostaDeTrocarModoUsaONomeDoProtocoloELevaRef() {
+        JsonNode frame = ler(conversor.paraFrame(
+                new RespostaDeTrocarModo("s", ModoChamada.QRCODE, "sala", 1791370900000L), "t1"));
+        assertEquals("sessao.modo_alterado", frame.get("tipo").stringValue());
+        assertEquals("t1", frame.get("ref").stringValue());
+        JsonNode dados = frame.get("dados");
+        assertEquals("s", dados.get("sessaoId").stringValue());
+        assertEquals("QRCODE", dados.get("modo").stringValue());
+        assertEquals("sala", dados.get("salaId").stringValue());
+        assertEquals(1791370900000L, dados.get("alteradoEm").longValue());
+        assertEquals(4, dados.size());
+    }
+
+    @Test
+    void eventoDeModoAlteradoNaoTemRefEMandaSalaNulaExplicita() {
+        JsonNode frame = ler(conversor.paraFrame(new EventoDeModoAlterado("s", ModoChamada.SOM, null, 5L), null));
+        assertEquals("sessao.modo_alterado", frame.get("tipo").stringValue());
+        assertNull(frame.get("ref"));
+        // O campo existe, com null: o cliente distingue "sem sala" de "campo esquecido"
+        assertTrue(frame.get("dados").has("salaId"));
+        assertTrue(frame.get("dados").get("salaId").isNull());
+        assertEquals("SOM", frame.get("dados").get("modo").stringValue());
     }
 
     @Test

@@ -93,6 +93,7 @@ O fechamento, em qualquer momento, usa os códigos da seção 8.
 | `sessao.abrir` | professor | `sessao.aberta` | 3 |
 | `sessao.encerrar` | professor | `sessao.encerrada` | 3 |
 | `sessao.acompanhar` | professor | `sessao.estado` | 4 |
+| `sessao.trocar_modo` | professor | `sessao.modo_alterado` | 6 (#49) |
 | `presenca.marcar` | professor | `presenca.atualizada` | 4 |
 | `presenca.marcar_lote` | professor | `presenca.lote_ok` | 4 |
 | `checkin` | aluno | `checkin.ok` | 5 (QR), 6 (som) |
@@ -261,6 +262,51 @@ Ordem de validação do servidor (`ServicoDeCheckin`):
 Os passos 9 e 10 também são garantidos pelos índices únicos `aluno_sessao_unico` e
 `sessao_dispositivo_unico`, que cobrem a corrida entre réplicas.
 
+### 4.9 `sessao.trocar_modo`
+
+Troca o modo de uma chamada aberta **sem perder as presenças** (#49): por exemplo, do som para o QR
+Code quando os alunos do fundo não captam o sinal, ou de qualquer modo para a clássica. A resposta é
+`sessao.modo_alterado` (seção 5.1), e os professores que acompanham a sessão recebem o mesmo tipo
+como evento (seção 5.2).
+
+```json
+{ "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9", "modo": "QRCODE", "salaId": "66f1c1a1b2c3d4e5f6a7b8c9" }
+```
+
+| Campo | Descrição |
+|---|---|
+| `sessaoId` | Sessão aberta do professor. |
+| `modo` | `CLASSICA`, `QRCODE` ou `SOM`. |
+| `salaId` | Opcional. Ao ir para `QRCODE`, vale a sala informada ou, sem ela, a que a sessão já tinha (de uma abertura ou troca anterior para QR Code); sem nenhuma das duas, `MENSAGEM_INVALIDA`. Nos demais modos, se informada, fica guardada para uma volta ao QR Code. Se informada, precisa existir. |
+
+Regras, na ordem em que o servidor as verifica (`ServicoDeSessoes.trocarModo`):
+
+1. Usuário que não é professor: `PERMISSAO_NEGADA`.
+2. `sessaoId` ou `modo` ausentes: `MENSAGEM_INVALIDA`. `modo` desconhecido é recusado antes, pela ponte.
+3. Sessão inexistente ou com id em formato inválido: `SESSAO_NAO_ENCONTRADA`.
+4. Sessão de outro professor: `PERMISSAO_NEGADA`.
+5. Sessão encerrada, pelo professor ou por tempo limite: `SESSAO_ENCERRADA`.
+6. `salaId` informada e inexistente, ou `QRCODE` sem sala: `MENSAGEM_INVALIDA`.
+
+O que muda e o que não muda:
+
+- **Presenças:** continuam valendo, porque são gravadas por `sessaoId`. Quem já está presente não
+  precisa registrar de novo, e uma nova tentativa é `PRESENCA_DUPLICADA`.
+- **Canal aceito:** passa a ser o do modo novo, com as regras das seções 4.6 a 4.8. Depois de ir para
+  `CLASSICA`, `presenca.marcar` passa a valer; o `checkin` no canal antigo recebe `MODO_INCOMPATIVEL`.
+- **TOTP:** o segredo é o mesmo da abertura (seção 5.3). O app do professor continua gerando os
+  códigos com a configuração recebida em `sessao.aberta`.
+- **Mesmo modo e mesma sala:** nada é gravado e nenhum evento é enviado. A resposta traz o estado
+  atual, para que reenviar o pedido depois de uma reconexão não gere erro.
+- **Gravação:** atômica e só para sessão ainda `ABERTA`. Uma sessão encerrada entre a leitura e a
+  escrita recebe `SESSAO_ENCERRADA`. A sessão guarda `modoAlteradoEm` e o histórico `trocasDeModo`
+  (`de`, `para`, `salaId`, `em`).
+- **Aluno:** não recebe evento. A tela inicial do app do aluno consulta `GET /api/sessoes/ativas`,
+  que já traz o modo atual, e o `checkin` no canal antigo recebe `MODO_INCOMPATIVEL`, com a mensagem
+  para voltar ao início e usar o canal indicado pelo professor.
+- **Corrida com o check-in:** um `checkin` validado no modo antigo no mesmo instante da troca pode ser
+  aceito. É uma presença legítima, registrada enquanto o modo antigo ainda valia.
+
 ## 5. Mensagens servidor → cliente
 
 ### 5.1 Respostas
@@ -272,12 +318,14 @@ Os passos 9 e 10 também são garantidos pelos índices únicos `aluno_sessao_un
 | `sessao.aberta` | `{ "sessaoId", "turmaId", "modo", "abertaEm", "totp" }` (ver 5.3) |
 | `sessao.encerrada` | `{ "sessaoId", "motivo": "PROFESSOR" \| "TEMPO_LIMITE", "encerradaEm", "totalPresentes" }` |
 | `sessao.estado` | `{ "sessaoId", "modo", "abertaEm", "presentes": [ { "alunoId", "nome", "origem", "registradoEm" } ], "totalMatriculados" }` (seção 4.5) |
+| `sessao.modo_alterado` | `{ "sessaoId", "modo", "salaId", "alteradoEm" }` (seção 4.9); `salaId` é `null` quando a sessão não tem sala, e `alteradoEm` é a última troca ou, sem troca, a abertura |
 | `presenca.lote_ok` | `{ "sessaoId", "totalPresentes", "totalMatriculados" }` |
 | `checkin.ok` | `{ "sessaoId", "registradoEm" }` |
 | `erro` | `{ "codigo", "mensagem" }` |
 
 `sessao.aberta` é apenas resposta a `sessao.abrir`. `sessao.encerrada` é a resposta a
-`sessao.encerrar` e também um evento (5.2).
+`sessao.encerrar` e também um evento (5.2). `sessao.modo_alterado` é a resposta a
+`sessao.trocar_modo` e também um evento (5.2).
 
 Respostas levam `ref` e não levam `id`. Exemplos com o envelope completo:
 
@@ -298,12 +346,19 @@ Respostas levam `ref` e não levam `id`. Exemplos com o envelope completo:
              "registradoEm": 1791370900090, "totalPresentes": 30, "totalMatriculados": 58 } }
 ```
 
+```json
+{ "v": 1, "tipo": "sessao.modo_alterado", "ref": "t1", "ts": 1791371000020,
+  "dados": { "sessaoId": "66f1c2a1b2c3d4e5f6a7b8c9", "modo": "QRCODE",
+             "salaId": "66f1c1a1b2c3d4e5f6a7b8c9", "alteradoEm": 1791371000010 } }
+```
+
 ### 5.2 Eventos (push, sem `ref`)
 
 | Tipo | Destinatários | `dados` |
 |---|---|---|
 | `presenca.atualizada` | Professores acompanhando a sessão | `{ "sessaoId", "alunoId", "nomeAluno", "presente", "origem": "MANUAL" \| "QRCODE" \| "SOM", "registradoEm", "totalPresentes", "totalMatriculados" }` |
 | `sessao.encerrada` | Professores acompanhando a sessão | igual à resposta da seção 5.1 |
+| `sessao.modo_alterado` | Professores acompanhando a sessão | igual à resposta da seção 5.1 |
 
 Eventos não têm `ref`. Exemplo do encerramento por tempo limite:
 
@@ -315,7 +370,9 @@ Eventos não têm `ref`. Exemplo do encerramento por tempo limite:
 
 **Origem dos eventos:** eles não são enviados pelo roteador de mensagens. O `ObservadorDeMudancas`
 de cada réplica acompanha dois fluxos do MongoDB: as presenças (inserção, atualização e substituição)
-e as sessões (atualização com `status` `ENCERRADA`). Cada evento é entregue às conexões acompanhando a
+e as sessões (atualização com `status` `ENCERRADA`, que vira `sessao.encerrada`, e atualização que
+grava `modoAlteradoEm` numa sessão aberta, que vira `sessao.modo_alterado`). Outras atualizações de
+uma sessão aberta não geram evento. Cada evento é entregue às conexões acompanhando a
 sessão naquela réplica (`PainelAoVivo`). Assim, um professor conectado a uma réplica recebe as
 presenças registradas em qualquer outra. Por isso a chamada clássica não envia push direto aos
 acompanhantes: o evento vem só do fluxo.
@@ -328,6 +385,11 @@ acompanhantes: o evento vem só do fluxo.
   professor que pediu. Quem encerra a sessão e a acompanha recebe as duas mensagens.
 - Ao encerrar a sessão, os acompanhantes são retirados dela: nenhum evento de presença é enviado
   depois do `sessao.encerrada`.
+- `sessao.modo_alterado` segue a mesma regra do encerramento: o evento vai aos acompanhantes, e a
+  resposta a `sessao.trocar_modo`, só a quem pediu. Na troca, os acompanhantes **continuam**
+  registrados e seguem recebendo as presenças.
+- Na ponte, um evento nunca ocupa a vez de uma resposta: a ponte reconhece os comunicados de evento
+  pela interface `Evento` do `common` e os envia sem `ref`, fora da fila de pendentes.
 
 ### 5.3 Configuração TOTP
 
@@ -369,7 +431,7 @@ O `sessaoId` do QR Code é o mesmo `sessaoId` do `checkin`: 24 caracteres hexade
 
 | Código | Quando ocorre |
 |---|---|
-| `MENSAGEM_INVALIDA` | JSON malformado, frame binário, `id` com mais de 64 caracteres, campo obrigatório ausente, campo de tipo errado, `presente` não booleano, `modo` ou `canal` desconhecidos, tipo desconhecido ou tipo que o cliente não pode enviar. |
+| `MENSAGEM_INVALIDA` | JSON malformado, frame binário, `id` com mais de 64 caracteres, campo obrigatório ausente, campo de tipo errado, `presente` não booleano, `modo` ou `canal` desconhecidos, tipo desconhecido ou tipo que o cliente não pode enviar. Em `sessao.abrir` e `sessao.trocar_modo`, também sala inexistente ou `QRCODE` sem sala. |
 | `VERSAO_NAO_SUPORTADA` | Campo `v` inteiro diferente de `1`. A conexão é fechada com 4002. |
 | `AUTH_REQUERIDA` | Mensagem enviada antes de `auth.ok`. |
 | `AUTH_INVALIDA` | JWT inválido, expirado ou com assinatura incorreta. A conexão é fechada com 4001. |
@@ -436,3 +498,4 @@ Exemplo ilustrativo: os valores de `token` e de horário não correspondem a uma
 | 1 | 20/10/2026 | Regras de `sessao.abrir` e `sessao.encerrar` e tempo limite da sessão (seções 4.3 e 4.4). Sem mudança de formato. |
 | 1 | 04/11/2026 | Revisão contra o servidor de `develop`: limites do servidor (seção 1), ordem de validação de `sessao.abrir`, `presenca.marcar` e `checkin`, situação de `sessao.acompanhar` e dos eventos (PR #96), detalhes do TOTP (seção 5.3), códigos de erro e de fechamento (seções 7 e 8). Após o merge da PR #96, `sessao.acompanhar` e os eventos da seção 5.2 foram documentados como implementados, com a ordem de validação e o comportamento do acompanhante ao desconectar. Sem mudança de formato. |
 | 1 | 08/11/2026 | Etapa 2 do servidor no modelo por sockets: a ponte WebSocket ↔ TCP (`ponte/`) passa a validar os frames e a emitir os fechamentos desta seção. Sem mudança de formato (campos, tipos e códigos). |
+| 1 | 22/11/2026 | Novo pedido `sessao.trocar_modo` (seção 4.9) e nova resposta e evento `sessao.modo_alterado` (seções 5.1 e 5.2), para trocar o modo da chamada sem perder as presenças (#49). Acréscimo compatível: os tipos e campos existentes não mudam, então a versão continua 1. A ponte passa a reconhecer eventos pela interface `Evento`. |

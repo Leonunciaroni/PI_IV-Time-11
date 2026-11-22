@@ -47,7 +47,7 @@ class ExemplosDoProtocoloTest {
     private static final Pattern TITULO_COM_TIPO = Pattern.compile("^### [^`]*`([a-z_.]+)`");
 
     /** Quantidade mínima de exemplos JSON no documento; abaixo disso, o leitor de blocos quebrou. */
-    private static final int EXEMPLOS_ESPERADOS = 14;
+    private static final int EXEMPLOS_ESPERADOS = 16;
 
     private static final JsonMapper ESTRITO = JsonMapper.builder()
             .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
