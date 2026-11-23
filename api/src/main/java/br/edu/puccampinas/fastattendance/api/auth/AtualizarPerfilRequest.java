@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 package br.edu.puccampinas.fastattendance.api.auth;
 
 import jakarta.validation.constraints.Email;

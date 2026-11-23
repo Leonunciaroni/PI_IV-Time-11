@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 // Tipos da API REST (docs/api-rest.md).
 
 export type Papel = "PROFESSOR" | "ALUNO";

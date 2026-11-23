@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 // Protocolo v1 do servidor de sessão, compartilhando o contrato usado pelo professor.
 export const VERSAO_PROTOCOLO = 1;
 export const INTERVALO_PING_MS = 25_000;

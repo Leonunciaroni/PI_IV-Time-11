@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { editarPerfil, ErroPerfil, validarSenha } from "./perfil";
 import { atualizarUsuario, encerrarSessao, lerSessao, salvarSessao } from "./sessao";

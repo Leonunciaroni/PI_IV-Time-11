@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Leitura do QR Code e check-in com geolocalização — issue #39
 
 ## Integração existente

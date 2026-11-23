@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";

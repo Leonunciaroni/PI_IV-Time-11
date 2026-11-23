@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 "use client";
 
 import { use, useEffect, useSyncExternalStore, type ReactNode } from "react";

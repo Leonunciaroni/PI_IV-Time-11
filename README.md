@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # PI_IV-Time-11 — Fast Attendance
 
 Repositório do Projeto Integrador do quarto semestre, PUC Campinas 2026.

@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Tela inicial do aluno — issue #25
 
 Rota autenticada `/aluno`, conforme o wireframe A2. A página segue as cores e formas do
