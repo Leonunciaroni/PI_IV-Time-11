@@ -410,8 +410,10 @@ async function cenarioMongo() {
 
   const confirmados = [...new Set(registros.filter((r) => r.ok).map((r) => r.alunoId))];
   const consulta = `JSON.stringify(db.getSiblingDB("fast_attendance").presencas.find({ sessaoId: "${sessaoId}", presente: true }, { alunoId: 1, _id: 0 }).toArray().map(d => d.alunoId))`;
-  const gravados = JSON.parse(await docker("exec", novoPrimario, "mongosh",
-    'mongodb://localhost:27017/fast_attendance?replicaSet=rs0', '--quiet', '--eval', consulta));
+  // Com autenticação (#54): o usuário da aplicação vem das variáveis do próprio container
+  const gravados = JSON.parse(await docker("exec", novoPrimario, "sh", "-c",
+    'mongosh "mongodb://$MONGO_APP_USUARIO:$MONGO_APP_SENHA@localhost:27017/fast_attendance?replicaSet=rs0" --quiet --eval "$1"',
+    'sh', consulta));
   const gravadosSet = new Set(gravados);
   const perdidos = confirmados.filter((id) => !gravadosSet.has(id));
 

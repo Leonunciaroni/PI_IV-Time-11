@@ -87,14 +87,19 @@ docker compose up -d --build
 docker compose ps             # aguarde os serviços ficarem "healthy"
 ```
 
-Gere um segredo com `openssl rand -base64 48` e cole o valor em `JWT_SECRET`. O Compose não sobe
-sem essa variável.
+Gere um segredo com `openssl rand -base64 48` e cole o valor em `JWT_SECRET`. Preencha também
+`MONGO_KEYFILE`, `MONGO_ROOT_SENHA` e `MONGO_APP_SENHA`, cada um com `openssl rand -hex 24`: o
+MongoDB roda com autenticação ([infra/README.md](infra/README.md#autenticação)). O Compose não sobe
+sem essas variáveis.
 
 Variáveis principais do `infra/.env`:
 
 | Variável | Padrão | Uso |
 |---|---|---|
 | `JWT_SECRET` | (obrigatória) | Assinatura dos JWTs da API e do servidor de sessão |
+| `MONGO_KEYFILE` | (obrigatória) | Keyfile com que os três nós do replica set se autenticam entre si |
+| `MONGO_ROOT_USUARIO` / `MONGO_ROOT_SENHA` | `root` / (obrigatória) | Administrador do MongoDB, usado só para iniciar o replica set |
+| `MONGO_APP_USUARIO` / `MONGO_APP_SENHA` | `fast_attendance` / (obrigatória) | Usuário da API e do servidor de sessão, com `readWrite` só em `fast_attendance` |
 | `JWT_EXPIRACAO_HORAS` | `12` | Validade do token |
 | `PROFESSORES_PERMITIDOS` | `professor@demo.br` | E-mails ou domínios (`@dominio.edu.br`) que podem criar conta de professor |
 | `NGINX_PORTA` | `8088` | Porta publicada no host; se mudar, troque também os endereços abaixo |
@@ -126,8 +131,8 @@ em [infra/README.md](infra/README.md#dados-de-demonstração-dashboard-e-apresen
 | ws://localhost:8088/ws | Ponte para o servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
 
 Apenas o Nginx é publicado no host, além do `mongo1` em `127.0.0.1:27017`, para ferramentas
-locais. Para conectar ao MongoDB de fora do Docker, use
-`mongodb://localhost:27017/fast_attendance?directConnection=true`.
+locais. Para conectar ao MongoDB de fora do Docker, use o usuário da aplicação:
+`mongodb://<MONGO_APP_USUARIO>:<MONGO_APP_SENHA>@localhost:27017/fast_attendance?directConnection=true`.
 
 ### Desenvolvimento dos apps com recarga automática
 

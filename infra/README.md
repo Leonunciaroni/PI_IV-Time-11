@@ -82,10 +82,35 @@ Com o banco autenticado (#54), o script usa o usuário da aplicação (`MONGO_AP
 - Replica set `rs0` com `mongo1` (prioridade 2, primário preferencial), `mongo2` e `mongo3`.
 - O serviço `mongo-setup` executa `mongo/init-replica-set.js` uma vez e termina; o script é idempotente.
 - O replica set é requisito dos Change Streams, que alimentam o painel ao vivo do professor.
-- Apenas o `mongo1` é publicado no host, em `127.0.0.1:27017`. Para conectar de fora do Docker use
-  `mongodb://localhost:27017/fast_attendance?directConnection=true`.
-- Ambiente de desenvolvimento: o MongoDB roda **sem autenticação** e fica acessível apenas pela
-  rede interna do Compose e pelo loopback do host.
+- Apenas o `mongo1` é publicado no host, em `127.0.0.1:27017`. Para conectar de fora do Docker
+  (Compass, `mongosh`) use o usuário da aplicação:
+  `mongodb://<MONGO_APP_USUARIO>:<MONGO_APP_SENHA>@localhost:27017/fast_attendance?directConnection=true`.
+
+### Autenticação
+
+O MongoDB roda com autenticação. Tudo vem do `infra/.env` (veja o `.env.example`):
+
+| Variável | Uso |
+|---|---|
+| `MONGO_KEYFILE` | Keyfile do replica set: os três nós se autenticam entre si com ele. O Compose grava o valor em `/etc/mongo-keyfile` com permissão 400 antes de subir o `mongod`. |
+| `MONGO_ROOT_USUARIO`, `MONGO_ROOT_SENHA` | Usuário `root`, criado pela imagem no primeiro start do `mongo1`. Só o `mongo-setup` usa, para iniciar o replica set. |
+| `MONGO_APP_USUARIO`, `MONGO_APP_SENHA` | Usuário da aplicação, com `readWrite` apenas no banco `fast_attendance` (CRUD, índices e Change Streams). É o que a API e o servidor de sessão usam em `MONGODB_URI`. |
+
+Gere cada valor com `openssl rand -hex 24`: só letras e números, porque as senhas entram na URI.
+
+Os usuários são criados **uma vez**, quando o volume do `mongo1` está vazio:
+`mongo/criar-usuario-app.js` roda nesse momento, e o `mongo2` e o `mongo3` recebem os usuários
+pela replicação. Por isso, quem já tinha o ambiente sem autenticação precisa recriar os volumes
+(os dados locais são apagados; os de demonstração voltam com o script):
+
+```bash
+docker compose down -v
+docker compose up -d --build
+./dados-demo.sh
+```
+
+Trocar uma senha depois disso também pede `down -v`, ou a troca manual com `db.changeUserPassword`
+conectado como `root`.
 
 ## Rodar a API ou o servidor de sessão fora do Docker
 
@@ -94,13 +119,13 @@ Com o Compose rodando (para o MongoDB), pare o serviço correspondente e rode lo
 ```bash
 docker compose stop api
 ./mvnw -pl api -am package -DskipTests                               # na raiz do repositório
-JWT_SECRET=<mesmo do .env> java -jar api/target/api.jar
+JWT_SECRET=<mesmo do .env> MONGODB_URI='mongodb://<MONGO_APP_USUARIO>:<MONGO_APP_SENHA>@localhost:27017/fast_attendance?directConnection=true' java -jar api/target/api.jar
 ```
 
 ```bash
 docker compose stop sessao ponte
 ./mvnw -pl ponte -am package -DskipTests                                  # gera sessao/target e ponte/target
-JWT_SECRET=<mesmo do .env> java -jar sessao/target/sessao.jar 8081       # servidor de sessão (TCP), MongoDB em localhost:27017
+JWT_SECRET=<mesmo do .env> MONGODB_URI='<mesma URI acima>' java -jar sessao/target/sessao.jar 8081                                  # servidor de sessão (TCP), MongoDB em localhost:27017
 SESSAO_HOST=localhost java -jar ponte/target/ponte.jar 8082              # ponte (WebSocket), ligada ao servidor local
 ```
 
