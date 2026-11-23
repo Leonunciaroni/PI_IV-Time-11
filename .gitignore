@@ -1,3 +1,4 @@
+# Contribuição: Diogo Gonçalves Tonhosolo | RA: 25894007 | regras para ignorar resultados locais do JMeter
 # Java / Maven
 target/
 *.class

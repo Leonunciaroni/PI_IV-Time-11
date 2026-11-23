@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import org.apache.jmeter.samplers.SampleResult
 import org.apache.jmeter.threads.JMeterVariables
 

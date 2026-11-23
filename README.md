@@ -1,3 +1,4 @@
+<!-- Contribuição: Diogo Gonçalves Tonhosolo | RA: 25894007 | diagramas de arquitetura, instalação, documentação do modem e links dos testes -->
 # PI_IV-Time-11 — Fast Attendance
 
 Repositório do Projeto Integrador do quarto semestre, PUC Campinas 2026.

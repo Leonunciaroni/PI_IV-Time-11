@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 // Independente das telas e do enquadramento FSK: codificar(token, contexto)
 // deve retornar um AudioBuffer com um quadro completo do modem.
 export const VOLUME_REFERENCIA = 0.3;

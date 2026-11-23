@@ -1,6 +1,7 @@
 ---
 title: Fast Attendance — contrato de check-in por QR Code e som
 ---
+%% Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 sequenceDiagram
     accTitle: Fluxo de check-in por QR Code e som até o MongoDB
     accDescr: Com JWTs emitidos pela API e conexões autenticadas, o professor abre a sessão e recebe o segredo TOTP. O aluno obtém o token por QR Code ou som e envia check-in pelo Nginx, ponte WebSocket para TCP e servidor de sessão. O servidor valida as regras, grava no MongoDB e devolve confirmação. O painel recebe um evento independente via Change Streams. A captura no app do aluno e o modem de som ainda estão pendentes.

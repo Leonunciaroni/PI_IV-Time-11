@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { criarModem, configurar, codificarAmostras, DecodificadorFsk } from '../modem.mjs';
 import { EmissorToken, RAMPA_SEGUNDOS } from '../emissor.mjs';
 import { ReceptorFsk } from '../receptor.mjs';

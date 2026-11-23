@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 // FSK v1: somente o token; sessaoId e validação TOTP continuam no protocolo da aplicação.
 export const CONFIGURACAO_PADRAO = Object.freeze({
   frequencia0: 18500,

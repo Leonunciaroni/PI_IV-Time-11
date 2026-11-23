@@ -1,3 +1,4 @@
+<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007 -->
 # Modem de áudio FSK v1
 
 [audio/modem.mjs](../audio/modem.mjs) implementa a codificação e decodificação do
@@ -180,9 +181,7 @@ na janela TOTP. O contexto pertence ao chamador, que pode fechá-lo após o fade
 Cada quadro começa e termina com ganho zero, usando rampas lineares de 50 ms.
 A parada mantém o ganho instantâneo antes de reduzi-lo a zero, inclusive durante
 uma rampa. Fontes e ganhos são desconectados ao terminar. O volume padrão é 0,3,
-os 30% usados no [procedimento do spike](spikes/audio-ultrassom.md). O check-in a
-3 m passou no par notebook/Redmi Note 14; audibilidade, resposta de outros
-aparelhos e volume de referência ainda precisam ser medidos no spike #13.
+os 30% usados no [procedimento do spike](spikes/audio-ultrassom.md).
 
 Verificação automatizada, sem dependências:
 

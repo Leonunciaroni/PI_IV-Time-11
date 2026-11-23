@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 "use strict";
 
 const elemento = (id) => document.getElementById(id);
