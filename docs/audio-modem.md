@@ -1,4 +1,5 @@
-<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007 -->
+<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
+Arquivos de medições com o mesmo crédito: ../spikes/audio-ultrassom/medicoes/spike-audio-medicoes.csv, ../spikes/audio-ultrassom/medicoes/spike-audio-medicoes-ambientes.csv -->
 # Modem de áudio FSK v1
 
 [audio/modem.mjs](../audio/modem.mjs) implementa a codificação e decodificação do

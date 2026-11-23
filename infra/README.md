@@ -1,4 +1,3 @@
-<!-- Contribuição: Diogo Gonçalves Tonhosolo | RA: 25894007 | instruções de HTTPS para celulares e do teste de carga -->
 # Infraestrutura
 
 Sobe todo o ambiente com um comando: MongoDB em replica set (3 nós), API, servidor de sessão (TCP,

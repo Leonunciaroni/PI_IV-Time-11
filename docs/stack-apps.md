@@ -1,4 +1,3 @@
-<!-- Contribuição: Diogo Gonçalves Tonhosolo | RA: 25894007 | orientações de HTTPS para celulares -->
 # Stack das aplicações (professor e aluno)
 
 Decisão da Semana 1 (frentes C e D). Base: seção 3.2.3 do Relatório de Ideação.

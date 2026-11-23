@@ -1,5 +1,3 @@
-<!-- Contribuição: Diogo Gonçalves Tonhosolo | RA: 25894007 | medições e registro dos resultados do spike de áudio
-Arquivos relacionados com o mesmo crédito: ../../spikes/audio-ultrassom/medicoes/spike-audio-medicoes.csv, ../../spikes/audio-ultrassom/medicoes/spike-audio-medicoes-ambientes.csv -->
 # Spike: áudio ultrassônico 18–20 kHz
 
 | | |
