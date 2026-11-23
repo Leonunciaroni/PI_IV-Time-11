@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 // Lógica do dashboard de frequência da turma (P9), sem interface.
 
 import type { ModoChamada } from "./protocolo";

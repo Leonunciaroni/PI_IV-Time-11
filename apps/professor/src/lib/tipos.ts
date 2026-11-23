@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 // Tipos da API REST (docs/api-rest.md).
 
 import type { ModoChamada } from "./protocolo";

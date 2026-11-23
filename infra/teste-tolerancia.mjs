@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 // Cenários de tolerância a falha (infra/README.md, seção "Tolerância a falha").
 //
 // Uso, com o Compose rodando e as réplicas escaladas (ver o README):
