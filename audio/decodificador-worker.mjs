@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { DecodificadorFsk } from './modem.mjs';
 
 let decodificador;

@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { crc16, montarQuadro, lerQuadro, codificarAmostras, criarModem, DecodificadorFsk, configurar, MARGEM_SEGUNDOS } from './modem.mjs';

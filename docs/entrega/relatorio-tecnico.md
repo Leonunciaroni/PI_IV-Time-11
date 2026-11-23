@@ -1,3 +1,5 @@
+<!-- Preparação do material: Diogo Gonçalves Tonhosolo | RA: 25894007
+Arquivos relacionados com o mesmo crédito: relatorio-tecnico.pdf -->
 # Fast Attendance — relatório técnico
 
 **Projeto Integrador IV · Time 11 · PUC Campinas · 2026**<br>

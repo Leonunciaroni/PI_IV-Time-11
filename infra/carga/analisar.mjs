@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { lerCsv, loginProfessor, ClienteProtocolo } from './lib.mjs';

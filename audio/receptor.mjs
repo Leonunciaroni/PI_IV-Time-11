@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { configurar } from './modem.mjs';
 
 /** Microfone → filtro de graves → AudioWorklet → Worker → token com CRC válido. */

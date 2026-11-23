@@ -1,3 +1,4 @@
+<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007 -->
 # HTTPS para testes com celulares (#40)
 
 O perfil `https` do Docker Compose abre um Cloudflare Quick Tunnel até o Nginx.

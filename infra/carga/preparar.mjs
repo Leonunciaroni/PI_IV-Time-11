@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { parseArgs } from 'node:util';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';

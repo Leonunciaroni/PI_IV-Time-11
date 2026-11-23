@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.net.http.HttpClient

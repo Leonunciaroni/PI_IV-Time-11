@@ -1,3 +1,4 @@
+<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007 -->
 # Plano de teste de carga (#50)
 
 Este plano prepara a execução da [issue #52](https://github.com/Leonunciaroni/PI_IV-Time-11/issues/52):

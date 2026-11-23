@@ -1,3 +1,5 @@
+<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
+Arquivos relacionados com o mesmo crédito: diagramas/arquitetura.png, diagramas/fluxo-checkin.png, diagramas/mermaid.config.json -->
 # Arquitetura do Fast Attendance
 
 Diagramas da issue #73, conferidos com a `develop` no commit `032a510`

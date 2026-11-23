@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 export function resumir(manifesto, amostras, persistencias) {
   const chave = (sessaoId, alunoId) => `${sessaoId}/${alunoId}`;
   const esperados = new Set(manifesto.sessoes.flatMap((s) => s.alunos.map((a) => chave(s.sessaoId, a))));
