@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 // Cria o usuário da aplicação, usado pela API e pelo servidor de sessão. A imagem do MongoDB roda
 // este arquivo uma única vez, no primeiro start do mongo1 com o volume vazio, já autenticada como
 // root (MONGO_INITDB_ROOT_*).

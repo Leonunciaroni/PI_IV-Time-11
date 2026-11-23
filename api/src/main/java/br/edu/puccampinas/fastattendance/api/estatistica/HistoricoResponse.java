@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 package br.edu.puccampinas.fastattendance.api.estatistica;
 
 import java.util.List;
