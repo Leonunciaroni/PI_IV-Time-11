@@ -179,6 +179,36 @@ services:
     restart: "no"
     networks: [interna]
 
+  # Opcional, sem internet: HTTPS na rede local com certificado autoassinado (reserva do túnel).
+  #   node https-local/gerar-certificado.mjs
+  #   docker compose --profile https-local up -d nginx-https
+  # Usa o mesmo nginx.conf do serviço `nginx`: só troca `listen 80;` por `listen 443 ssl;`, então as
+  # rotas não podem ficar diferentes. O aviso de certificado no celular é esperado.
+  nginx-https:
+    image: nginx:1.30-alpine
+    profiles: [https-local]
+    ports:
+      - "${HTTPS_LOCAL_PORTA:-8443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./teste-celular:/usr/share/nginx/teste-celular:ro
+      - ./https-local/certs:/etc/nginx/certs:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        grep -q 'listen 80;' /etc/nginx/nginx.conf || { echo 'nginx.conf sem "listen 80;": ajuste este serviço' >&2; exit 1; }
+        [ -f /etc/nginx/certs/cert.pem ] || { echo 'Sem certificado: rode node https-local/gerar-certificado.mjs' >&2; exit 1; }
+        sed 's|listen 80;|listen 443 ssl; ssl_certificate /etc/nginx/certs/cert.pem; ssl_certificate_key /etc/nginx/certs/key.pem; ssl_protocols TLSv1.2 TLSv1.3;|' /etc/nginx/nginx.conf > /tmp/nginx-https.conf
+        exec nginx -c /tmp/nginx-https.conf -g 'daemon off;'
+    depends_on:
+      - api
+      - ponte
+      - professor
+      - aluno
+    restart: unless-stopped
+    networks: [interna]
+
 volumes:
   mongo1-dados:
   mongo2-dados:
