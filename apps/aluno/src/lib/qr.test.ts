@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 import fixture from "./fixtures/qr-professor.json";
 import {

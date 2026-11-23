@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Captação e check-in por som — issue #45
 
 A rota `/aluno/checkin?turmaId=...&sessaoId=...&modo=SOM` usa o microfone para
@@ -48,14 +53,16 @@ mesmo armazenamento do login e do QR Code. Zeros à esquerda do token são prese
 
 ## Origem e empacotamento do modem
 
-O receptor, codec, Worker e worklet em `apps/aluno/public/audio/` são cópias **sem
-alterações** de `audio/` da branch `feature/modem-audio-fsk`, commit
+O receptor, codec, Worker e worklet em `apps/aluno/public/audio/` preservam o código
+de `audio/` da branch `feature/modem-audio-fsk`, com um cabeçalho de identificação
+acadêmica no topo. A origem é o commit
 [`b0246a6796230a242dec252fbffa87c195eb0536`](https://github.com/Leonunciaroni/PI_IV-Time-11/tree/b0246a6796230a242dec252fbffa87c195eb0536/audio)
 (PR #124). O Docker do aluno usa `apps/aluno` como contexto; os quatro arquivos são
 servidos juntos sob `/aluno/audio/`, preservando os imports relativos do Worker.
 
-`src/lib/audio/origem.json` registra a origem e o SHA-256 de cada arquivo. Os testes
-detectam alterações na cópia. Se o perfil do modem mudar após as medições da #13,
+`src/lib/audio/origem.json` registra a origem e o SHA-256 do conteúdo original de
+cada arquivo, sem o cabeçalho de identificação. Os testes conferem o cabeçalho e
+detectam alterações no código original. Se o perfil do modem mudar após as medições da #13,
 sincronizar esses arquivos e o adaptador do professor no mesmo release. O perfil
 atual é o da equipe: 18.500/19.500 Hz, símbolos de 20 ms e CRC-16/IBM-3740.
 

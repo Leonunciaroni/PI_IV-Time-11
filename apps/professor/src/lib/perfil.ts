@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { encerrarSessao, lerSessao } from "./sessao";
 import type { Problema, Usuario } from "./tipos";
 

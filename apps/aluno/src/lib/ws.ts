@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 // Cliente do servidor de sessão (docs/protocolo-v1.md): autentica com o JWT, casa respostas
 // pelo ref, mantém a conexão viva com ping e reconecta com espera crescente.
 

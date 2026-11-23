@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Fast Attendance — Aluno
 
 Aplicação web Next.js. Decisões de stack em [docs/stack-apps.md](../../docs/stack-apps.md) e telas em

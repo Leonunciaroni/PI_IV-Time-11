@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Tela inicial do aluno — issue #25
 
 Rota autenticada `/aluno`, conforme o wireframe A2. As cores vêm das variáveis do `globals.css`,

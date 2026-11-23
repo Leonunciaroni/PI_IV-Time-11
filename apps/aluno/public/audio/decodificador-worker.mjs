@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { DecodificadorFsk } from './modem.mjs';
 
 let decodificador;

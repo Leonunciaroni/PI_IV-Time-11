@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { ErroCheckin } from "./checkin";
 import { listarSessoesAtivas } from "./api";
 import type { CheckinOk } from "./protocolo";

@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 // Apenas transporta PCM. O DSP fica em Worker, fora da thread de áudio e da interface.
 class CapturaFsk extends AudioWorkletProcessor {
   constructor() {
