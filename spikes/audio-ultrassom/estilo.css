@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 :root { color-scheme: light dark; --borda: #8884; --ok: #15803d; --nao: #b91c1c; }
 * { box-sizing: border-box; }
 body { margin: 0 auto; max-width: 760px; padding: 16px; font: 15px/1.45 system-ui, sans-serif; }

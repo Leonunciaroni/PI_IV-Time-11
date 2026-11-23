@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.common.comunicado;
 
 /** Servidor -> professor: resultado de PedidoDeMarcarPresencaEmLote (tipo presenca.lote_ok). */
