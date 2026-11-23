@@ -56,12 +56,14 @@ Uma sessão é uma aula aberta pelo professor em um dos três modos.
 | `_id` | ObjectId | É o `sessaoId` do protocolo. |
 | `turmaId` | string | |
 | `professorId` | string | |
-| `modo` | string | `CLASSICA`, `QRCODE` ou `SOM`. |
-| `salaId` | string | Obrigatório no modo `QRCODE`. |
+| `modo` | string | `CLASSICA`, `QRCODE` ou `SOM`. Alterado por `sessao.trocar_modo`. |
+| `salaId` | string | Obrigatório no modo `QRCODE`. Pode ser trocado junto com o modo. |
 | `segredoTotp` | string | Base32, gerado por sessão; enviado só ao professor dono. |
 | `status` | string | `ABERTA` ou `ENCERRADA`. |
 | `abertaEm`, `encerradaEm` | date | |
 | `motivoEncerramento` | string | `PROFESSOR` ou `TEMPO_LIMITE`. |
+| `modoAlteradoEm` | date | Instante da última troca de modo. Gravado só pelo servidor de sessão; ausente em sessão que nunca teve o modo trocado. |
+| `trocasDeModo` | array | Histórico das trocas, uma entrada por troca, na ordem em que ocorreram. Cada item tem `de` e `para` (modos), `salaId` (sala vigente após a troca) e `em` (date). Ausente em sessão sem troca. |
 
 ### `presencas`
 
