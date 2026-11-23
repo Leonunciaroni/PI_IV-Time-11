@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -85,8 +88,11 @@ describe("recepção do primeiro token", () => {
 });
 
 describe("cópia do modem entregue pela equipe", () => {
-  it.each(Object.entries(origem.sha256))("preserva %s byte a byte no app isolado", (arquivo, esperado) => {
-    const dados = readFileSync(new URL(`../../../public/audio/${arquivo}`, import.meta.url));
-    expect(createHash("sha256").update(dados).digest("hex")).toBe(esperado);
+  it.each(Object.entries(origem.sha256))("preserva o conteúdo original de %s após o cabeçalho de identificação", (arquivo, esperado) => {
+    const texto = readFileSync(new URL(`../../../public/audio/${arquivo}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+    const dados = Buffer.from(texto);
+    const cabecalho = Buffer.from("// Guilherme Preventi Correia\n// RA: 25001694\n\n");
+    expect(dados.subarray(0, cabecalho.length)).toEqual(cabecalho);
+    expect(createHash("sha256").update(dados.subarray(cabecalho.length)).digest("hex")).toBe(esperado);
   });
 });

@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Histórico de frequência do aluno — issue #32
 
 A tela A4 está em `/aluno/historico`, protegida pela sessão do aluno. O botão “Ver histórico”

@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { HistoricoFrequencia } from "@/components/HistoricoFrequencia";

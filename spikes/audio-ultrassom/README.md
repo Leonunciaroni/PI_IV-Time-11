@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Spike — áudio ultrassônico 18–20 kHz
 
 Página estática (HTML + JS, sem dependências) para medir se notebooks emitem e celulares captam

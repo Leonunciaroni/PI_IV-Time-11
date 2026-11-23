@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { configurar } from './modem.mjs';
 
 /** Microfone → filtro de graves → AudioWorklet → Worker → token com CRC válido. */

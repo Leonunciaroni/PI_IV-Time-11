@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # Edição de perfil — issue #69
 
 Os dois apps oferecem `/professor/perfil` e `/aluno/perfil`, com acesso pelo cabeçalho

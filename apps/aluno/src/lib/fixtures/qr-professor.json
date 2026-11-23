@@ -1,4 +1,8 @@
 {
+  "x-identificacao": {
+    "nome": "Guilherme Preventi Correia",
+    "RA": "25001694"
+  },
   "origem": "apps/professor/src/lib/qr.ts e totp.ts (FA1, issue #38)",
   "texto": "FA1:66f1c2aa0011223344556677:004239",
   "linhas": [
