@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import Link from "next/link";
 import type { Turma } from "@/lib/tipos";
 import { botaoPrincipal, botaoSecundario, cartao } from "./ui/estilos";

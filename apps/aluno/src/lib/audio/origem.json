@@ -1,4 +1,8 @@
 {
+  "x-identificacao": {
+    "nome": "Guilherme Preventi Correia",
+    "RA": "25001694"
+  },
   "commit": "b0246a6796230a242dec252fbffa87c195eb0536",
   "origem": "https://github.com/Leonunciaroni/PI_IV-Time-11/tree/b0246a6796230a242dec252fbffa87c195eb0536/audio",
   "sha256": {

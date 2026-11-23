@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import type { ClienteSessao } from "./ws";
 import { ErroSessao } from "./ws";
 import type { CheckinOk } from "./protocolo";

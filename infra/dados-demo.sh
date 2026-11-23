@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Autores:
+# - Leonardo Miranda Nunciaroni (RA 25002726)
 # Dados de demonstração para o dashboard e a apresentação (#71):
 #   - as contas de usuarios-demo.sh e mais 60 alunos (aluno01@demo.br ... aluno60@demo.br), pela API;
 #   - 2 turmas do professor@demo.br com 30+ alunos cada, 2 salas, aulas encerradas e presenças nos

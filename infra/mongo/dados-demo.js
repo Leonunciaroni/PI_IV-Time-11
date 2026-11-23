@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 // Dados de demonstração para o dashboard e a apresentação: turmas, salas, matrículas, aulas
 // encerradas e presenças nos três modos. Chamado por infra/dados-demo.sh, depois que as contas já
 // foram criadas pela API (a senha precisa do hash BCrypt da API).

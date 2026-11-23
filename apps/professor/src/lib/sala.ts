@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Salas da validação de distância do modo QR Code (docs/api-rest.md, seção Salas).
 
 export interface Sala {

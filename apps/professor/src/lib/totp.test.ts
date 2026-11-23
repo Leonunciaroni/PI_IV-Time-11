@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { describe, expect, it } from "vitest";
 import { codigoHotp, codigoTotp, conteudoQr, decodificarBase32, janelaTotp, msAteProximaJanela } from "./totp";
 

@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # PI_IV-Time-11 — Fast Attendance
 
 Repositório do Projeto Integrador do quarto semestre, PUC Campinas 2026.
@@ -22,9 +27,9 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 | **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
 | **Antifraude** (no servidor) | Pronto: token válido, matrícula e unicidade por aluno/aparelho nos canais QR Code e Som; raio até a sala (Haversine) somente no QR Code. Check-ins enviados pela ponte WebSocket/TCP. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
-| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. A tela de emissão por Som está no PR #125. |
-| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por som com confirmação automática. |
-| **Modo Som ponta a ponta** | Captação e check-in integrados no aluno. A emissão na tela do professor está no PR #125 (dependente do #118). Fluxo digital conferido com as duas telas, ponte e banco reais; medições acústicas em sala continuam pendentes. Ver [docs/checkin-som.md](docs/checkin-som.md). |
+| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo, emissão FSK por Som e painel ao vivo. |
+| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por Som com confirmação automática. |
+| **Modo Som ponta a ponta** | Emissão, recepção e check-in integrados. O fluxo digital foi conferido; o token também foi recebido a 3 m em sala silenciosa com notebook e Redmi Note 14/Chrome. Outras distâncias, ruído, aparelhos e volume de referência continuam no spike #13. Ver [docs/checkin-som.md](docs/checkin-som.md) e [docs/audio-modem.md](docs/audio-modem.md). |
 
 ## Arquitetura
 
@@ -43,7 +48,7 @@ A API e o servidor de sessão compartilham o MongoDB e o segredo `JWT_SECRET`: o
 valida o mesmo JWT que a API emite, na mensagem `auth` (recebida pela ponte, no WebSocket). As regras de unicidade
 (uma presença por aluno e por sessão, uma sessão aberta por turma) ficam em índices do banco, porque
 as duas aplicações escrevem nas mesmas coleções. O [fluxo de check-in por QR Code e som](docs/arquitetura.md#fluxo-do-check-in)
-mostra a validação, a persistência e a atualização do painel, com as partes ainda pendentes nos apps.
+mostra a validação, a persistência e a atualização do painel nos apps integrados.
 
 ## Estrutura do repositório
 
@@ -87,14 +92,19 @@ docker compose up -d --build
 docker compose ps             # aguarde os serviços ficarem "healthy"
 ```
 
-Gere um segredo com `openssl rand -base64 48` e cole o valor em `JWT_SECRET`. O Compose não sobe
-sem essa variável.
+Gere um segredo com `openssl rand -base64 48` e cole o valor em `JWT_SECRET`. Preencha também
+`MONGO_KEYFILE`, `MONGO_ROOT_SENHA` e `MONGO_APP_SENHA`, cada um com `openssl rand -hex 24`: o
+MongoDB roda com autenticação ([infra/README.md](infra/README.md#autenticação)). O Compose não sobe
+sem essas variáveis.
 
 Variáveis principais do `infra/.env`:
 
 | Variável | Padrão | Uso |
 |---|---|---|
 | `JWT_SECRET` | (obrigatória) | Assinatura dos JWTs da API e do servidor de sessão |
+| `MONGO_KEYFILE` | (obrigatória) | Keyfile com que os três nós do replica set se autenticam entre si |
+| `MONGO_ROOT_USUARIO` / `MONGO_ROOT_SENHA` | `root` / (obrigatória) | Administrador do MongoDB, usado só para iniciar o replica set |
+| `MONGO_APP_USUARIO` / `MONGO_APP_SENHA` | `fast_attendance` / (obrigatória) | Usuário da API e do servidor de sessão, com `readWrite` só em `fast_attendance` |
 | `JWT_EXPIRACAO_HORAS` | `12` | Validade do token |
 | `PROFESSORES_PERMITIDOS` | `professor@demo.br` | E-mails ou domínios (`@dominio.edu.br`) que podem criar conta de professor |
 | `NGINX_PORTA` | `8088` | Porta publicada no host; se mudar, troque também os endereços abaixo |
@@ -126,8 +136,8 @@ em [infra/README.md](infra/README.md#dados-de-demonstração-dashboard-e-apresen
 | ws://localhost:8088/ws | Ponte para o servidor de sessão ([docs/protocolo-v1.md](docs/protocolo-v1.md)) |
 
 Apenas o Nginx é publicado no host, além do `mongo1` em `127.0.0.1:27017`, para ferramentas
-locais. Para conectar ao MongoDB de fora do Docker, use
-`mongodb://localhost:27017/fast_attendance?directConnection=true`.
+locais. Para conectar ao MongoDB de fora do Docker, use o usuário da aplicação:
+`mongodb://<MONGO_APP_USUARIO>:<MONGO_APP_SENHA>@localhost:27017/fast_attendance?directConnection=true`.
 
 ### Desenvolvimento dos apps com recarga automática
 
@@ -162,7 +172,7 @@ docker compose down -v     # apaga também os volumes do MongoDB
 ./mvnw verify                              # common, api e sessao; os testes da API sobem MongoDB em contêiner
 cd apps/professor && npm test              # testes unitários do app do professor (Vitest)
 cd apps/aluno && npm test                  # leitura QR, localização e transporte de check-in (Vitest)
-node --test audio/emissor.test.mjs         # testes do emissor sonoro (Node)
+node --test audio/*.test.mjs               # codec FSK, receptor e emissor sonoro (Node)
 ```
 
 Os testes da API usam Testcontainers, então o Docker precisa estar rodando. Para lint e build dos

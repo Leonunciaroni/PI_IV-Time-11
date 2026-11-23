@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EmissorToken } from "./emissor.mjs";

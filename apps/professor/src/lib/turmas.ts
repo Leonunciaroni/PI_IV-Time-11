@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import type { Turma } from "./tipos";
 
 export type OrdemTurmas = "alfabetica" | "recentes";

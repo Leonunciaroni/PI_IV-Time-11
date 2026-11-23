@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Envio e download de arquivos pela API (importação e exportação de CSV, #70). Fica fora do api.ts
 // porque o JSON de lá não serve para multipart nem para baixar um arquivo; as regras de erro e de
 // sessão são as mesmas.

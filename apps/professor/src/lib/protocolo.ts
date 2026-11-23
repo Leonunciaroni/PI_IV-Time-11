@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Tipos do protocolo WebSocket com o servidor de sessão (docs/protocolo-v1.md), espelhando
 // common/.../protocolo. Só o que o app do professor usa.
 

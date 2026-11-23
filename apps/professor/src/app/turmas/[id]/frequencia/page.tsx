@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DashboardTurma } from "@/components/DashboardTurma";

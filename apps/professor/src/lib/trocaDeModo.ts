@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Troca do modo da chamada aberta (#49), sem interface: quais trocas a tela oferece e como a
 // chamada guardada no navegador passa a refletir o modo novo.
 

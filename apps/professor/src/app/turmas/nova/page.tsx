@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { NovaTurma } from "@/components/NovaTurma";

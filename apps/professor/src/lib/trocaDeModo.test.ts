@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { describe, expect, it } from "vitest";
 import type { ChamadaGuardada } from "./chamadas";
 import {

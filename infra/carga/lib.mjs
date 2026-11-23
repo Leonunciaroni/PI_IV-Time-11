@@ -1,3 +1,4 @@
+// Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 import { randomUUID } from 'node:crypto';
 
 export async function http(base, caminho, { corpo, token, status = 200 } = {}) {

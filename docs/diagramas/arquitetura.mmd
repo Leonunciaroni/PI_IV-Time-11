@@ -1,6 +1,7 @@
 ---
 title: Fast Attendance — arquitetura em develop
 ---
+%% Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
 flowchart LR
     accTitle: Arquitetura do Fast Attendance
     accDescr: Navegadores acessam o Nginx, que serve os dois apps Next.js, encaminha REST à API e WebSocket à ponte. A ponte converte JSON em comunicados Java e fala por TCP com o servidor de sessão. API e sessão compartilham o MongoDB em replica set de três membros, com Change Streams para o painel ao vivo.

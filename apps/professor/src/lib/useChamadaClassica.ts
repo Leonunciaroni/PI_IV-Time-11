@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useMemo, useRef, useState } from "react";
 import { contarPresentes, marcacoesExibidas, soltarPendentes, type Pendentes } from "./presencas";
 import type { PresencaAtualizada, PresencaLoteOk } from "./protocolo";

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { describe, expect, it } from "vitest";
 import { codificarAmostras, configurar, crc16, criarModem, MARGEM_SEGUNDOS, montarQuadro } from "./modem";
 

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AcompanhamentoSessao, type ClienteAcompanhamento } from "./acompanhamento";
 import type { Envelope, PresencaAtualizada, SessaoEstado, SessaoModoAlterado } from "./protocolo";

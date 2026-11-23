@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 import { describe, expect, it } from "vitest";
 import {
   alturaDaBarra,

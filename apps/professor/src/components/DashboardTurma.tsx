@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 "use client";
 
 import Link from "next/link";

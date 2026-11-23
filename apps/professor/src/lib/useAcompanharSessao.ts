@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { AcompanhamentoSessao, type SituacaoAoVivo } from "./acompanhamento";
 import type { PresencaAtualizada, SessaoModoAlterado } from "./protocolo";

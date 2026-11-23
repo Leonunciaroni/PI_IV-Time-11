@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import type { TokenResponse, Usuario } from "./tipos";
 
 // As duas aplicações compartilham a mesma origem; a chave separa a sessão de cada uma.

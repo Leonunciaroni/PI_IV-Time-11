@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { enviarCheckinSom, mensagemDoSom, verificarChamadaSom } from "./checkinSom";
 import { ErroSessao, type ClienteSessao } from "./ws";
