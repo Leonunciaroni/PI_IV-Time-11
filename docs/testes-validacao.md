@@ -30,7 +30,7 @@ auxiliares. A cobertura das regras não deve ser confundida com a cobertura glob
 
 ## Resultado da execução completa
 
-Medição local em 22/11/2026, com `./mvnw verify` na raiz, sobre `develop` em `4c3256c`
+Medição local em 23/11/2026, com `./mvnw verify` na raiz, sobre `develop` em `4a8c628`
 (release `v1.0.0`), com Docker Desktop aberto: **BUILD SUCCESS**, em 3 min 38 s, **452 testes
 aprovados, 0 falhas, 0 erros e 0 ignorados**.
 
