@@ -28,9 +28,29 @@ cd infra
 cp .env.example .env
 ```
 
-Edite `infra/.env` e troque o `JWT_SECRET` por um valor aleatório de pelo menos 32 bytes
-(`node -e "console.log(require('node:crypto').randomBytes(48).toString('base64'))"`). Deixe
-`PROFESSORES_PERMITIDOS=professor@demo.br`. O `.env` não vai para o Git.
+Edite `infra/.env` e troque os valores de exemplo. O `.env` **não vai para o Git** e nenhum valor
+secreto deve ir para commit, README ou issue.
+
+| Variável | O que colocar |
+|---|---|
+| `JWT_SECRET` | Aleatório, de pelo menos 32 bytes: `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64'))"` |
+| `MONGO_KEYFILE` | Aleatório; os três nós do Mongo se autenticam entre si com ele |
+| `MONGO_ROOT_USUARIO` e `MONGO_ROOT_SENHA` | Usuário `root` do banco (o usuário pode ficar `root`) |
+| `MONGO_APP_USUARIO` e `MONGO_APP_SENHA` | Usuário da aplicação (o usuário pode ficar `fast_attendance`) |
+| `PROFESSORES_PERMITIDOS` | Deixe `professor@demo.br` |
+
+Para cada valor aleatório do Mongo, use **só letras e números**, porque as senhas entram na URI de
+conexão: `node -e "console.log(require('node:crypto').randomBytes(24).toString('hex'))"` (ou
+`openssl rand -hex 24`). Se a equipe combinou usar os mesmos valores de demonstração, copie-os do
+grupo da equipe. **Sem essas variáveis o `docker compose up` falha** com "defina ... em infra/.env".
+
+O MongoDB agora exige senha, e os usuários só são criados quando o volume do banco está vazio. Se
+o ambiente já tinha subido **sem senha** nesta máquina, apague os volumes **uma vez** (isso **apaga
+os dados locais**; os de demonstração voltam com o script da seção 2):
+
+```bash
+docker compose down -v
+```
 
 ```bash
 docker compose up -d --build
@@ -166,7 +186,8 @@ pendente: o modo já existe na `develop`, então confira o que valer antes de us
 | Sintoma | O que verificar |
 |---|---|
 | `docker` não encontrado ou daemon indisponível | Abra o Docker Desktop e confirme `docker version` |
-| `JWT_SECRET` obrigatório ao subir | `infra/.env` não existe ou está sem `JWT_SECRET` |
+| "defina ... em infra/.env" ao subir | `infra/.env` não existe ou falta `JWT_SECRET` ou alguma variável `MONGO_*` (seção 1) |
+| API ou Mongo não ficam *healthy* depois de atualizar o código | O volume do Mongo é de antes da senha: rode `docker compose down -v` uma vez (apaga os dados locais) e suba de novo |
 | Porta 8088 ocupada | Mude `NGINX_PORTA` no `.env` (e use a nova porta em todos os endereços) |
 | Login do professor ou do aluno falha | As contas não foram criadas: rode `./usuarios-demo.sh` |
 | `./usuarios-demo.sh` diz que o professor não está permitido | `PROFESSORES_PERMITIDOS` no `.env` precisa ter `professor@demo.br` (depois, `docker compose up -d`) |
