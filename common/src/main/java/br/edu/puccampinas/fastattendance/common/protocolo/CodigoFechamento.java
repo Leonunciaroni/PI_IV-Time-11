@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.common.protocolo;
 
 /** Códigos de fechamento do WebSocket (seção 8 do protocolo). */

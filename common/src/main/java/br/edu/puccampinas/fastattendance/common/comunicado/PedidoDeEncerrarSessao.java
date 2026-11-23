@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.common.comunicado;
 
 /** Professor -> servidor: encerra a sessão (tipo sessao.encerrar). Resposta: RespostaDeEncerrarSessao ou Erro. */

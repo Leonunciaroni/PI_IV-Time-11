@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.common.comunicado;
 
 /** Professor -> servidor: marca um aluno como presente ou ausente, no modo clássico (tipo presenca.marcar). Resposta: RespostaDeMarcarPresenca ou Erro. */

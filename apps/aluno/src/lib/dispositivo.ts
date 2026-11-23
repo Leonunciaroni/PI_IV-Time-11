@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 // Identificador aleatório do navegador do aluno, enviado no check-in (campo dispositivoId do
 // protocolo). Impede que um mesmo aparelho registre presença para dois alunos na mesma sessão.
 // Não identifica o aparelho fora do sistema (LGPD).

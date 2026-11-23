@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.common.comunicado;
 
 /** Professor -> servidor: passa a receber os eventos da sessão (tipo sessao.acompanhar). Resposta: RespostaDeAcompanharSessao ou Erro. */

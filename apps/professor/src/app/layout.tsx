@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Next, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
