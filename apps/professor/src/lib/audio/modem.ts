@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Parte de emissão do modem FSK v1 (#26), portada de audio/modem.mjs (PR #124, branch
 // feature/modem-audio-fsk, commit b0246a6). A imagem Docker do professor só enxerga apps/professor,
 // por isso a cópia. O decodificador fica no módulo original, que é do app do aluno.

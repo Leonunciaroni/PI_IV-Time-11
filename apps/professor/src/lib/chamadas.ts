@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Chamadas abertas neste navegador: modo, TOTP e sala, para retomar a tela depois de recarregar.
 // Quem está presente vem do servidor (sessao.acompanhar), não daqui. O sessao.estado não traz o
 // segredo TOTP, então o QR de uma chamada só pode ser retomado no navegador que a abriu.

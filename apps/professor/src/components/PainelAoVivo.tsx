@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import type { ReactNode } from "react";
 import type { PresenteAoVivo } from "@/lib/presencas";
 import type { OrigemPresenca } from "@/lib/protocolo";

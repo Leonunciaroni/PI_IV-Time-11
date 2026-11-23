@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import type { ReactNode } from "react";
 
 /** Confirmação de uma ação que deu certo, no topo da tela para onde o usuário foi levado. */

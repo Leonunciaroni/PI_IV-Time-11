@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Emissão do token em loop (#46), portada para TypeScript de audio/emissor.mjs (develop, commit
 // e95e449, PR #104) com a mesma lógica. A imagem Docker do professor só enxerga apps/professor,
 // por isso a cópia. Se o módulo original mudar, atualize esta cópia.

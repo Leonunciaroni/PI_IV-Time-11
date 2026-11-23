@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useId, useState, type InputHTMLAttributes } from "react";
 
 interface CampoSenhaProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {

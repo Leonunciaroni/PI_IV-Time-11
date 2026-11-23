@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import type { ReactNode } from "react";
 
 /** Região de alerta com altura mínima fixa, para o formulário não pular quando o erro aparece. */

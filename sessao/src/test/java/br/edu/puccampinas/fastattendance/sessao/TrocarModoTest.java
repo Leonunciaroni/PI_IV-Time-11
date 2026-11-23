@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 package br.edu.puccampinas.fastattendance.sessao;
 
 import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
