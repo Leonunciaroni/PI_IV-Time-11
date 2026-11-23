@@ -1,0 +1,63 @@
+<!doctype html>
+<!-- Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007 -->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modem de áudio · Fast Attendance</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="estilo.css">
+  <script type="module" src="demo.mjs"></script>
+</head>
+<body>
+  <main>
+    <p class="marca">Fast Attendance · teste do canal sonoro</p>
+    <h1>Modem de áudio FSK</h1>
+    <p>Emita um token de seis dígitos e confira a recepção com checksum. Esta página não registra presença.</p>
+    <p id="ambiente" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <form id="form-configuracao">
+    <fieldset id="configuracao">
+      <legend>Configuração do teste</legend>
+      <p>Use os mesmos valores nos dois aparelhos. A faixa inicial é provisória até as medições em sala.</p>
+      <div class="campos">
+        <label>Token de teste (6 dígitos) <input id="token" type="text" value="001234" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" required></label>
+        <label>Frequência do bit 0 (Hz) <input id="frequencia0" type="number" min="18000" max="20000" step="50" value="18500"></label>
+        <label>Frequência do bit 1 (Hz) <input id="frequencia1" type="number" min="18000" max="20000" step="50" value="19500"></label>
+        <label>Duração do símbolo <select id="simbolo"><option value="10">10 ms</option><option value="20" selected>20 ms</option><option value="40">40 ms</option></select></label>
+        <label>Volume de emissão <input id="volume" type="range" min="0" max="1" step="0.01" value="0.3"><output id="volume-valor">30%</output></label>
+      </div>
+      <button id="restaurar" type="reset">Restaurar configuração inicial</button>
+    </fieldset>
+    </form>
+
+    <div class="painel">
+      <section aria-labelledby="titulo-emissao">
+        <h2 id="titulo-emissao">1. Emitir</h2>
+        <p>No notebook, inicie a emissão. O token é repetido nas fronteiras das janelas de 15 segundos.</p>
+        <button id="emitir" type="button">Iniciar emissão</button>
+        <button id="parar-emissao" type="button" disabled>Parar emissão</button>
+        <p id="estado-emissao" role="status">Emissão parada.</p>
+      </section>
+      <section aria-labelledby="titulo-recepcao">
+        <h2 id="titulo-recepcao">2. Receber</h2>
+        <p>No receptor, permita o microfone. Somente quadros com versão, formato e CRC válidos aparecem abaixo.</p>
+        <button id="ouvir" type="button">Ouvir microfone</button>
+        <button id="parar-recepcao" type="button" disabled>Parar escuta</button>
+        <p id="estado-recepcao" role="status">Microfone desligado.</p>
+        <p>Último token: <output id="token-recebido" aria-live="polite">—</output></p>
+        <ol id="recebidos" aria-label="Últimas recepções"></ol>
+      </section>
+    </div>
+
+    <section aria-labelledby="titulo-autoteste">
+      <h2 id="titulo-autoteste">Autoteste digital</h2>
+      <p>Verifica codificação e decodificação sem microfone e sem reproduzir som. O alcance precisa ser medido nos aparelhos reais.</p>
+      <button id="autoteste" type="button">Executar autoteste</button>
+      <p id="estado-autoteste" role="status">Ainda não executado.</p>
+    </section>
+    <p class="rodape">As capturas e a emissão são encerradas ao sair da página ou colocar a aba em segundo plano. O áudio é processado localmente, sem gravação ou envio ao servidor.</p>
+  </main>
+</body>
+</html>

@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -18,7 +21,7 @@ import type { TurmaDoAluno } from "@/lib/tipos";
 type Etapa =
   "pronto" | "localizando" | "lendo" | "enviando" | "erro" | "sucesso";
 const botao =
-  "min-h-11 rounded-lg bg-[#5040e8] px-5 py-3 text-sm font-semibold text-white hover:bg-[#4332cd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5040e8] disabled:cursor-not-allowed disabled:opacity-50";
+  "min-h-11 rounded-lg bg-[#3b2db5] px-5 py-3 text-sm font-semibold text-white hover:bg-[#2f2491] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca disabled:cursor-not-allowed disabled:opacity-50";
 const semNovaTentativa = new Set([
   "SESSAO_ENCERRADA",
   "SESSAO_NAO_ENCONTRADA",
@@ -161,19 +164,19 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
   const podeTentar = !semNovaTentativa.has(falha?.codigo ?? "");
   return (
     <section
-      className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"
+      className="mt-6 rounded-xl border border-borda bg-superficie p-5 sm:p-7"
       aria-label="Leitura do QR Code"
     >
       <h1 className="text-2xl font-bold">
         {etapa === "sucesso" ? "Presença confirmada" : "Confirmar presença"}
       </h1>
-      <p className="mt-2 text-sm text-slate-500">
-        {turma.disciplina} · {turma.nome}
+      <p className="mt-2 text-sm text-suave">
+        {turma.disciplina} ({turma.nome})
       </p>
       {etapa === "sucesso" && resultado ? (
         <div
           role="status"
-          className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"
+          className="mt-6 rounded-lg border border-sucesso-borda bg-sucesso-fundo p-5 text-sucesso-texto"
         >
           <p className="font-semibold">
             Sua presença foi registrada por QR Code.
@@ -210,7 +213,7 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
           {falha && (
             <div
               role="alert"
-              className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-relaxed text-red-800"
+              className="mt-5 rounded-lg border border-perigo-borda bg-perigo-fundo p-4 text-sm leading-relaxed text-perigo-texto"
             >
               <p className="font-semibold">
                 {falha.codigo === "PRESENCA_DUPLICADA"
@@ -223,19 +226,19 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
           <p
             role="status"
             aria-live="polite"
-            className="mt-4 text-sm text-slate-600"
+            className="mt-4 text-sm text-suave"
           >
             {etapa === "lendo"
               ? "Aponte para o QR Code atual exibido pelo professor."
               : descreverConexao(estado)}
           </p>
           {precisao !== null && !falha && (
-            <p className="mt-2 text-xs text-slate-500">
-              Localização obtida · precisão aproximada de {Math.round(precisao)}{" "}
+            <p className="mt-2 text-xs text-suave">
+              Localização obtida, com precisão aproximada de {Math.round(precisao)}{" "}
               m.
             </p>
           )}
-          <p className="mt-3 text-xs leading-relaxed text-slate-500">
+          <p className="mt-3 text-xs leading-relaxed text-suave">
             A câmera é processada neste aparelho. As coordenadas são enviadas ao
             servidor para verificar a proximidade da sala.
           </p>
@@ -245,7 +248,7 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
                 type="button"
                 onClick={cancelar}
                 disabled={etapa === "enviando"}
-                className="min-h-11 rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold disabled:opacity-50"
+                className="min-h-11 rounded-lg border border-borda-forte px-5 py-3 text-sm font-semibold disabled:opacity-50"
               >
                 {etapa === "enviando"
                   ? "Confirmando presença..."
@@ -278,8 +281,14 @@ export function CheckinQr({ turma }: { turma: TurmaDoAluno }) {
         </>
       )}
       <Link
+        href={`/historico?turmaId=${encodeURIComponent(turma.id)}`}
+        className="mt-6 mr-5 inline-flex min-h-11 items-center text-sm font-semibold text-marca hover:underline"
+      >
+        Ver histórico desta turma
+      </Link>
+      <Link
         href="/"
-        className="mt-6 inline-flex text-sm font-semibold text-[#5040e8] hover:underline"
+        className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-marca hover:underline"
       >
         Voltar ao início
       </Link>

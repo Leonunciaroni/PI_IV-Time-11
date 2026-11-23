@@ -1,3 +1,10 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 package br.edu.puccampinas.fastattendance.api.repositorio;
 
 import br.edu.puccampinas.fastattendance.api.dominio.Matricula;
@@ -14,4 +21,6 @@ public interface MatriculaRepository extends MongoRepository<Matricula, String> 
     long countByTurmaId(String turmaId);
 
     boolean existsByTurmaIdAndAlunoId(String turmaId, String alunoId);
+
+    long deleteByTurmaIdAndAlunoId(String turmaId, String alunoId);
 }

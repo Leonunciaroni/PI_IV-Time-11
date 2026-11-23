@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Localização atual do navegador, usada para preencher as coordenadas de uma sala.
 
 export interface Posicao {

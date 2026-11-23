@@ -1,3 +1,10 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 package br.edu.puccampinas.fastattendance.api.seguranca;
 
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
@@ -46,6 +53,7 @@ public class SegurancaConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/error").permitAll()
                         .requestMatchers("/api/aluno/**").hasRole("ALUNO")
+                        .requestMatchers("/api/sessoes/ativas").hasRole("ALUNO")
                         // O aluno consulta o próprio histórico; o serviço confere quem pode ver o quê
                         .requestMatchers(HttpMethod.GET, "/api/turmas/*/frequencia/*").hasAnyRole("PROFESSOR", "ALUNO")
                         .requestMatchers("/api/turmas/**").hasRole("PROFESSOR")

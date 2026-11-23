@@ -1,3 +1,8 @@
+<!--
+Guilherme Preventi Correia
+RA: 25001694
+-->
+
 # API REST
 
 Base: `/api` (via Nginx, `http://localhost:8088/api`). Corpo em JSON. Erros seguem o formato
@@ -158,6 +163,48 @@ Quem já está na turma não gera erro: conta em `jaMatriculados`. Se algum id n
 de um aluno, a resposta é `400` (`"A lista tem alunos que não existem."`) e **nenhum** aluno da
 lista é matriculado. Se a lista for vazia, `400` com `campos`.
 
+### `DELETE /api/turmas/{id}/matriculas/{alunoId}`
+
+Tira o aluno da turma. Resposta `204` sem corpo. Se o aluno não estiver matriculado na turma, a
+resposta é `404` com `"detail": "Matrícula não encontrada"`.
+
+As presenças que o aluno já tinha continuam gravadas, mas ele sai da lista de alunos e das
+estatísticas da turma, o histórico dele na turma passa a responder `404` e ele volta a aparecer em
+`candidatos`. As matrículas dele em outras turmas não mudam.
+
+### `POST /api/turmas/{id}/importacao`
+
+Matricula na turma os alunos listados em um CSV. Requisição `multipart/form-data` com o arquivo no
+campo `arquivo`. O cabeçalho (primeira linha) precisa ter as colunas `nome`, `email` e `matricula`
+(`ra` também vale para a matrícula), em qualquer ordem; aceita vírgula ou ponto e vírgula, e o UTF-8
+do Excel com BOM. Limite de 2000 linhas por arquivo.
+
+```csv
+nome,email,matricula
+Ana Souza,ana@puc.br,24001234
+```
+
+Só entram alunos que **já têm conta**: o aluno é encontrado pelo e-mail (sem diferenciar maiúsculas)
+e a matrícula do arquivo precisa ser a cadastrada. Resposta `200`:
+
+```json
+{
+  "importados": 1,
+  "jaMatriculados": 1,
+  "rejeitados": [{ "linha": 4, "motivo": "Aluno não cadastrado." }],
+  "totalAlunos": 2
+}
+```
+
+`linha` conta o cabeçalho como 1. Motivos de rejeição: campo obrigatório vazio, e-mail inválido,
+e-mail repetido no arquivo, aluno não cadastrado (inclui e-mail de professor) e matrícula que não
+confere. Uma linha rejeitada não impede as demais. É idempotente: quem já está na turma conta em
+`jaMatriculados`. Arquivo ausente, vazio, sem as colunas ou com mais de 2000 linhas responde `400`;
+turma inexistente ou de outro professor, `404`. Um arquivo que não dá para ler como CSV (aspas fora
+do lugar, como em `Ana "Aninha" Souza`, ou um arquivo binário) também responde `400`, com
+`"Não foi possível ler o arquivo como CSV. Confira as aspas e o separador."`. Nenhum aluno do
+arquivo é importado nesse caso.
+
 ### `GET /api/turmas/{id}/estatisticas`
 
 Números do dashboard de frequência da turma (tela P9). Só entram no cálculo as aulas já
@@ -168,10 +215,32 @@ Números do dashboard de frequência da turma (tela P9). Só entram no cálculo 
 | Frequência da aula | Presentes ÷ alunos matriculados hoje. Quem não tem registro conta como ausente, e a presença desmarcada (`presente: false`) não conta. |
 | Frequência do aluno | Aulas com presença ÷ aulas dadas. |
 | Frequência média | Média dos percentuais das aulas. |
+| Alunos | Todos os matriculados, com qualquer percentual, em ordem alfabética de nome. |
 | Abaixo do mínimo | Aluno com menos de 75% (exatamente 75% não entra), do menor para o maior percentual. |
 | Uso por modo | Número de aulas dadas em cada modo; os três modos sempre aparecem, mesmo com zero. |
 
 Os percentuais têm uma casa decimal. Turma sem aulas ou sem alunos devolve zeros e listas vazias.
+Sem aulas encerradas, cada aluno de `alunos` vem com `aulas: 0` e `percentual: 0.0`: use `aulas`
+(ou `aulasDadas`) igual a zero para mostrar "sem dados" em vez de 0%.
+
+### `GET /api/turmas/{id}/exportacao/consolidado`
+
+Baixa o CSV com a frequência acumulada da turma: uma linha por aluno matriculado, em ordem
+alfabética, com `Nome`, `Matrícula`, `Presenças`, `Aulas`, `Frequência (%)` e `Situação`
+(`Regular`, `Abaixo de 75%` ou `Sem aulas`). Só contam as aulas encerradas, com as mesmas regras do
+dashboard.
+
+### `GET /api/turmas/{id}/exportacao/aulas/{sessaoId}`
+
+Baixa o CSV da chamada de uma aula da turma: todos os alunos matriculados com `Nome`, `Matrícula`,
+`Situação` (`Presente` ou `Ausente`), `Origem` (`MANUAL`, `QRCODE` ou `SOM`) e `Registrado em`
+(horário de Brasília).
+
+Os dois arquivos vêm como `text/csv` em UTF-8 com BOM, ponto e vírgula como separador e vírgula
+decimal, para abrir direto no Excel em português. O nome sugerido em `Content-Disposition` usa o
+nome da turma (`frequencia-<turma>.csv`, `chamada-<turma>-<data>.csv`). Textos que começam com `=`,
+`+`, `-` ou `@` ganham um apóstrofo na frente, para o Excel não executá-los como fórmula. Turma
+inexistente ou de outro professor, ou aula que não é da turma, responde `404`; aluno recebe `403`.
 
 ### `GET /api/turmas/{id}/frequencia/{alunoId}`
 
@@ -213,6 +282,12 @@ O e-mail do aluno não é exposto ao professor.
     { "sessaoId": "66f1d0aa...", "data": "2026-10-19T22:00:00Z", "modo": "QRCODE",
       "presentes": 27, "matriculados": 30, "percentual": 90.0 }
   ],
+  "alunos": [
+    { "alunoId": "66f1b9aa...", "nome": "Ana Souza", "matricula": "24001234",
+      "presencas": 12, "aulas": 12, "percentual": 100.0 },
+    { "alunoId": "66f1b9ff...", "nome": "Bruno Lima", "matricula": "24005678",
+      "presencas": 8, "aulas": 12, "percentual": 66.7 }
+  ],
   "abaixoDoMinimo": [
     { "alunoId": "66f1b9ff...", "nome": "Bruno Lima", "matricula": "24005678",
       "presencas": 8, "aulas": 12, "percentual": 66.7 }
@@ -221,7 +296,8 @@ O e-mail do aluno não é exposto ao professor.
 }
 ```
 
-`aulas` vem em ordem cronológica e `data` é a abertura da aula.
+`aulas` vem em ordem cronológica e `data` é a abertura da aula. `alunos` traz todos os matriculados,
+no mesmo formato de `abaixoDoMinimo`, em ordem alfabética.
 
 ## `HistoricoResponse`
 
@@ -307,6 +383,28 @@ a interface apresenta “—” para distinguir falta de dados de frequência ze
 `chamadaAberta` é `null` quando não existe aula aberta. O modo pode ser `CLASSICA`, `QRCODE`
 ou `SOM`. A resposta nunca inclui o segredo TOTP. O histórico detalhado continua disponível
 em `GET /api/turmas/{id}/frequencia/{alunoId}` com as autorizações já documentadas.
+
+## Aulas e sessões ativas
+
+### `GET /api/turmas/{id}/aulas`
+
+Somente professor dono da turma. Lista aulas abertas e encerradas, da mais recente para a
+mais antiga, com `id`, `turmaId`, `modo`, `status`, `abertaEm`, `encerradaEm` e `totalPresentes`.
+`encerradaEm` é `null` na aula aberta. Conta apenas registros com `presente: true`.
+Sem aulas retorna `[]`; turma inexistente ou de outro professor responde `404`; aluno, `403`.
+
+### `GET /api/sessoes/ativas`
+
+Somente aluno autenticado. Retorna as chamadas abertas das turmas em que ele está matriculado,
+da mais recente para a mais antiga, nos modos `CLASSICA`, `QRCODE` ou `SOM`:
+
+```json
+[{ "sessaoId": "sessao-id", "turmaId": "turma-id", "turma": "Turma A",
+   "disciplina": "Engenharia de Software I", "modo": "SOM", "abertaEm": "2026-10-29T22:00:00Z" }]
+```
+
+Nunca retorna segredos TOTP ou dados de presença de outros alunos. Sem matrículas/chamadas,
+responde `[]`; professor recebe `403`. Ambas as consultas exigem JWT; sem token respondem `401`.
 
 ## Saúde
 

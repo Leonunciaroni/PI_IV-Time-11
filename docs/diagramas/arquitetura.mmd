@@ -1,0 +1,50 @@
+---
+title: Fast Attendance — arquitetura em develop
+---
+%% Autoria: Diogo Gonçalves Tonhosolo | RA: 25894007
+flowchart LR
+    accTitle: Arquitetura do Fast Attendance
+    accDescr: Navegadores acessam o Nginx, que serve os dois apps Next.js, encaminha REST à API e WebSocket à ponte. A ponte converte JSON em comunicados Java e fala por TCP com o servidor de sessão. API e sessão compartilham o MongoDB em replica set de três membros, com Change Streams para o painel ao vivo.
+
+    subgraph clientes["Navegadores"]
+        P["Professor<br/>app no navegador"]
+        A["Aluno<br/>app no navegador"]
+    end
+
+    subgraph compose["Docker Compose · rede interna"]
+        N["Nginx<br/>:8088 → :80"]
+
+        subgraph apps["Apps web · Next.js 16 / React 19"]
+            FP["professor:3000"]
+            FA["aluno:3001"]
+        end
+
+        API["api:8080<br/>Spring Boot<br/>REST e JWT"]
+        B["ponte:8082<br/>WebSocket ↔ TCP"]
+        S["sessao:8081<br/>TOTP · antifraude<br/>presenças"]
+
+        subgraph rs0["MongoDB 8 · replica set rs0"]
+            direction TB
+            M1[("mongo1:27017<br/>primário preferencial")]
+            M2[("mongo2:27017")]
+            M3[("mongo3:27017")]
+            M1 --- M2 --- M3
+        end
+    end
+
+    P -->|"HTTP / WS"| N
+    A -->|"HTTP / WS"| N
+    N -->|"/professor"| FP
+    N -->|"/aluno"| FA
+    N -->|"/api · REST"| API
+    N <-->|"/ws · JSON v1"| B
+    B <-->|"TCP<br/>Comunicados Java"| S
+    API -->|"MongoDB driver"| rs0
+    S <-->|"MongoDB driver<br/>e Change Streams"| rs0
+
+    classDef cliente fill:#ffffff,stroke:#475569,color:#0f172a
+    classDef entrada fill:#dbeafe,stroke:#1d4ed8,color:#172554
+    classDef banco fill:#ecfdf5,stroke:#047857,color:#064e3b
+    class P,A cliente
+    class N entrada
+    class M1,M2,M3 banco

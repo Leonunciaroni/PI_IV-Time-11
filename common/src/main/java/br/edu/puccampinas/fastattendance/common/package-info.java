@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 /**
  * Código compartilhado entre os módulos {@code api} e {@code sessao}: modelos de domínio,
  * protocolo de mensagens WebSocket e emissão/validação de JWT.

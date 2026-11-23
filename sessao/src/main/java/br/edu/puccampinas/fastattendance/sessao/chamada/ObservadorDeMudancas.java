@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao.chamada;
 
 import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
@@ -11,6 +15,7 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.FullDocument;
+import com.mongodb.client.model.changestream.UpdateDescription;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -145,9 +150,25 @@ public final class ObservadorDeMudancas implements AutoCloseable {
 
     private void tratarSessao(ChangeStreamDocument<Document> evento) {
         Document sessao = evento.getFullDocument();
-        if (sessao != null && StatusSessao.ENCERRADA.name().equals(sessao.getString("status"))) {
-            painel.sessaoEncerrada(sessao);
+        if (sessao == null) {
+            return;
         }
+        if (StatusSessao.ENCERRADA.name().equals(sessao.getString("status"))) {
+            painel.sessaoEncerrada(sessao);
+        } else if (modoTrocado(evento)) {
+            painel.modoAlterado(sessao);
+        }
+    }
+
+    /**
+     * A troca de modo sempre grava {@code modoAlteradoEm} ({@code ServicoDeSessoes.trocarModo}). Olhar
+     * esse campo nos campos alterados, e não o documento inteiro, evita tratar como troca outras
+     * atualizações de uma sessão aberta.
+     */
+    private static boolean modoTrocado(ChangeStreamDocument<Document> evento) {
+        UpdateDescription alteracao = evento.getUpdateDescription();
+        return alteracao != null && alteracao.getUpdatedFields() != null
+                && alteracao.getUpdatedFields().containsKey("modoAlteradoEm");
     }
 
     private void fechar(MongoChangeStreamCursor<?> cursor) {

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 package br.edu.puccampinas.fastattendance.api.estatistica;
 
 /** Frequência acumulada de um aluno em todas as aulas dadas da turma. */

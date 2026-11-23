@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { encerrarSessao, lerSessao } from "./sessao";
 import { ClienteSessao, urlDaSessao, type EstadoConexao } from "./ws";

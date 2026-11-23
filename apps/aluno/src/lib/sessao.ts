@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 import type { TokenResponse, Usuario } from "./tipos";
 
 // As duas aplicações compartilham a mesma origem; a chave separa a sessão de cada uma.
@@ -77,4 +80,13 @@ function interpretar(bruto: string | null): Sessao | null {
 export function encerrarSessao(): void {
   localStorage.removeItem(CHAVE);
   notificar();
+}
+
+/** Preserva token e validade; uma resposta atrasada não pode recriar outra sessão. */
+export function atualizarUsuario(usuario: Usuario, tokenEsperado: string): boolean {
+  const atual = lerSessao();
+  if (!atual || atual.token !== tokenEsperado || atual.usuario.id !== usuario.id) return false;
+  localStorage.setItem(CHAVE, JSON.stringify({ ...atual, usuario }));
+  notificar();
+  return true;
 }

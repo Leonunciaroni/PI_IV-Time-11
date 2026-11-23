@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 package br.edu.puccampinas.fastattendance.api.repositorio;
 
 import br.edu.puccampinas.fastattendance.api.dominio.Turma;

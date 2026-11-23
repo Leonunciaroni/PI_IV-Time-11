@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 "use client";
 
 import Link from "next/link";
@@ -15,13 +19,12 @@ import { Botao } from "./ui/Botao";
 import { Carregando } from "./ui/Carregando";
 import { ErroDeCarga } from "./ui/ErroDeCarga";
 import { MensagemDeErro } from "./ui/MensagemDeErro";
-import { botaoSecundario } from "./ui/estilos";
+import { alvoDeToque, botaoSecundario } from "./ui/estilos";
 
 const MODOS: { modo: ModoChamada; nome: string; descricao: string; disponivel: boolean }[] = [
   { modo: "CLASSICA", nome: "Clássica", descricao: "Marque a lista aluno por aluno ou todos de uma vez.", disponivel: true },
   { modo: "QRCODE", nome: "QR Code", descricao: "Código que muda a cada 15 s, com a localização do aluno.", disponivel: true },
-  // A emissão do sinal sonoro (P8) ainda não existe
-  { modo: "SOM", nome: "Som", descricao: "Ultrassom, sem câmera nem foto.", disponivel: false },
+  { modo: "SOM", nome: "Som", descricao: "Ultrassom, sem câmera nem foto.", disponivel: true },
 ];
 
 export function AbrirChamada() {
@@ -70,12 +73,12 @@ export function AbrirChamada() {
           <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <Link href={`/turmas/${id}`} className="text-sm underline">
+                <Link href={`/turmas/${id}`} className={`${alvoDeToque} text-sm underline`}>
                   ← {turma.situacao === "pronto" ? `${turma.dados.disciplina} · ${turma.dados.nome}` : "Turma"}
                 </Link>
                 <h1 className="mt-2 text-xl font-semibold">Abrir chamada</h1>
               </div>
-              <p role="status" className="flex items-center gap-2 text-sm opacity-70">
+              <p role="status" className="flex items-center gap-2 text-sm text-suave">
                 <span
                   aria-hidden="true"
                   className={`size-2 rounded-full ${estado === "pronto" ? "bg-sucesso" : "bg-borda-forte"}`}
@@ -101,10 +104,10 @@ export function AbrirChamada() {
                           key={opcao.modo}
                           className={`relative flex flex-col gap-1 rounded-cartao border p-4 ${
                             !opcao.disponivel
-                              ? "cursor-not-allowed border-dashed border-borda-forte opacity-60"
+                              ? "cursor-not-allowed border-dashed border-borda-forte bg-superficie opacity-60"
                               : escolhido
-                                ? "cursor-pointer border-primaria bg-realce ring-1 ring-primaria"
-                                : "cursor-pointer border-borda"
+                                ? "cursor-pointer border-primaria bg-primaria/10 ring-1 ring-primaria"
+                                : "cursor-pointer border-borda bg-superficie"
                           }`}
                         >
                           <input
@@ -127,7 +130,7 @@ export function AbrirChamada() {
                               </span>
                             )}
                           </span>
-                          <span className="pr-6 text-sm opacity-70">{opcao.descricao}</span>
+                          <span className="pr-6 text-sm text-suave">{opcao.descricao}</span>
                         </label>
                       );
                     })}
@@ -155,7 +158,7 @@ export function AbrirChamada() {
                           <select
                             value={salaId ?? ""}
                             onChange={(e) => setSalaEscolhida(e.target.value)}
-                            className="rounded-controle border border-borda-forte bg-background px-3 py-2 text-base outline-none focus:border-primaria"
+                            className="rounded-controle border border-borda-forte bg-superficie px-3 py-2 text-base outline-none focus:border-primaria focus:ring-1 focus:ring-primaria"
                           >
                             {listaSalas.map((sala) => (
                               <option key={sala.id} value={sala.id}>
@@ -178,15 +181,15 @@ export function AbrirChamada() {
                       {abrindo ? "Abrindo..." : "Abrir chamada"}
                     </Botao>
                   </div>
+                  <MensagemDeErro>{erro?.mensagem}</MensagemDeErro>
                   {retomar && (
                     <Link href={`/turmas/${id}/chamada/${retomar.sessaoId}`} className={`${botaoSecundario} px-3 py-2 text-sm`}>
                       Retomar a chamada aberta
                     </Link>
                   )}
-                  <MensagemDeErro>{erro?.mensagem}</MensagemDeErro>
                   {erro?.jaAberta && !retomar && (
                     // O servidor ainda não informa qual é a sessão aberta (#30), então só dá para retomar neste navegador
-                    <p className="max-w-md text-center text-sm opacity-70">
+                    <p className="max-w-md text-center text-sm text-suave">
                       Ela foi aberta em outro navegador ou aparelho. Encerre por lá, ou aguarde: a chamada se encerra
                       sozinha depois de 4 horas.
                     </p>

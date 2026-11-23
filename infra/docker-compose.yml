@@ -1,12 +1,25 @@
 # Ambiente completo do Fast Attendance.
 #   cd infra && cp .env.example .env && docker compose up -d --build
-# Tolerância a falha: docker compose up -d --scale api=2 --scale sessao=2 e depois docker compose stop <container>
+# Tolerância a falha: docker compose up -d --scale api=2 --scale sessao=2 --scale ponte=2 e depois docker compose stop <container>
 
 name: fast-attendance
 
+# Os nós do replica set se autenticam entre si pelo keyfile; os clientes, por usuário e senha.
+# O keyfile vem do .env e é gravado com permissão 400 antes de o mongod subir (montar o arquivo
+# direto do host não funciona no Windows, que não preserva o dono nem a permissão).
 x-mongo: &mongo
   image: mongo:8.0
-  command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+  entrypoint:
+    - bash
+    - -c
+    - >-
+      printf '%s' "$$MONGO_KEYFILE" > /etc/mongo-keyfile &&
+      chown mongodb:mongodb /etc/mongo-keyfile && chmod 400 /etc/mongo-keyfile &&
+      exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongo-keyfile
+  environment: &mongo-ambiente
+    MONGO_KEYFILE: ${MONGO_KEYFILE:?defina MONGO_KEYFILE em infra/.env}
+    MONGO_APP_USUARIO: ${MONGO_APP_USUARIO:-fast_attendance}
+    MONGO_APP_SENHA: ${MONGO_APP_SENHA:?defina MONGO_APP_SENHA em infra/.env}
   restart: unless-stopped
   networks: [interna]
   healthcheck:
@@ -18,12 +31,19 @@ x-mongo: &mongo
 services:
   mongo1:
     <<: *mongo
+    # Só no primeiro start, com o volume vazio: a imagem cria o usuário root (sem o replica set) e
+    # roda mongo/criar-usuario-app.js. Os outros nós recebem os usuários pela replicação.
+    environment:
+      <<: *mongo-ambiente
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USUARIO:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_SENHA:?defina MONGO_ROOT_SENHA em infra/.env}
     ports:
       # Exposto só para ferramentas locais (Compass, mongosh, api rodando fora do Docker).
       # Use: mongodb://localhost:27017/?directConnection=true
       - "127.0.0.1:27017:27017"
     volumes:
       - mongo1-dados:/data/db
+      - ./mongo/criar-usuario-app.js:/docker-entrypoint-initdb.d/criar-usuario-app.js:ro
 
   mongo2:
     <<: *mongo
@@ -41,9 +61,18 @@ services:
       mongo1: { condition: service_healthy }
       mongo2: { condition: service_healthy }
       mongo3: { condition: service_healthy }
+    environment:
+      MONGO_ROOT_USUARIO: ${MONGO_ROOT_USUARIO:-root}
+      MONGO_ROOT_SENHA: ${MONGO_ROOT_SENHA:?defina MONGO_ROOT_SENHA em infra/.env}
     volumes:
       - ./mongo/init-replica-set.js:/scripts/init-replica-set.js:ro
-    entrypoint: ["mongosh", "--host", "mongo1:27017", "--quiet", "/scripts/init-replica-set.js"]
+    entrypoint:
+      - bash
+      - -c
+      - >-
+        exec mongosh --host mongo1:27017 --quiet
+        -u "$$MONGO_ROOT_USUARIO" -p "$$MONGO_ROOT_SENHA" --authenticationDatabase admin
+        /scripts/init-replica-set.js
     networks: [interna]
     restart: "no"
 
@@ -52,7 +81,7 @@ services:
       context: ..
       dockerfile: api/Dockerfile
     environment:
-      MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0
+      MONGODB_URI: mongodb://${MONGO_APP_USUARIO:-fast_attendance}:${MONGO_APP_SENHA:?defina MONGO_APP_SENHA em infra/.env}@mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0&authSource=fast_attendance
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET em infra/.env}
       JWT_EXPIRACAO_HORAS: ${JWT_EXPIRACAO_HORAS:-12}
       PROFESSORES_PERMITIDOS: ${PROFESSORES_PERMITIDOS:-professor@demo.br}
@@ -71,19 +100,42 @@ services:
     build:
       context: ..
       dockerfile: sessao/Dockerfile
+    command: ["8081"]
     environment:
-      MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0
+      MONGODB_URI: mongodb://${MONGO_APP_USUARIO:-fast_attendance}:${MONGO_APP_SENHA:?defina MONGO_APP_SENHA em infra/.env}@mongo1:27017,mongo2:27017,mongo3:27017/fast_attendance?replicaSet=rs0&authSource=fast_attendance
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET em infra/.env}
       SESSAO_DURACAO_MAXIMA_MIN: ${SESSAO_DURACAO_MAXIMA_MIN:-240}
     # A API cria os índices (inclusive o que impede duas sessões abertas na mesma turma)
     depends_on:
       api: { condition: service_healthy }
     restart: unless-stopped
-    # Tempo para fechar as conexões com 1001 e os clientes reconectarem em outra réplica
+    # Sem `ports`: o servidor fala TCP só com a ponte, na rede interna
     stop_grace_period: 5s
     networks: [interna]
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8081'"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+
+  # Ponte WebSocket (protocolo v1, JSON) ↔ servidor de sessão (TCP). É o que o Nginx expõe em /ws.
+  ponte:
+    build:
+      context: ..
+      dockerfile: ponte/Dockerfile
+    command: ["8082"]
+    environment:
+      SESSAO_HOST: sessao
+      SESSAO_PORTA: 8081
+    depends_on:
+      sessao: { condition: service_healthy }
+    restart: unless-stopped
+    # Tempo para fechar os WebSockets com 1001 e os clientes reconectarem em outra réplica
+    stop_grace_period: 5s
+    networks: [interna]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8082'"]
       interval: 10s
       timeout: 3s
       retries: 6
@@ -107,9 +159,51 @@ services:
       - "${NGINX_PORTA:-8088}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./teste-celular:/usr/share/nginx/teste-celular:ro
     depends_on:
       - api
-      - sessao
+      - ponte
+      - professor
+      - aluno
+    restart: unless-stopped
+    networks: [interna]
+
+  # Opcional: docker compose --profile https up -d --build
+  # O endereço HTTPS temporário aparece em: docker compose logs -f tunel
+  tunel:
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [https]
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--url", "http://nginx:80"]
+    depends_on:
+      - nginx
+    restart: "no"
+    networks: [interna]
+
+  # Opcional, sem internet: HTTPS na rede local com certificado autoassinado (reserva do túnel).
+  #   node https-local/gerar-certificado.mjs
+  #   docker compose --profile https-local up -d nginx-https
+  # Usa o mesmo nginx.conf do serviço `nginx`: só troca `listen 80;` por `listen 443 ssl;`, então as
+  # rotas não podem ficar diferentes. O aviso de certificado no celular é esperado.
+  nginx-https:
+    image: nginx:1.30-alpine
+    profiles: [https-local]
+    ports:
+      - "${HTTPS_LOCAL_PORTA:-8443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./teste-celular:/usr/share/nginx/teste-celular:ro
+      - ./https-local/certs:/etc/nginx/certs:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        grep -q 'listen 80;' /etc/nginx/nginx.conf || { echo 'nginx.conf sem "listen 80;": ajuste este serviço' >&2; exit 1; }
+        [ -f /etc/nginx/certs/cert.pem ] || { echo 'Sem certificado: rode node https-local/gerar-certificado.mjs' >&2; exit 1; }
+        sed 's|listen 80;|listen 443 ssl; ssl_certificate /etc/nginx/certs/cert.pem; ssl_certificate_key /etc/nginx/certs/key.pem; ssl_protocols TLSv1.2 TLSv1.3;|' /etc/nginx/nginx.conf > /tmp/nginx-https.conf
+        exec nginx -c /tmp/nginx-https.conf -g 'daemon off;'
+    depends_on:
+      - api
+      - ponte
       - professor
       - aluno
     restart: unless-stopped

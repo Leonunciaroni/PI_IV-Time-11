@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 "use client";
 
 import { use, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
@@ -6,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { ErroApi, login } from "@/lib/api";
 import { obterDispositivoId } from "@/lib/dispositivo";
 import { assinarSessao, lerSessao, salvarSessao } from "@/lib/sessao";
+import { Campo } from "./ui/Campo";
+import { CampoSenha } from "./ui/CampoSenha";
 
 export function FormularioLogin() {
   use(browser("A sessão do usuário fica no localStorage."));
@@ -50,31 +55,24 @@ export function FormularioLogin() {
 
   return (
     <form onSubmit={entrar} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        E-mail
-        <input
-          type="email"
-          name="email"
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md border border-black/20 bg-transparent px-3 py-2 text-base outline-none focus:border-blue-600 dark:border-white/25"
-        />
-      </label>
+      <Campo
+        rotulo="E-mail"
+        type="email"
+        name="email"
+        autoComplete="username"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
 
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Senha
-        <input
-          type="password"
-          name="senha"
-          autoComplete="current-password"
-          required
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="rounded-md border border-black/20 bg-transparent px-3 py-2 text-base outline-none focus:border-blue-600 dark:border-white/25"
-        />
-      </label>
+      <CampoSenha
+        rotulo="Senha"
+        name="senha"
+        autoComplete="current-password"
+        required
+        value={senha}
+        onChange={(e) => setSenha(e.target.value)}
+      />
 
       <button
         type="submit"

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao.chamada;
 
 import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
@@ -6,9 +10,11 @@ import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import br.edu.puccampinas.fastattendance.common.modelo.StatusSessao;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.MotivoEncerramento;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoAberta;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoAbrir;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoEncerrada;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeTrocarModo;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeTrocarModo;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.ErroDeProtocolo;
 import br.edu.puccampinas.fastattendance.sessao.totp.SegredoTotp;
@@ -28,11 +34,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Objects;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.lt;
 import static com.mongodb.client.model.Updates.combine;
+import static com.mongodb.client.model.Updates.push;
 import static com.mongodb.client.model.Updates.set;
 
 /**
@@ -62,19 +70,19 @@ public final class ServicoDeSessoes {
         this.duracaoMaxima = duracaoMaxima;
     }
 
-    public SessaoAberta abrir(UsuarioAutenticado professor, SessaoAbrir pedido) {
+    public RespostaDeAbrirSessao abrir(UsuarioAutenticado professor, PedidoDeAbrirSessao pedido) {
         exigirProfessor(professor);
-        if (vazio(pedido.turmaId()) || pedido.modo() == null) {
+        if (vazio(pedido.getTurmaId()) || pedido.getModo() == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Informe turmaId e modo");
         }
-        String turmaId = pedido.turmaId().strip();
+        String turmaId = pedido.getTurmaId().strip();
         Document turma = porId(turmas, turmaId);
         // Turma inexistente e turma de outro professor têm a mesma resposta, para não revelar quais existem
         if (turma == null || !professor.id().equals(turma.getString("professorId"))) {
             throw new ErroDeProtocolo(CodigoErro.PERMISSAO_NEGADA, "Turma não encontrada");
         }
-        String salaId = vazio(pedido.salaId()) ? null : pedido.salaId().strip();
-        if (pedido.modo() == ModoChamada.QRCODE && salaId == null) {
+        String salaId = vazio(pedido.getSalaId()) ? null : pedido.getSalaId().strip();
+        if (pedido.getModo() == ModoChamada.QRCODE && salaId == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "O modo QRCODE exige salaId");
         }
         if (salaId != null && porId(salas, salaId) == null) {
@@ -90,7 +98,7 @@ public final class ServicoDeSessoes {
         Document sessao = new Document("_id", id)
                 .append("turmaId", turmaId)
                 .append("professorId", professor.id())
-                .append("modo", pedido.modo().name())
+                .append("modo", pedido.getModo().name())
                 .append("segredoTotp", segredo)
                 .append("status", StatusSessao.ABERTA.name())
                 .append("abertaEm", Date.from(agora));
@@ -105,11 +113,11 @@ public final class ServicoDeSessoes {
             }
             throw e;
         }
-        return new SessaoAberta(id.toHexString(), turmaId, pedido.modo(), agora.toEpochMilli(),
+        return new RespostaDeAbrirSessao(id.toHexString(), turmaId, pedido.getModo(), agora.toEpochMilli(),
                 SegredoTotp.configuracao(segredo));
     }
 
-    public SessaoEncerrada encerrar(UsuarioAutenticado professor, String sessaoId) {
+    public RespostaDeEncerrarSessao encerrar(UsuarioAutenticado professor, String sessaoId) {
         exigirProfessor(professor);
         Document sessao = buscar(sessaoId);
         if (!professor.id().equals(sessao.getString("professorId"))) {
@@ -126,8 +134,82 @@ public final class ServicoDeSessoes {
             // Encerrada por outra conexão ou pelo tempo limite entre a leitura e a atualização
             throw new ErroDeProtocolo(CodigoErro.SESSAO_ENCERRADA, "A sessão já foi encerrada");
         }
-        return new SessaoEncerrada(sessaoId, MotivoEncerramento.PROFESSOR, agora.toEpochMilli(),
+        return new RespostaDeEncerrarSessao(sessaoId, MotivoEncerramento.PROFESSOR, agora.toEpochMilli(),
                 totalPresentes(sessaoId));
+    }
+
+    /**
+     * {@code sessao.trocar_modo}: muda o modo de uma chamada aberta sem tocar nas presenças, que são
+     * gravadas por {@code sessaoId}, nem no segredo TOTP, que é o mesmo para QR Code e som.
+     * <p>
+     * Ordem das regras: papel de professor, campos obrigatórios, sessão existente, professor dono,
+     * sessão aberta, sala. Ir para {@code QRCODE} exige sala: a do pedido ou, se ele não trouxer, a que
+     * a sessão já tinha (de uma abertura ou troca anterior para QR Code). Pedir o modo e a sala atuais
+     * não altera nada e devolve o estado atual, para que reenviar o pedido depois de uma reconexão não
+     * gere erro nem evento.
+     * <p>
+     * A atualização é atômica e só vale para sessão ainda {@code ABERTA}: se ela for encerrada entre a
+     * leitura e a escrita, a resposta é {@code SESSAO_ENCERRADA}. Cada troca fica registrada em
+     * {@code trocasDeModo}. Os acompanhantes recebem o evento pelo change stream ({@link ObservadorDeMudancas}).
+     */
+    public RespostaDeTrocarModo trocarModo(UsuarioAutenticado professor, PedidoDeTrocarModo pedido) {
+        exigirProfessor(professor);
+        if (vazio(pedido.getSessaoId()) || pedido.getModo() == null) {
+            throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Informe sessaoId e modo");
+        }
+        String sessaoId = pedido.getSessaoId().strip();
+        Document sessao = buscar(sessaoId);
+        if (!professor.id().equals(sessao.getString("professorId"))) {
+            throw new ErroDeProtocolo(CodigoErro.PERMISSAO_NEGADA, "A sessão é de outro professor");
+        }
+        exigirAberta(sessao);
+
+        String salaAtual = sessao.getString("salaId");
+        String salaPedida = vazio(pedido.getSalaId()) ? null : pedido.getSalaId().strip();
+        if (salaPedida != null && porId(salas, salaPedida) == null) {
+            throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Sala não encontrada");
+        }
+        String salaNova = salaPedida != null ? salaPedida : salaAtual;
+        if (pedido.getModo() == ModoChamada.QRCODE && salaNova == null) {
+            throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "O modo QRCODE exige salaId");
+        }
+
+        ModoChamada modoAtual = ModoChamada.valueOf(sessao.getString("modo"));
+        if (modoAtual == pedido.getModo() && Objects.equals(salaAtual, salaNova)) {
+            return resposta(sessao);
+        }
+
+        Instant agora = agora();
+        Document troca = new Document("de", modoAtual.name())
+                .append("para", pedido.getModo().name())
+                .append("salaId", salaNova)
+                .append("em", Date.from(agora));
+        Document trocada = sessoes.findOneAndUpdate(
+                and(eq("_id", sessao.getObjectId("_id")), eq("status", StatusSessao.ABERTA.name())),
+                combine(
+                        set("modo", pedido.getModo().name()),
+                        set("salaId", salaNova),
+                        set("modoAlteradoEm", Date.from(agora)),
+                        push("trocasDeModo", troca)),
+                new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+        if (trocada == null) {
+            // Encerrada por outra conexão ou pelo tempo limite entre a leitura e a atualização
+            throw new ErroDeProtocolo(CodigoErro.SESSAO_ENCERRADA, "A sessão já foi encerrada");
+        }
+        return resposta(trocada);
+    }
+
+    /** Modo atual da sessão; {@code alteradoEm} é a última troca ou, sem troca, a abertura. */
+    private static RespostaDeTrocarModo resposta(Document sessao) {
+        return new RespostaDeTrocarModo(sessao.getObjectId("_id").toHexString(),
+                ModoChamada.valueOf(sessao.getString("modo")), sessao.getString("salaId"),
+                momentoDoModo(sessao));
+    }
+
+    /** Momento em que a sessão passou ao modo atual: a última troca ou, sem troca, a abertura. */
+    static long momentoDoModo(Document sessao) {
+        Date alteradoEm = sessao.getDate("modoAlteradoEm");
+        return (alteradoEm != null ? alteradoEm : sessao.getDate("abertaEm")).getTime();
     }
 
     /**

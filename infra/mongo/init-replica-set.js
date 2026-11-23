@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 // Inicializa o replica set rs0 com três membros. Idempotente: se o replica set já existir,
 // apenas aguarda a eleição do primário.
 const config = {

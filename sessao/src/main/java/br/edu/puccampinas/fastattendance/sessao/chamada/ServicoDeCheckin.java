@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao.chamada;
 
 import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
@@ -5,8 +9,8 @@ import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.Checkin;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.CheckinOk;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeCheckin;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeCheckin;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.ErroDeProtocolo;
 import br.edu.puccampinas.fastattendance.sessao.totp.ValidadorTotp;
@@ -57,22 +61,22 @@ public final class ServicoDeCheckin {
         this.relogio = relogio;
     }
 
-    public CheckinOk registrar(UsuarioAutenticado aluno, Checkin pedido) {
+    public RespostaDeCheckin registrar(UsuarioAutenticado aluno, PedidoDeCheckin pedido) {
         if (aluno.papel() != Papel.ALUNO) {
             throw new ErroDeProtocolo(CodigoErro.PERMISSAO_NEGADA, "Apenas alunos fazem check-in");
         }
-        String sessaoId = exigirTexto(pedido.sessaoId(), "sessaoId");
+        String sessaoId = exigirTexto(pedido.getSessaoId(), "sessaoId");
         // Sessão encerrada responde antes de qualquer outra validação (docs/protocolo-v1.md, seção 4.4)
         Document sessao = sessoes.aberta(sessaoId.strip());
         String sessaoHex = sessao.getObjectId("_id").toHexString();
 
-        String token = exigirTexto(pedido.token(), "token");
-        String dispositivoId = exigirTexto(pedido.dispositivoId(), "dispositivoId");
-        if (pedido.canal() == null) {
+        String token = exigirTexto(pedido.getToken(), "token");
+        String dispositivoId = exigirTexto(pedido.getDispositivoId(), "dispositivoId");
+        if (pedido.getCanal() == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Campo canal ausente");
         }
-        exigirModoDoCanal(pedido.canal(), sessao);
-        boolean comGeolocalizacao = pedido.canal() == OrigemPresenca.QRCODE;
+        exigirModoDoCanal(pedido.getCanal(), sessao);
+        boolean comGeolocalizacao = pedido.getCanal() == OrigemPresenca.QRCODE;
         if (comGeolocalizacao) {
             exigirCoordenadas(pedido);
         }
@@ -106,14 +110,14 @@ public final class ServicoDeCheckin {
                 .append("turmaId", turmaId)
                 .append("alunoId", aluno.id())
                 .append("presente", true)
-                .append("origem", pedido.canal().name())
+                .append("origem", pedido.getCanal().name())
                 .append("dispositivoId", dispositivoId)
                 .append("registradoEm", Date.from(agora));
         if (comGeolocalizacao) {
-            presenca.append("latitude", pedido.latitude()).append("longitude", pedido.longitude());
+            presenca.append("latitude", pedido.getLatitude()).append("longitude", pedido.getLongitude());
         }
         gravar(presenca);
-        return new CheckinOk(sessaoHex, agora.toEpochMilli());
+        return new RespostaDeCheckin(sessaoHex, agora.toEpochMilli());
     }
 
     /** O canal precisa corresponder ao modo da sessão: QRCODE com QRCODE, SOM com SOM. */
@@ -143,10 +147,10 @@ public final class ServicoDeCheckin {
         }
     }
 
-    private void validarRaio(Document sessao, Checkin pedido) {
+    private void validarRaio(Document sessao, PedidoDeCheckin pedido) {
         Document sala = sala(sessao.getString("salaId"));
         double distancia = Haversine.metros(sala.getDouble("latitude"), sala.getDouble("longitude"),
-                pedido.latitude(), pedido.longitude());
+                pedido.getLatitude(), pedido.getLongitude());
         double raio = sala.getDouble("raioMetros");
         if (distancia > raio) {
             throw new ErroDeProtocolo(CodigoErro.FORA_DO_RAIO,
@@ -194,10 +198,10 @@ public final class ServicoDeCheckin {
     }
 
     /** Coordenadas e precisão são obrigatórias no canal QRCODE (seção 4.8). */
-    private static void exigirCoordenadas(Checkin pedido) {
-        Double latitude = pedido.latitude();
-        Double longitude = pedido.longitude();
-        Double precisao = pedido.precisaoMetros();
+    private static void exigirCoordenadas(PedidoDeCheckin pedido) {
+        Double latitude = pedido.getLatitude();
+        Double longitude = pedido.getLongitude();
+        Double precisao = pedido.getPrecisaoMetros();
         if (latitude == null || longitude == null || precisao == null) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA,
                     "Latitude, longitude e precisaoMetros são obrigatórios no canal QRCODE");

@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 // Tipos da API REST (docs/api-rest.md).
 
 export type Papel = "PROFESSOR" | "ALUNO";
@@ -6,6 +9,15 @@ export type ModoChamada = "CLASSICA" | "QRCODE" | "SOM";
 
 export interface ChamadaAberta {
   id: string;
+  modo: ModoChamada;
+  abertaEm: string;
+}
+
+export interface SessaoAtiva {
+  sessaoId: string;
+  turmaId: string;
+  turma: string;
+  disciplina: string;
   modo: ModoChamada;
   abertaEm: string;
 }
@@ -24,8 +36,13 @@ export interface TurmaDoAluno {
 }
 
 export interface HistoricoAluno {
+  turmaId: string;
+  alunoId: string;
   aulasDadas: number;
+  presencas: number;
   percentual: number;
+  minimo: number;
+  abaixoDoMinimo: boolean;
   aulas: {
     sessaoId: string;
     data: string;

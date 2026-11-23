@@ -1,16 +1,28 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao;
 
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeCheckin;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeMarcarPresenca;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
+import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
+import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
-import br.edu.puccampinas.fastattendance.sessao.servidor.ServidorSessao;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -20,16 +32,15 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** {@code sessao.abrir} e {@code sessao.encerrar} pelo WebSocket, com o MongoDB real. */
+/** {@code sessao.abrir} e {@code sessao.encerrar} pelo transporte por sockets, com o MongoDB real. */
 class SessaoAbrirEncerrarTest {
 
-    private static final String SEGREDO = "segredo-dos-testes-com-mais-de-32-bytes-0123456789";
-    private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final String SEGREDO = ServidorDeTeste.SEGREDO;
 
     private final JwtService jwt = new JwtService(SEGREDO, Duration.ofHours(1));
     private final List<ClienteTeste> clientes = new ArrayList<>();
     private final MongoCollection<Document> sessoes = MongoDeTeste.banco().getCollection("sessoes");
-    private ServidorSessao servidor;
+    private ServidorDeTeste servidor;
 
     private String professorId;
     private String turmaId;
@@ -45,13 +56,13 @@ class SessaoAbrirEncerrarTest {
                 new Document("nome", "Turma B").append("professorId", new ObjectId().toHexString()));
         salaId = inserir("salas", new Document("nome", "H15 - Sala 203").append("latitude", -22.83)
                 .append("longitude", -47.05).append("raioMetros", 30.0));
-        iniciarServidor(Duration.ofHours(4));
+        servidor = new ServidorDeTeste(Duration.ofSeconds(5), Duration.ofSeconds(60), Duration.ofHours(4));
     }
 
     @AfterEach
     void parar() throws Exception {
         clientes.forEach(ClienteTeste::close);
-        servidor.encerrar(1_000);
+        servidor.close();
     }
 
     // ---- Abertura ----
@@ -60,36 +71,32 @@ class SessaoAbrirEncerrarTest {
     void abreSessaoEEnviaAConfiguracaoTotpAoProfessor() throws Exception {
         ClienteTeste professor = professor();
 
-        professor.enviar(mensagem("sessao.abrir", "s1", "{\"turmaId\":\"%s\",\"modo\":\"CLASSICA\"}".formatted(turmaId)));
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.CLASSICA, null));
 
-        JsonNode resposta = ler(professor.proxima());
-        assertEquals("sessao.aberta", resposta.get("tipo").stringValue(), resposta.toString());
-        assertEquals("s1", resposta.get("ref").stringValue());
-        JsonNode dados = resposta.get("dados");
-        assertEquals(turmaId, dados.get("turmaId").stringValue());
-        assertEquals("CLASSICA", dados.get("modo").stringValue());
-        assertTrue(dados.get("abertaEm").longValue() > 0);
-        JsonNode totp = dados.get("totp");
-        assertTrue(totp.get("segredo").stringValue().matches("[A-Z2-7]{32}"));
-        assertEquals("HmacSHA256", totp.get("algoritmo").stringValue());
-        assertEquals(6, totp.get("digitos").intValue());
-        assertEquals(15, totp.get("periodoSegundos").intValue());
-        assertEquals(0, totp.get("t0").longValue());
+        RespostaDeAbrirSessao resposta = professor.proximo(RespostaDeAbrirSessao.class);
+        assertEquals(turmaId, resposta.getTurmaId());
+        assertEquals(ModoChamada.CLASSICA, resposta.getModo());
+        assertTrue(resposta.getAbertaEm() > 0);
+        assertTrue(resposta.getTotp().getSegredo().matches("[A-Z2-7]{32}"));
+        assertEquals("HmacSHA256", resposta.getTotp().getAlgoritmo());
+        assertEquals(6, resposta.getTotp().getDigitos());
+        assertEquals(15, resposta.getTotp().getPeriodoSegundos());
+        assertEquals(0, resposta.getTotp().getT0());
 
-        Document gravada = sessoes.find(eq("_id", new ObjectId(dados.get("sessaoId").stringValue()))).first();
+        Document gravada = sessoes.find(eq("_id", new ObjectId(resposta.getSessaoId()))).first();
         assertNotNull(gravada);
         assertEquals("ABERTA", gravada.getString("status"));
         assertEquals(professorId, gravada.getString("professorId"));
-        assertEquals(totp.get("segredo").stringValue(), gravada.getString("segredoTotp"));
+        assertEquals(resposta.getTotp().getSegredo(), gravada.getString("segredoTotp"));
     }
 
     @Test
     void abreSessaoQrCodeComSala() throws Exception {
         ClienteTeste professor = professor();
 
-        professor.enviar(abrir(turmaId, "QRCODE", salaId));
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.QRCODE, salaId));
 
-        assertEquals("sessao.aberta", ler(professor.proxima()).get("tipo").stringValue());
+        professor.proximo(RespostaDeAbrirSessao.class);
         assertEquals(salaId, sessoes.find().first().getString("salaId"));
     }
 
@@ -97,38 +104,36 @@ class SessaoAbrirEncerrarTest {
     void modoQrCodeExigeSalaExistente() throws Exception {
         ClienteTeste professor = professor();
 
-        professor.enviar(abrir(turmaId, "QRCODE", null));
-        assertErro(professor.proxima(), "MENSAGEM_INVALIDA");
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.QRCODE, null));
+        professor.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
 
-        professor.enviar(abrir(turmaId, "QRCODE", new ObjectId().toHexString()));
-        assertErro(professor.proxima(), "MENSAGEM_INVALIDA");
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.QRCODE, new ObjectId().toHexString()));
+        professor.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
 
         assertEquals(0, sessoes.countDocuments());
     }
 
     @Test
-    void recusaPedidoSemTurmaOuComModoDesconhecido() throws Exception {
+    void recusaPedidoSemTurma() throws Exception {
         ClienteTeste professor = professor();
 
-        professor.enviar(mensagem("sessao.abrir", "s1", "{\"modo\":\"CLASSICA\"}"));
-        assertErro(professor.proxima(), "MENSAGEM_INVALIDA");
+        professor.enviar(new PedidoDeAbrirSessao(null, ModoChamada.CLASSICA, null));
 
-        professor.enviar(abrir(turmaId, "TELEPATIA", null));
-        assertErro(professor.proxima(), "MENSAGEM_INVALIDA");
+        professor.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
     }
 
     @Test
     void soODonoDaTurmaAbreSessao() throws Exception {
         ClienteTeste professor = professor();
 
-        professor.enviar(abrir(turmaDeOutroProfessor, "CLASSICA", null));
-        assertErro(professor.proxima(), "PERMISSAO_NEGADA");
+        professor.enviar(new PedidoDeAbrirSessao(turmaDeOutroProfessor, ModoChamada.CLASSICA, null));
+        professor.proximoErro(CodigoErro.PERMISSAO_NEGADA);
 
-        professor.enviar(abrir(new ObjectId().toHexString(), "CLASSICA", null));
-        assertErro(professor.proxima(), "PERMISSAO_NEGADA");
+        professor.enviar(new PedidoDeAbrirSessao(new ObjectId().toHexString(), ModoChamada.CLASSICA, null));
+        professor.proximoErro(CodigoErro.PERMISSAO_NEGADA);
 
-        professor.enviar(abrir("nao-e-um-objectid", "CLASSICA", null));
-        assertErro(professor.proxima(), "PERMISSAO_NEGADA");
+        professor.enviar(new PedidoDeAbrirSessao("nao-e-um-objectid", ModoChamada.CLASSICA, null));
+        professor.proximoErro(CodigoErro.PERMISSAO_NEGADA);
 
         assertEquals(0, sessoes.countDocuments());
     }
@@ -137,9 +142,9 @@ class SessaoAbrirEncerrarTest {
     void alunoNaoAbreSessao() throws Exception {
         ClienteTeste aluno = autenticado(new ObjectId().toHexString(), Papel.ALUNO);
 
-        aluno.enviar(abrir(turmaId, "CLASSICA", null));
+        aluno.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.CLASSICA, null));
 
-        assertErro(aluno.proxima(), "PERMISSAO_NEGADA");
+        aluno.proximoErro(CodigoErro.PERMISSAO_NEGADA);
     }
 
     @Test
@@ -147,9 +152,9 @@ class SessaoAbrirEncerrarTest {
         ClienteTeste professor = professor();
         abrirSessao(professor);
 
-        professor.enviar(abrir(turmaId, "SOM", null));
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.SOM, null));
 
-        assertErro(professor.proxima(), "SESSAO_JA_ABERTA");
+        professor.proximoErro(CodigoErro.SESSAO_JA_ABERTA);
         assertEquals(1, sessoes.countDocuments());
     }
 
@@ -165,27 +170,25 @@ class SessaoAbrirEncerrarTest {
                 new Document("sessaoId", sessaoId).append("alunoId", "a2").append("presente", true),
                 new Document("sessaoId", sessaoId).append("alunoId", "a3").append("presente", false)));
 
-        professor.enviar(encerrar(sessaoId));
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
 
-        JsonNode resposta = ler(professor.proxima());
-        assertEquals("sessao.encerrada", resposta.get("tipo").stringValue(), resposta.toString());
-        assertEquals("e1", resposta.get("ref").stringValue());
-        assertEquals(sessaoId, resposta.get("dados").get("sessaoId").stringValue());
-        assertEquals("PROFESSOR", resposta.get("dados").get("motivo").stringValue());
-        assertEquals(2, resposta.get("dados").get("totalPresentes").intValue());
+        RespostaDeEncerrarSessao resposta = professor.proximo(RespostaDeEncerrarSessao.class);
+        assertEquals(sessaoId, resposta.getSessaoId());
+        assertEquals("PROFESSOR", resposta.getMotivo().name());
+        assertEquals(2, resposta.getTotalPresentes());
 
         Document gravada = sessoes.find(eq("_id", new ObjectId(sessaoId))).first();
         assertEquals("ENCERRADA", gravada.getString("status"));
         assertEquals("PROFESSOR", gravada.getString("motivoEncerramento"));
-        assertEquals(resposta.get("dados").get("encerradaEm").longValue(), gravada.getDate("encerradaEm").getTime());
+        assertEquals(resposta.getEncerradaEm(), gravada.getDate("encerradaEm").getTime());
     }
 
     @Test
     void permiteNovaSessaoDepoisDoEncerramento() throws Exception {
         ClienteTeste professor = professor();
         String primeira = abrirSessao(professor);
-        professor.enviar(encerrar(primeira));
-        assertEquals("sessao.encerrada", ler(professor.proxima()).get("tipo").stringValue());
+        professor.enviar(new PedidoDeEncerrarSessao(primeira));
+        professor.proximo(RespostaDeEncerrarSessao.class);
 
         String segunda = abrirSessao(professor);
 
@@ -198,14 +201,14 @@ class SessaoAbrirEncerrarTest {
     void naoEncerraDuasVezesNemSessaoInexistente() throws Exception {
         ClienteTeste professor = professor();
         String sessaoId = abrirSessao(professor);
-        professor.enviar(encerrar(sessaoId));
-        professor.proxima();
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professor.proximo(RespostaDeEncerrarSessao.class);
 
-        professor.enviar(encerrar(sessaoId));
-        assertErro(professor.proxima(), "SESSAO_ENCERRADA");
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professor.proximoErro(CodigoErro.SESSAO_ENCERRADA);
 
-        professor.enviar(encerrar(new ObjectId().toHexString()));
-        assertErro(professor.proxima(), "SESSAO_NAO_ENCONTRADA");
+        professor.enviar(new PedidoDeEncerrarSessao(new ObjectId().toHexString()));
+        professor.proximoErro(CodigoErro.SESSAO_NAO_ENCONTRADA);
     }
 
     @Test
@@ -213,9 +216,9 @@ class SessaoAbrirEncerrarTest {
         String sessaoId = abrirSessao(professor());
         ClienteTeste outro = autenticado(new ObjectId().toHexString(), Papel.PROFESSOR);
 
-        outro.enviar(encerrar(sessaoId));
+        outro.enviar(new PedidoDeEncerrarSessao(sessaoId));
 
-        assertErro(outro.proxima(), "PERMISSAO_NEGADA");
+        outro.proximoErro(CodigoErro.PERMISSAO_NEGADA);
         assertEquals("ABERTA", sessoes.find().first().getString("status"));
     }
 
@@ -223,34 +226,32 @@ class SessaoAbrirEncerrarTest {
     void nenhumRegistroEAceitoAposOEncerramento() throws Exception {
         ClienteTeste professor = professor();
         String sessaoId = abrirSessao(professor);
-        professor.enviar(encerrar(sessaoId));
-        professor.proxima();
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professor.proximo(RespostaDeEncerrarSessao.class);
         ClienteTeste aluno = autenticado(new ObjectId().toHexString(), Papel.ALUNO);
 
-        aluno.enviar(mensagem("checkin", "c1", """
-                {"sessaoId":"%s","token":"123456","canal":"QRCODE","dispositivoId":"d1"}""".formatted(sessaoId)));
-        assertErro(aluno.proxima(), "SESSAO_ENCERRADA");
+        aluno.enviar(new PedidoDeCheckin(sessaoId, "123456", OrigemPresenca.QRCODE, "d1", null, null, null));
+        aluno.proximoErro(CodigoErro.SESSAO_ENCERRADA);
 
-        professor.enviar(mensagem("presenca.marcar", "m1", """
-                {"sessaoId":"%s","alunoId":"a1","presente":true}""".formatted(sessaoId)));
-        assertErro(professor.proxima(), "SESSAO_ENCERRADA");
+        professor.enviar(new PedidoDeMarcarPresenca(sessaoId, "a1", true));
+        professor.proximoErro(CodigoErro.SESSAO_ENCERRADA);
     }
 
     // ---- Tempo limite ----
 
     @Test
     void encerraPorTempoLimiteSemAcaoDoProfessor() throws Exception {
-        servidor.encerrar(1_000);
+        servidor.close();
         clientes.clear();
-        iniciarServidor(Duration.ofMillis(500));
+        servidor = new ServidorDeTeste(Duration.ofSeconds(5), Duration.ofSeconds(60), Duration.ofMillis(500));
         ClienteTeste professor = professor();
         String sessaoId = abrirSessao(professor);
 
         Document gravada = aguardarStatus(sessaoId, "ENCERRADA", 5_000);
 
         assertEquals("TEMPO_LIMITE", gravada.getString("motivoEncerramento"));
-        professor.enviar(encerrar(sessaoId));
-        assertErro(professor.proxima(), "SESSAO_ENCERRADA");
+        professor.enviar(new PedidoDeEncerrarSessao(sessaoId));
+        professor.proximoErro(CodigoErro.SESSAO_ENCERRADA);
     }
 
     @Test
@@ -269,29 +270,22 @@ class SessaoAbrirEncerrarTest {
 
     // ---- Apoio ----
 
-    private void iniciarServidor(Duration duracaoMaxima) throws Exception {
-        servidor = SessaoApplication.iniciar(new Configuracao(0, SEGREDO, MongoDeTeste.uri(),
-                Duration.ofSeconds(5), Duration.ofSeconds(60), duracaoMaxima));
-    }
-
     private ClienteTeste professor() throws Exception {
         return autenticado(professorId, Papel.PROFESSOR);
     }
 
     private ClienteTeste autenticado(String usuarioId, Papel papel) throws Exception {
-        ClienteTeste cliente = new ClienteTeste(servidor.getPort());
+        ClienteTeste cliente = new ClienteTeste(servidor.porta());
         clientes.add(cliente);
         String token = jwt.emitir(usuarioId, "Usuário", papel).token();
-        cliente.enviar(mensagem("auth", "a", "{\"token\":\"" + token + "\"}"));
-        assertEquals("auth.ok", ler(cliente.proxima()).get("tipo").stringValue());
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
         return cliente;
     }
 
     private String abrirSessao(ClienteTeste professor) throws Exception {
-        professor.enviar(abrir(turmaId, "CLASSICA", null));
-        JsonNode resposta = ler(professor.proxima());
-        assertEquals("sessao.aberta", resposta.get("tipo").stringValue(), resposta.toString());
-        return resposta.get("dados").get("sessaoId").stringValue();
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, ModoChamada.CLASSICA, null));
+        return professor.proximo(RespostaDeAbrirSessao.class).getSessaoId();
     }
 
     private Document aguardarStatus(String sessaoId, String status, long timeoutMs) throws InterruptedException {
@@ -310,29 +304,5 @@ class SessaoAbrirEncerrarTest {
         ObjectId id = new ObjectId();
         MongoDeTeste.banco().getCollection(colecao).insertOne(documento.append("_id", id));
         return id.toHexString();
-    }
-
-    private static String abrir(String turmaId, String modo, String salaId) {
-        String sala = salaId == null ? "" : ",\"salaId\":\"" + salaId + "\"";
-        return mensagem("sessao.abrir", "s1", "{\"turmaId\":\"%s\",\"modo\":\"%s\"%s}".formatted(turmaId, modo, sala));
-    }
-
-    private static String encerrar(String sessaoId) {
-        return mensagem("sessao.encerrar", "e1", "{\"sessaoId\":\"" + sessaoId + "\"}");
-    }
-
-    private static String mensagem(String tipo, String id, String dados) {
-        return "{\"v\":1,\"tipo\":\"%s\",\"id\":\"%s\",\"ts\":%d,\"dados\":%s}"
-                .formatted(tipo, id, System.currentTimeMillis(), dados);
-    }
-
-    private static JsonNode ler(String texto) {
-        return JSON.readTree(texto);
-    }
-
-    private static void assertErro(String texto, String codigoEsperado) {
-        JsonNode resposta = ler(texto);
-        assertEquals("erro", resposta.get("tipo").stringValue(), texto);
-        assertEquals(codigoEsperado, resposta.get("dados").get("codigo").stringValue(), texto);
     }
 }

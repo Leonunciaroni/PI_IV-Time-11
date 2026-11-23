@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 // Spike da Semana 2: verifica se notebooks emitem e celulares captam tons de 18 a 20 kHz pelo
 // navegador, com que relação sinal-ruído (SNR) e a que distância. Não codifica dados: o modem
 // FSK é o entregável da Semana 3.

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Gerador TOTP (RFC 6238) do QR Code rotativo, a partir da configuração que o servidor envia em
 // sessao.aberta (docs/protocolo-v1.md, seção 5.3). O HMAC vem do Web Crypto do navegador.
 

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useCallback, useEffect, useState } from "react";
 import { ErroApi, obter } from "./api";
 

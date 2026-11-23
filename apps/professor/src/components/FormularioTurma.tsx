@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 "use client";
 
 import { useState, type SubmitEvent } from "react";
@@ -14,6 +18,9 @@ export interface DadosTurma {
 }
 
 type Erros = Partial<Record<keyof DadosTurma, string>>;
+
+// Ordem dos campos na tela, para focar o primeiro com erro
+const CAMPOS: (keyof DadosTurma)[] = ["nome", "disciplina", "horarioPadrao"];
 
 /** Validação do lado do cliente; a API continua sendo a fonte final das regras. */
 export function validarTurma(dados: DadosTurma): Erros {
@@ -53,7 +60,13 @@ export function FormularioTurma({ aoEnviar }: FormularioTurmaProps) {
     };
     const encontrados = validarTurma(limpos);
     setErros(encontrados);
-    if (Object.keys(encontrados).length > 0) return;
+    const primeiroInvalido = CAMPOS.find((campo) => encontrados[campo]);
+    if (primeiroInvalido) {
+      // Leva o foco ao primeiro campo com erro, para quem usa teclado ou leitor de tela
+      const elemento = evento.currentTarget.elements.namedItem(primeiroInvalido);
+      if (elemento instanceof HTMLInputElement) elemento.focus();
+      return;
+    }
 
     setEnviando(true);
     try {
@@ -71,6 +84,7 @@ export function FormularioTurma({ aoEnviar }: FormularioTurmaProps) {
         rotulo="Nome da turma"
         name="nome"
         placeholder="Turma A"
+        required
         value={dados.nome}
         onChange={(e) => alterar("nome", e.target.value)}
         erro={erros.nome}
@@ -80,6 +94,7 @@ export function FormularioTurma({ aoEnviar }: FormularioTurmaProps) {
         rotulo="Disciplina"
         name="disciplina"
         placeholder="Engenharia de Software I"
+        required
         value={dados.disciplina}
         onChange={(e) => alterar("disciplina", e.target.value)}
         erro={erros.disciplina}
@@ -89,6 +104,10 @@ export function FormularioTurma({ aoEnviar }: FormularioTurmaProps) {
         rotulo="Horário padrão"
         name="horarioPadrao"
         placeholder="Seg 19:00"
+        required
+        autoComplete="off"
+        // A dica some enquanto o erro de formato está na tela, para não repetir a orientação
+        dica={erros.horarioPadrao ? undefined : "Dia da semana e hora de início, como Seg 19:00."}
         value={dados.horarioPadrao}
         onChange={(e) => alterar("horarioPadrao", e.target.value)}
         erro={erros.horarioPadrao}

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 "use client";
 
 import Link from "next/link";
@@ -65,7 +69,7 @@ export function ListaDeChamada({ turmaId, alunos, marcacoes, habilitada, emLote,
       </div>
 
       {visiveis.length === 0 ? (
-        <p role="status" className="text-sm opacity-70">
+        <p role="status" className="text-sm text-suave">
           Nenhum aluno encontrado para “{busca.trim()}”.
         </p>
       ) : (
@@ -87,8 +91,8 @@ export function ListaDeChamada({ turmaId, alunos, marcacoes, habilitada, emLote,
                     className="size-5 shrink-0 accent-primaria"
                   />
                   <span className="min-w-0 flex-1">{aluno.nome}</span>
-                  <span className="font-mono text-sm opacity-70">{aluno.matricula}</span>
-                  <span className={`w-16 text-right text-sm font-semibold ${presente ? "text-sucesso" : "opacity-60"}`}>
+                  <span className="font-mono text-sm text-suave">{aluno.matricula}</span>
+                  <span className={`w-16 text-right text-sm font-semibold ${presente ? "text-sucesso" : "text-suave"}`}>
                     {presente ? "Presente" : "Ausente"}
                   </span>
                 </label>

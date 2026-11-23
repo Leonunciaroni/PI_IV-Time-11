@@ -5,7 +5,7 @@
 | Frente | E — Áudio e Infraestrutura |
 | Semana | 2 (04/10 a 11/10/2026) |
 | Ferramenta | [`spikes/audio-ultrassom/`](../../spikes/audio-ultrassom/) |
-| Situação | **Ferramenta pronta; medições em sala pendentes** |
+| Situação | **Amostras registradas; validação ampla adiada como melhoria futura** |
 
 ## Objetivo
 
@@ -55,15 +55,31 @@ Autoteste no Chrome (macOS, taxa de 96 kHz), com tom digital a -40 dBFS e ruído
 detectado com SNR de 23 dB, e as outras frequências da faixa abaixo de 9 dB. Isso valida a
 análise, mas não o caminho acústico, que depende dos testes com alto-falante e microfone físicos.
 
-## Resultados
+## Resultados parciais
 
-Preencher após as medições.
+O primeiro arquivo, [spike-audio-medicoes.csv](../../spikes/audio-ultrassom/medicoes/spike-audio-medicoes.csv),
+tem 18 leituras em **sala silenciosa**, a 3, 6, 9 e 12 m, com os rótulos Redmi 14 e
+iPhone 12, 13, 14 e 15. O segundo,
+[spike-audio-medicoes-ambientes.csv](../../spikes/audio-ultrassom/medicoes/spike-audio-medicoes-ambientes.csv),
+tem 36 leituras em sala com conversa, sala vizinha e corredor. Nos dois arquivos,
+`audivel` está como `Não` em todas as linhas, mas não consta quantos integrantes
+avaliaram. Os CSVs não registram navegador, taxa de amostragem, tipo de emissor nem
+volume do sistema ou da página.
 
-| Receptor (modelo / navegador) | Taxa (Hz) | Autoteste | 1 m | 3 m | 6 m | 10–12 m | Sala vizinha | Melhor freq. |
-|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
+Nas células abaixo, cada leitura está no formato frequência : SNR (dB) : detecção.
 
-## Decisão
+| Receptor (rótulo do CSV) | 3 m | 6 m | 9 m | 12 m |
+|---|---|---|---|---|
+| Redmi 14 | 18 kHz: 51,0 dB, sim; 19,75 kHz: 47,8 dB, sim; 20 kHz: 45,1 dB, não | 18,5 kHz: 20,9 dB, sim | 18 kHz: 31,7 dB, sim; 18,75/19,25/20 kHz: não | 19,5 kHz: 37,1 dB, sim |
+| iPhone 12 | 18,75 kHz: 51,3 dB, não | — | — | — |
+| iPhone 13 | 19 kHz: 47,8 dB, sim | — | — | — |
+| iPhone 14 | 19,5 kHz: 54,3 dB, sim | 19,25 kHz: 30,5 dB, sim | 19,5 kHz: 36,3 dB, sim | 19,25 kHz: 34,0 dB, sim |
+| iPhone 15 | — | 18,75 kHz: 41,4 dB, sim | 18,5 kHz: 38,1 dB, sim | 18,5 kHz: 35,5 dB, sim |
 
-Pendente das medições. Registrar aqui a faixa escolhida para o modem v1 (Semana 3), o volume de
-referência e os modelos de celular que falharam.
+Resumo do segundo CSV:
+
+| Cenário | Leituras | Detecções estáveis | SNR registrado |
+|---|---:|---:|---:|
+| Sala com conversa | 17, a 3, 6, 9 e 12 m | 13/17 | 33,2–53,9 dB |
+| Sala vizinha, porta fechada | 14, a 3, 6, 9 e 12 m | 13/14 | 40,3–64,5 dB |
+| Corredor | 5, a 6, 9 e 12 m | 4/5 | 24,5–63,3 dB |

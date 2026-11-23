@@ -1,20 +1,24 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao.chamada;
 
+import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeModoAlterado;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDePresencaAtualizada;
+import br.edu.puccampinas.fastattendance.common.comunicado.EventoDeSessaoEncerrada;
+import br.edu.puccampinas.fastattendance.common.comunicado.PresenteResumo;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAcompanharSessao;
 import br.edu.puccampinas.fastattendance.common.modelo.Colecoes;
 import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
 import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
 import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
-import br.edu.puccampinas.fastattendance.common.protocolo.Envelope;
-import br.edu.puccampinas.fastattendance.common.protocolo.TipoMensagem;
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.MotivoEncerramento;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresencaAtualizada;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.PresenteResumo;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoEncerrada;
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.SessaoEstado;
 import br.edu.puccampinas.fastattendance.common.seguranca.UsuarioAutenticado;
 import br.edu.puccampinas.fastattendance.sessao.protocolo.ErroDeProtocolo;
-import br.edu.puccampinas.fastattendance.sessao.servidor.Conexao;
+import br.edu.puccampinas.fastattendance.sessao.servidor.Parceiro;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Sorts;
@@ -34,9 +38,11 @@ import static com.mongodb.client.model.Projections.include;
 /**
  * Painel ao vivo do professor (docs/protocolo-v1.md, seções 4.5 e 5.2).
  * <p>
- * Cada réplica guarda, em memória, as conexões que acompanham cada sessão. Os eventos não são
- * enviados pelo roteador: chegam pelos Change Streams do MongoDB ({@link ObservadorDeMudancas}),
+ * Cada réplica guarda, em memória, os parceiros que acompanham cada sessão. Os eventos não são
+ * enviados pela supervisora: chegam pelos Change Streams do MongoDB ({@link ObservadorDeMudancas}),
  * de modo que uma presença gravada em qualquer réplica alcança os professores conectados aqui.
+ * <p>
+ * Os eventos são comunicados não solicitados ({@code EventoDe...}): não têm correlação com pedido.
  */
 public final class PainelAoVivo {
 
@@ -44,7 +50,7 @@ public final class PainelAoVivo {
     private final MongoCollection<Document> matriculas;
     private final MongoCollection<Document> usuarios;
     private final MongoCollection<Document> presencas;
-    private final Map<String, Set<Conexao>> acompanhantes = new ConcurrentHashMap<>();
+    private final Map<String, Set<Parceiro>> acompanhantes = new ConcurrentHashMap<>();
 
     public PainelAoVivo(MongoDatabase banco, ServicoDeSessoes sessoes) {
         this.sessoes = sessoes;
@@ -54,7 +60,7 @@ public final class PainelAoVivo {
     }
 
     /**
-     * {@code sessao.acompanhar}: registra a conexão como acompanhante e devolve o estado atual.
+     * {@code sessao.acompanhar}: registra o parceiro como acompanhante e devolve o estado atual.
      * <p>
      * O registro vem antes da leitura do estado: um registro gravado entre as duas operações pode
      * aparecer no estado e também no evento, mas nunca se perde.
@@ -62,7 +68,7 @@ public final class PainelAoVivo {
      * @throws ErroDeProtocolo {@code SESSAO_NAO_ENCONTRADA}, {@code SESSAO_ENCERRADA} ou
      *                         {@code PERMISSAO_NEGADA} para quem não é o professor da sessão
      */
-    public SessaoEstado acompanhar(Conexao conexao, UsuarioAutenticado professor, String sessaoId) {
+    public RespostaDeAcompanharSessao acompanhar(Parceiro parceiro, UsuarioAutenticado professor, String sessaoId) {
         if (sessaoId == null || sessaoId.isBlank()) {
             throw new ErroDeProtocolo(CodigoErro.MENSAGEM_INVALIDA, "Informe sessaoId");
         }
@@ -70,19 +76,19 @@ public final class PainelAoVivo {
         if (professor.papel() != Papel.PROFESSOR || !professor.id().equals(sessao.getString("professorId"))) {
             throw new ErroDeProtocolo(CodigoErro.PERMISSAO_NEGADA, "Apenas o professor da sessão a acompanha");
         }
-        registrar(conexao, sessao.getObjectId("_id").toHexString());
+        registrar(parceiro, sessao.getObjectId("_id").toHexString());
         return estado(sessao);
     }
 
     /** Chamado pelo observador para cada presença gravada, em qualquer réplica. */
     void presencaGravada(Document presenca) {
         String sessaoId = presenca.getString("sessaoId");
-        Set<Conexao> destinos = acompanhantes.getOrDefault(sessaoId, Set.of());
+        Set<Parceiro> destinos = acompanhantes.getOrDefault(sessaoId, Set.of());
         if (destinos.isEmpty()) {
             return;
         }
         String alunoId = presenca.getString("alunoId");
-        PresencaAtualizada dados = new PresencaAtualizada(
+        EventoDePresencaAtualizada evento = new EventoDePresencaAtualizada(
                 sessaoId,
                 alunoId,
                 nome(alunoId),
@@ -91,50 +97,69 @@ public final class PainelAoVivo {
                 presenca.getDate("registradoEm").getTime(),
                 sessoes.totalPresentes(sessaoId),
                 totalMatriculados(presenca.getString("turmaId")));
-        enviar(destinos, TipoMensagem.PRESENCA_ATUALIZADA, dados);
+        enviar(destinos, evento);
     }
 
     /** Chamado pelo observador quando a sessão passa a {@code ENCERRADA}. A sessão deixa de ter acompanhantes. */
     void sessaoEncerrada(Document sessao) {
         String sessaoId = sessao.getObjectId("_id").toHexString();
-        Set<Conexao> destinos = acompanhantes.remove(sessaoId);
+        Set<Parceiro> destinos = acompanhantes.remove(sessaoId);
         if (destinos == null || destinos.isEmpty()) {
             return;
         }
-        SessaoEncerrada dados = new SessaoEncerrada(
+        EventoDeSessaoEncerrada evento = new EventoDeSessaoEncerrada(
                 sessaoId,
                 MotivoEncerramento.valueOf(sessao.getString("motivoEncerramento")),
                 sessao.getDate("encerradaEm").getTime(),
                 sessoes.totalPresentes(sessaoId));
-        enviar(destinos, TipoMensagem.SESSAO_ENCERRADA, dados);
+        enviar(destinos, evento);
     }
 
-    private void registrar(Conexao conexao, String sessaoId) {
-        acompanhantes.computeIfAbsent(sessaoId, id -> ConcurrentHashMap.newKeySet()).add(conexao);
-        conexao.aoFechar(() -> desregistrar(conexao, sessaoId));
+    /**
+     * Chamado pelo observador quando o modo de uma sessão aberta muda ({@code sessao.trocar_modo}).
+     * Os acompanhantes continuam registrados: a sessão segue aberta, só que em outro modo.
+     */
+    void modoAlterado(Document sessao) {
+        String sessaoId = sessao.getObjectId("_id").toHexString();
+        Set<Parceiro> destinos = acompanhantes.getOrDefault(sessaoId, Set.of());
+        if (destinos.isEmpty()) {
+            return;
+        }
+        EventoDeModoAlterado evento = new EventoDeModoAlterado(
+                sessaoId,
+                ModoChamada.valueOf(sessao.getString("modo")),
+                sessao.getString("salaId"),
+                ServicoDeSessoes.momentoDoModo(sessao));
+        enviar(destinos, evento);
     }
 
-    private void desregistrar(Conexao conexao, String sessaoId) {
-        acompanhantes.computeIfPresent(sessaoId, (id, conjunto) -> {
-            conjunto.remove(conexao);
-            return conjunto.isEmpty() ? null : conjunto;
-        });
+    /** Chamado pela supervisora quando a conexão do parceiro termina, por qualquer motivo. */
+    public void desconectar(Parceiro parceiro) {
+        for (String sessaoId : acompanhantes.keySet()) {
+            acompanhantes.computeIfPresent(sessaoId, (id, conjunto) -> {
+                conjunto.remove(parceiro);
+                return conjunto.isEmpty() ? null : conjunto;
+            });
+        }
     }
 
-    private void enviar(Set<Conexao> destinos, TipoMensagem tipo, Object dados) {
-        Envelope<?> evento = Envelope.evento(tipo, dados);
-        for (Conexao destino : destinos) {
+    private void registrar(Parceiro parceiro, String sessaoId) {
+        acompanhantes.computeIfAbsent(sessaoId, id -> ConcurrentHashMap.newKeySet()).add(parceiro);
+    }
+
+    private void enviar(Set<Parceiro> destinos, Comunicado evento) {
+        for (Parceiro destino : destinos) {
             try {
-                destino.enviar(evento);
-            } catch (RuntimeException e) {
-                // Uma conexão com falha não pode impedir a entrega às demais
+                destino.receba(evento);
+            } catch (Exception e) {
+                // Um parceiro com falha não pode impedir a entrega aos demais
                 System.getLogger(PainelAoVivo.class.getName())
                         .log(System.Logger.Level.WARNING, "Falha ao enviar evento a um acompanhante", e);
             }
         }
     }
 
-    private SessaoEstado estado(Document sessao) {
+    private RespostaDeAcompanharSessao estado(Document sessao) {
         String sessaoId = sessao.getObjectId("_id").toHexString();
         List<PresenteResumo> presentes = new ArrayList<>();
         for (Document presenca : presencas.find(and(eq("sessaoId", sessaoId), eq("presente", true)))
@@ -144,7 +169,7 @@ public final class PainelAoVivo {
                     OrigemPresenca.valueOf(presenca.getString("origem")),
                     presenca.getDate("registradoEm").getTime()));
         }
-        return new SessaoEstado(sessaoId, ModoChamada.valueOf(sessao.getString("modo")),
+        return new RespostaDeAcompanharSessao(sessaoId, ModoChamada.valueOf(sessao.getString("modo")),
                 sessao.getDate("abertaEm").getTime(), presentes,
                 totalMatriculados(sessao.getString("turmaId")));
     }

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.common.protocolo;
 
 import br.edu.puccampinas.fastattendance.common.protocolo.dados.*;
@@ -20,6 +24,7 @@ public enum TipoMensagem {
     SESSAO_ABRIR("sessao.abrir", CLIENTE_PARA_SERVIDOR, SessaoAbrir.class),
     SESSAO_ENCERRAR("sessao.encerrar", CLIENTE_PARA_SERVIDOR, SessaoRef.class),
     SESSAO_ACOMPANHAR("sessao.acompanhar", CLIENTE_PARA_SERVIDOR, SessaoRef.class),
+    SESSAO_TROCAR_MODO("sessao.trocar_modo", CLIENTE_PARA_SERVIDOR, SessaoTrocarModo.class),
     PRESENCA_MARCAR("presenca.marcar", CLIENTE_PARA_SERVIDOR, PresencaMarcar.class),
     PRESENCA_MARCAR_LOTE("presenca.marcar_lote", CLIENTE_PARA_SERVIDOR, PresencaMarcarLote.class),
     CHECKIN("checkin", CLIENTE_PARA_SERVIDOR, Checkin.class),
@@ -30,6 +35,7 @@ public enum TipoMensagem {
     SESSAO_ABERTA("sessao.aberta", SERVIDOR_PARA_CLIENTE, SessaoAberta.class),
     SESSAO_ENCERRADA("sessao.encerrada", SERVIDOR_PARA_CLIENTE, SessaoEncerrada.class),
     SESSAO_ESTADO("sessao.estado", SERVIDOR_PARA_CLIENTE, SessaoEstado.class),
+    SESSAO_MODO_ALTERADO("sessao.modo_alterado", SERVIDOR_PARA_CLIENTE, SessaoModoAlterado.class),
     PRESENCA_LOTE_OK("presenca.lote_ok", SERVIDOR_PARA_CLIENTE, PresencaLoteOk.class),
     PRESENCA_ATUALIZADA("presenca.atualizada", SERVIDOR_PARA_CLIENTE, PresencaAtualizada.class),
     CHECKIN_OK("checkin.ok", SERVIDOR_PARA_CLIENTE, CheckinOk.class),

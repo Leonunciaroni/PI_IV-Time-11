@@ -1,6 +1,10 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao.totp;
 
-import br.edu.puccampinas.fastattendance.common.protocolo.dados.ConfiguracaoTotp;
+import br.edu.puccampinas.fastattendance.common.comunicado.ConfiguracaoTotp;
 
 import java.security.SecureRandom;
 import java.util.Arrays;

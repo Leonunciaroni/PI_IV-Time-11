@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.sessao;
 
 import br.edu.puccampinas.fastattendance.common.protocolo.Protocolo;
@@ -6,17 +10,17 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Configuração do servidor de sessão, lida de variáveis de ambiente.
+ * Configuração do servidor de sessão, lida de variáveis de ambiente. A porta não está aqui: é o
+ * argumento {@code [PORTA]} de {@link Servidor}.
  *
- * @param porta              {@code SESSAO_PORTA} (padrão 8081)
  * @param jwtSegredo         {@code JWT_SECRET}, o mesmo da API
  * @param mongoUri           {@code MONGODB_URI}, o mesmo banco da API
- * @param prazoAutenticacao  {@code SESSAO_PRAZO_AUTH_MS}: tempo para o cliente enviar {@code auth}
- * @param timeoutInatividade {@code SESSAO_TIMEOUT_INATIVIDADE_MS}: conexões sem tráfego são fechadas
+ * @param prazoAutenticacao  {@code SESSAO_PRAZO_AUTH_MS}: tempo para o cliente se autenticar após conectar
+ * @param timeoutInatividade {@code SESSAO_TIMEOUT_INATIVIDADE_MS}: conexões sem tráfego são encerradas
  * @param duracaoMaxima      {@code SESSAO_DURACAO_MAXIMA_MIN} (padrão 240): sessões abertas há mais
  *                           tempo são encerradas com motivo {@code TEMPO_LIMITE}
  */
-public record Configuracao(int porta, String jwtSegredo, String mongoUri, Duration prazoAutenticacao,
+public record Configuracao(String jwtSegredo, String mongoUri, Duration prazoAutenticacao,
                            Duration timeoutInatividade, Duration duracaoMaxima) {
 
     static final String MONGODB_URI_PADRAO = "mongodb://localhost:27017/fast_attendance?directConnection=true";
@@ -28,7 +32,6 @@ public record Configuracao(int porta, String jwtSegredo, String mongoUri, Durati
         }
         String mongoUri = ambiente.get("MONGODB_URI");
         return new Configuracao(
-                inteiro(ambiente, "SESSAO_PORTA", 8081),
                 segredo,
                 mongoUri == null || mongoUri.isBlank() ? MONGODB_URI_PADRAO : mongoUri.strip(),
                 Duration.ofMillis(inteiro(ambiente, "SESSAO_PRAZO_AUTH_MS", (int) Protocolo.PRAZO_AUTENTICACAO_MS)),

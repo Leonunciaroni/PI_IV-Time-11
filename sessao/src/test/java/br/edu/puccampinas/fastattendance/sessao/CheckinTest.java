@@ -1,8 +1,24 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 package br.edu.puccampinas.fastattendance.sessao;
 
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeCheckin;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.PedidoDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAbrirSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeAutenticacao;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeCheckin;
+import br.edu.puccampinas.fastattendance.common.comunicado.RespostaDeEncerrarSessao;
+import br.edu.puccampinas.fastattendance.common.comunicado.Comunicado;
+import br.edu.puccampinas.fastattendance.common.comunicado.Erro;
+import br.edu.puccampinas.fastattendance.sessao.chamada.Haversine;
+import br.edu.puccampinas.fastattendance.common.modelo.ModoChamada;
+import br.edu.puccampinas.fastattendance.common.modelo.OrigemPresenca;
 import br.edu.puccampinas.fastattendance.common.modelo.Papel;
+import br.edu.puccampinas.fastattendance.common.protocolo.CodigoErro;
 import br.edu.puccampinas.fastattendance.common.seguranca.JwtService;
-import br.edu.puccampinas.fastattendance.sessao.servidor.ServidorSessao;
 import br.edu.puccampinas.fastattendance.sessao.totp.SegredoTotp;
 import br.edu.puccampinas.fastattendance.sessao.totp.ValidadorTotp;
 import com.mongodb.client.MongoCollection;
@@ -11,21 +27,21 @@ import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** {@code checkin} pelo canal QR Code, com o MongoDB real e as regras antifraude (docs/protocolo-v1.md, 4.8 e 7). */
+/** {@code checkin} pelo canal QR Code e pelo som, com o MongoDB real e as regras antifraude (docs/protocolo-v1.md, 4.8 e 7). */
 class CheckinTest {
 
-    private static final String SEGREDO = "segredo-dos-testes-com-mais-de-32-bytes-0123456789";
-    private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final String SEGREDO = ServidorDeTeste.SEGREDO;
 
     /** Sala de referência: coordenadas do exemplo da seção 9 do protocolo, raio de 50 m. */
     private static final double SALA_LAT = -22.8339;
@@ -39,7 +55,7 @@ class CheckinTest {
     private final JwtService jwt = new JwtService(SEGREDO, Duration.ofHours(1));
     private final List<ClienteTeste> clientes = new ArrayList<>();
     private final MongoCollection<Document> presencas = MongoDeTeste.banco().getCollection("presencas");
-    private ServidorSessao servidor;
+    private ServidorDeTeste servidor;
 
     private String professorId;
     private String turmaId;
@@ -61,14 +77,13 @@ class CheckinTest {
         for (String alunoId : List.of(ana, bruno)) {
             inserir("matriculas", new Document("turmaId", turmaId).append("alunoId", alunoId));
         }
-        servidor = SessaoApplication.iniciar(new Configuracao(0, SEGREDO, MongoDeTeste.uri(),
-                Duration.ofSeconds(5), Duration.ofSeconds(60), Duration.ofHours(4)));
+        servidor = new ServidorDeTeste(Duration.ofSeconds(5), Duration.ofSeconds(60));
     }
 
     @AfterEach
     void parar() throws Exception {
         clientes.forEach(ClienteTeste::close);
-        servidor.encerrar(1_000);
+        servidor.close();
     }
 
     // ---- Caminho feliz e distância ----
@@ -78,12 +93,10 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", PERTO_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", PERTO_LAT, SALA_LON));
 
-        JsonNode resposta = ler(aluno.proxima());
-        assertEquals("checkin.ok", resposta.get("tipo").stringValue(), resposta.toString());
-        assertEquals("c1", resposta.get("ref").stringValue());
-        assertEquals(sessao.id(), resposta.get("dados").get("sessaoId").stringValue());
+        RespostaDeCheckin resposta = aluno.proximo(RespostaDeCheckin.class);
+        assertEquals(sessao.id(), resposta.getSessaoId());
 
         Document gravada = presencas.find(eq("alunoId", ana)).first();
         assertNotNull(gravada);
@@ -93,7 +106,7 @@ class CheckinTest {
         assertEquals("QRCODE", gravada.getString("origem"));
         assertEquals("disp-ana", gravada.getString("dispositivoId"));
         assertEquals(PERTO_LAT, gravada.getDouble("latitude"));
-        assertEquals(resposta.get("dados").get("registradoEm").longValue(), gravada.getDate("registradoEm").getTime());
+        assertEquals(resposta.getRegistradoEm(), gravada.getDate("registradoEm").getTime());
     }
 
     @Test
@@ -102,9 +115,9 @@ class CheckinTest {
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
         String tokenAnterior = ValidadorTotp.gerar(sessao.segredo(), instanteAgora() - SegredoTotp.PERIODO_SEGUNDOS);
 
-        aluno.enviar(checkin("c1", sessao, tokenAnterior, "disp-ana", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAnterior, "disp-ana", SALA_LAT, SALA_LON));
 
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.proximo(RespostaDeCheckin.class);
     }
 
     @Test
@@ -112,11 +125,9 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", LONGE_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", LONGE_LAT, SALA_LON));
 
-        JsonNode resposta = assertErro(aluno.proxima(), "FORA_DO_RAIO");
-        assertEquals("c1", resposta.get("ref").stringValue());
-        assertTrue(resposta.get("dados").get("mensagem").stringValue().contains("111"));
+        assertTrue(aluno.proximoErro(CodigoErro.FORA_DO_RAIO).getMensagem().contains("111"));
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -129,9 +140,9 @@ class CheckinTest {
         // Segredo Base32 do exemplo da seção 5.3 do protocolo, diferente do segredo desta sessão
         String token = ValidadorTotp.gerar("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", instanteAgora());
 
-        aluno.enviar(checkin("c1", sessao, token, "disp-ana", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, token, "disp-ana", SALA_LAT, SALA_LON));
 
-        assertErro(aluno.proxima(), "TOKEN_INVALIDO");
+        aluno.proximoErro(CodigoErro.TOKEN_INVALIDO);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -140,9 +151,9 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, "12ab56", "disp-ana", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, "12ab56", "disp-ana", SALA_LAT, SALA_LON));
 
-        assertErro(aluno.proxima(), "TOKEN_INVALIDO");
+        aluno.proximoErro(CodigoErro.TOKEN_INVALIDO);
     }
 
     @Test
@@ -152,9 +163,9 @@ class CheckinTest {
         // Duas janelas atrás: fora das aceitas (atual e anterior), mas ainda reconhecida como expirada
         String token = ValidadorTotp.gerar(sessao.segredo(), instanteAgora() - 2L * SegredoTotp.PERIODO_SEGUNDOS);
 
-        aluno.enviar(checkin("c1", sessao, token, "disp-ana", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, token, "disp-ana", SALA_LAT, SALA_LON));
 
-        assertErro(aluno.proxima(), "TOKEN_EXPIRADO");
+        aluno.proximoErro(CodigoErro.TOKEN_EXPIRADO);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -165,9 +176,9 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(alunoDeOutraTurma, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-diego", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-diego", SALA_LAT, SALA_LON));
 
-        assertErro(aluno.proxima(), "ALUNO_NAO_MATRICULADO");
+        aluno.proximoErro(CodigoErro.ALUNO_NAO_MATRICULADO);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -177,15 +188,15 @@ class CheckinTest {
     void recusaSegundoCheckinDoMesmoAlunoComPresencaDuplicada() throws Exception {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
+        aluno.proximo(RespostaDeCheckin.class);
 
-        aluno.enviar(checkin("c2", sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
-        assertErro(aluno.proxima(), "PRESENCA_DUPLICADA");
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
+        aluno.proximoErro(CodigoErro.PRESENCA_DUPLICADA);
 
         // Mesmo com outro dispositivo, o aluno não registra duas vezes
-        aluno.enviar(checkin("c3", sessao, tokenAtual(sessao), "disp-outro", SALA_LAT, SALA_LON));
-        assertErro(aluno.proxima(), "PRESENCA_DUPLICADA");
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-outro", SALA_LAT, SALA_LON));
+        aluno.proximoErro(CodigoErro.PRESENCA_DUPLICADA);
         assertEquals(1, presencas.countDocuments(eq("sessaoId", sessao.id())));
     }
 
@@ -193,13 +204,13 @@ class CheckinTest {
     void mesmoDispositivoComOutroAlunoRecusaComDispositivoJaUtilizado() throws Exception {
         Sessao sessao = abrirQrcode();
         ClienteTeste ana1 = autenticado(ana, Papel.ALUNO);
-        ana1.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-compartilhado", SALA_LAT, SALA_LON));
-        assertEquals("checkin.ok", ler(ana1.proxima()).get("tipo").stringValue());
+        ana1.enviar(checkin(sessao, tokenAtual(sessao), "disp-compartilhado", SALA_LAT, SALA_LON));
+        ana1.proximo(RespostaDeCheckin.class);
 
         ClienteTeste bruno1 = autenticado(bruno, Papel.ALUNO);
-        bruno1.enviar(checkin("c2", sessao, tokenAtual(sessao), "disp-compartilhado", SALA_LAT, SALA_LON));
+        bruno1.enviar(checkin(sessao, tokenAtual(sessao), "disp-compartilhado", SALA_LAT, SALA_LON));
 
-        assertErro(bruno1.proxima(), "DISPOSITIVO_JA_UTILIZADO");
+        bruno1.proximoErro(CodigoErro.DISPOSITIVO_JA_UTILIZADO);
         assertEquals(0, presencas.countDocuments(eq("alunoId", bruno)));
     }
 
@@ -207,15 +218,15 @@ class CheckinTest {
     void dispositivoPodeSerReutilizadoEmOutraSessao() throws Exception {
         Sessao primeira = abrirQrcode();
         ClienteTeste ana1 = autenticado(ana, Papel.ALUNO);
-        ana1.enviar(checkin("c1", primeira, tokenAtual(primeira), "disp-x", SALA_LAT, SALA_LON));
-        ana1.proxima();
+        ana1.enviar(checkin(primeira, tokenAtual(primeira), "disp-x", SALA_LAT, SALA_LON));
+        ana1.proximo(RespostaDeCheckin.class);
         encerrar(primeira);
 
         Sessao segunda = abrirQrcode();
         ClienteTeste bruno1 = autenticado(bruno, Papel.ALUNO);
-        bruno1.enviar(checkin("c2", segunda, tokenAtual(segunda), "disp-x", SALA_LAT, SALA_LON));
+        bruno1.enviar(checkin(segunda, tokenAtual(segunda), "disp-x", SALA_LAT, SALA_LON));
 
-        assertEquals("checkin.ok", ler(bruno1.proxima()).get("tipo").stringValue());
+        bruno1.proximo(RespostaDeCheckin.class);
     }
 
     // ---- Estado da sessão ----
@@ -223,25 +234,25 @@ class CheckinTest {
     @Test
     void recusaSessaoEncerradaOuInexistente() throws Exception {
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
-        aluno.enviar(checkin("c0", new Sessao(new ObjectId().toHexString(), null), "123456", "disp-ana",
+        aluno.enviar(checkin(new Sessao(new ObjectId().toHexString(), null), "123456", "disp-ana",
                 SALA_LAT, SALA_LON));
-        assertErro(aluno.proxima(), "SESSAO_NAO_ENCONTRADA");
+        aluno.proximoErro(CodigoErro.SESSAO_NAO_ENCONTRADA);
 
         Sessao sessao = abrirQrcode();
         encerrar(sessao);
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
-        assertErro(aluno.proxima(), "SESSAO_ENCERRADA");
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
+        aluno.proximoErro(CodigoErro.SESSAO_ENCERRADA);
         assertEquals(0, presencas.countDocuments());
     }
 
     @Test
     void recusaSessaoEmModoClassico() throws Exception {
-        Sessao sessao = abrirSessao("CLASSICA", "");
+        Sessao sessao = abrirSessao(ModoChamada.CLASSICA, null);
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
 
-        assertErro(aluno.proxima(), "MODO_INCOMPATIVEL");
+        aluno.proximoErro(CodigoErro.MODO_INCOMPATIVEL);
     }
 
     @Test
@@ -249,10 +260,10 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(mensagem("checkin", "c1", ("{\"sessaoId\":\"%s\",\"token\":\"%s\",\"canal\":\"SOM\","
-                + "\"dispositivoId\":\"disp-ana\"}").formatted(sessao.id(), tokenAtual(sessao))));
+        aluno.enviar(new PedidoDeCheckin(sessao.id(), tokenAtual(sessao), OrigemPresenca.SOM, "disp-ana",
+                null, null, null));
 
-        assertErro(aluno.proxima(), "MODO_INCOMPATIVEL");
+        aluno.proximoErro(CodigoErro.MODO_INCOMPATIVEL);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -261,9 +272,9 @@ class CheckinTest {
         Sessao sessao = abrirSom();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON));
 
-        assertErro(aluno.proxima(), "MODO_INCOMPATIVEL");
+        aluno.proximoErro(CodigoErro.MODO_INCOMPATIVEL);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -272,10 +283,10 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(mensagem("checkin", "c1", ("{\"sessaoId\":\"%s\",\"token\":\"%s\",\"canal\":\"MANUAL\","
-                + "\"dispositivoId\":\"disp-ana\"}").formatted(sessao.id(), tokenAtual(sessao))));
+        aluno.enviar(new PedidoDeCheckin(sessao.id(), tokenAtual(sessao), OrigemPresenca.MANUAL, "disp-ana",
+                null, null, null));
 
-        assertErro(aluno.proxima(), "MODO_INCOMPATIVEL");
+        aluno.proximoErro(CodigoErro.MODO_INCOMPATIVEL);
     }
 
     // ---- Canal SOM ----
@@ -285,11 +296,9 @@ class CheckinTest {
         Sessao sessao = abrirSom();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-ana", ""));
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-ana", null, null, null));
 
-        JsonNode resposta = ler(aluno.proxima());
-        assertEquals("checkin.ok", resposta.get("tipo").stringValue(), resposta.toString());
-        assertEquals("s1", resposta.get("ref").stringValue());
+        aluno.proximo(RespostaDeCheckin.class);
         Document gravada = presencas.find(eq("alunoId", ana)).first();
         assertNotNull(gravada);
         assertEquals("SOM", gravada.getString("origem"));
@@ -301,10 +310,9 @@ class CheckinTest {
         Sessao sessao = abrirSom();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-ana",
-                ",\"latitude\":123.0,\"longitude\":500.0,\"precisaoMetros\":-5"));
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-ana", 123.0, 500.0, -5.0));
 
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.proximo(RespostaDeCheckin.class);
         Document gravada = presencas.find(eq("alunoId", ana)).first();
         assertNotNull(gravada);
         assertFalse(gravada.containsKey("latitude"));
@@ -316,10 +324,9 @@ class CheckinTest {
         Sessao sessao = abrirSom();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-ana",
-                ",\"latitude\":%s,\"longitude\":%s,\"precisaoMetros\":10".formatted(LONGE_LAT, SALA_LON)));
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-ana", LONGE_LAT, SALA_LON, 10.0));
 
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.proximo(RespostaDeCheckin.class);
         Document gravada = presencas.find(eq("alunoId", ana)).first();
         assertNotNull(gravada);
         assertFalse(gravada.containsKey("latitude"));
@@ -331,13 +338,12 @@ class CheckinTest {
         // Sala cadastrada longe da turma: a sessão SOM vinculada a ela ignora o raio
         String salaDistante = inserir("salas", new Document("nome", "Outro campus")
                 .append("latitude", 0.0).append("longitude", 0.0).append("raioMetros", RAIO_SALA));
-        Sessao sessao = abrirSessao("SOM", ",\"salaId\":\"" + salaDistante + "\"");
+        Sessao sessao = abrirSessao(ModoChamada.SOM, salaDistante);
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-ana",
-                ",\"latitude\":%s,\"longitude\":%s,\"precisaoMetros\":10".formatted(SALA_LAT, SALA_LON)));
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-ana", SALA_LAT, SALA_LON, 10.0));
 
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.proximo(RespostaDeCheckin.class);
     }
 
     @Test
@@ -346,9 +352,9 @@ class CheckinTest {
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
         String tokenAnterior = ValidadorTotp.gerar(sessao.segredo(), instanteAgora() - SegredoTotp.PERIODO_SEGUNDOS);
 
-        aluno.enviar(checkinSom("s1", sessao, tokenAnterior, "disp-ana", ""));
+        aluno.enviar(checkinSom(sessao, tokenAnterior, "disp-ana", null, null, null));
 
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.proximo(RespostaDeCheckin.class);
     }
 
     @Test
@@ -357,9 +363,9 @@ class CheckinTest {
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
         String token = ValidadorTotp.gerar("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", instanteAgora());
 
-        aluno.enviar(checkinSom("s1", sessao, token, "disp-ana", ""));
+        aluno.enviar(checkinSom(sessao, token, "disp-ana", null, null, null));
 
-        assertErro(aluno.proxima(), "TOKEN_INVALIDO");
+        aluno.proximoErro(CodigoErro.TOKEN_INVALIDO);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -369,9 +375,9 @@ class CheckinTest {
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
         String token = ValidadorTotp.gerar(sessao.segredo(), instanteAgora() - 2L * SegredoTotp.PERIODO_SEGUNDOS);
 
-        aluno.enviar(checkinSom("s1", sessao, token, "disp-ana", ""));
+        aluno.enviar(checkinSom(sessao, token, "disp-ana", null, null, null));
 
-        assertErro(aluno.proxima(), "TOKEN_EXPIRADO");
+        aluno.proximoErro(CodigoErro.TOKEN_EXPIRADO);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -380,9 +386,9 @@ class CheckinTest {
         Sessao sessao = abrirSom();
         ClienteTeste aluno = autenticado(alunoDeOutraTurma, Papel.ALUNO);
 
-        aluno.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-diego", ""));
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-diego", null, null, null));
 
-        assertErro(aluno.proxima(), "ALUNO_NAO_MATRICULADO");
+        aluno.proximoErro(CodigoErro.ALUNO_NAO_MATRICULADO);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -390,12 +396,12 @@ class CheckinTest {
     void somRecusaSegundoCheckinDoMesmoAlunoComPresencaDuplicada() throws Exception {
         Sessao sessao = abrirSom();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
-        aluno.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-ana", ""));
-        assertEquals("checkin.ok", ler(aluno.proxima()).get("tipo").stringValue());
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-ana", null, null, null));
+        aluno.proximo(RespostaDeCheckin.class);
 
-        aluno.enviar(checkinSom("s2", sessao, tokenAtual(sessao), "disp-outro", ""));
+        aluno.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-outro", null, null, null));
 
-        assertErro(aluno.proxima(), "PRESENCA_DUPLICADA");
+        aluno.proximoErro(CodigoErro.PRESENCA_DUPLICADA);
         assertEquals(1, presencas.countDocuments(eq("sessaoId", sessao.id())));
     }
 
@@ -403,13 +409,13 @@ class CheckinTest {
     void somRecusaDispositivoJaUtilizadoPorOutroAluno() throws Exception {
         Sessao sessao = abrirSom();
         ClienteTeste ana1 = autenticado(ana, Papel.ALUNO);
-        ana1.enviar(checkinSom("s1", sessao, tokenAtual(sessao), "disp-compartilhado", ""));
-        assertEquals("checkin.ok", ler(ana1.proxima()).get("tipo").stringValue());
+        ana1.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-compartilhado", null, null, null));
+        ana1.proximo(RespostaDeCheckin.class);
 
         ClienteTeste bruno1 = autenticado(bruno, Papel.ALUNO);
-        bruno1.enviar(checkinSom("s2", sessao, tokenAtual(sessao), "disp-compartilhado", ""));
+        bruno1.enviar(checkinSom(sessao, tokenAtual(sessao), "disp-compartilhado", null, null, null));
 
-        assertErro(bruno1.proxima(), "DISPOSITIVO_JA_UTILIZADO");
+        bruno1.proximoErro(CodigoErro.DISPOSITIVO_JA_UTILIZADO);
         assertEquals(0, presencas.countDocuments(eq("alunoId", bruno)));
     }
 
@@ -418,9 +424,9 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste professor = autenticado(professorId, Papel.PROFESSOR);
 
-        professor.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-prof", SALA_LAT, SALA_LON));
+        professor.enviar(checkin(sessao, tokenAtual(sessao), "disp-prof", SALA_LAT, SALA_LON));
 
-        assertErro(professor.proxima(), "PERMISSAO_NEGADA");
+        professor.proximoErro(CodigoErro.PERMISSAO_NEGADA);
         assertEquals(0, presencas.countDocuments());
     }
 
@@ -431,15 +437,15 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(mensagem("checkin", "c1", "{\"sessaoId\":\"%s\",\"token\":\"%s\",\"canal\":\"QRCODE\","
-                + "\"dispositivoId\":\"disp-ana\",\"longitude\":%s,\"precisaoMetros\":5}"
-                .formatted(sessao.id(), tokenAtual(sessao), SALA_LON)));
-        assertErro(aluno.proxima(), "MENSAGEM_INVALIDA");
+        // Sem latitude
+        aluno.enviar(new PedidoDeCheckin(sessao.id(), tokenAtual(sessao), OrigemPresenca.QRCODE, "disp-ana",
+                null, SALA_LON, 5.0));
+        aluno.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
 
-        aluno.enviar(mensagem("checkin", "c2", "{\"sessaoId\":\"%s\",\"token\":\"%s\",\"canal\":\"QRCODE\","
-                + "\"latitude\":%s,\"longitude\":%s,\"precisaoMetros\":5}"
-                .formatted(sessao.id(), tokenAtual(sessao), SALA_LAT, SALA_LON)));
-        assertErro(aluno.proxima(), "MENSAGEM_INVALIDA");
+        // Sem dispositivoId
+        aluno.enviar(new PedidoDeCheckin(sessao.id(), tokenAtual(sessao), OrigemPresenca.QRCODE, null,
+                SALA_LAT, SALA_LON, 5.0));
+        aluno.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
 
         assertEquals(0, presencas.countDocuments());
     }
@@ -449,40 +455,109 @@ class CheckinTest {
         Sessao sessao = abrirQrcode();
         ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
 
-        aluno.enviar(checkin("c1", sessao, tokenAtual(sessao), "disp-ana", 123.0, SALA_LON));
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-ana", 123.0, SALA_LON));
 
-        assertErro(aluno.proxima(), "MENSAGEM_INVALIDA");
+        aluno.proximoErro(CodigoErro.MENSAGEM_INVALIDA);
     }
 
     // ---- Apoio ----
 
-    /** Sessão aberta pelo professor; o segredo TOTP vem de sessao.aberta (nulo quando só o id importa). */
+    @Test
+    void aceitaDistanciaExatamenteIgualAoRaio() throws Exception {
+        double distancia = Haversine.metros(SALA_LAT, SALA_LON, PERTO_LAT, SALA_LON);
+        MongoDeTeste.banco().getCollection("salas").updateOne(eq("_id", new ObjectId(salaId)),
+                new Document("$set", new Document("raioMetros", distancia)));
+        Sessao sessao = abrirQrcode();
+        ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
+        aluno.enviar(checkin(sessao, tokenAtual(sessao), "disp-limite", PERTO_LAT, SALA_LON));
+        aluno.proximo(RespostaDeCheckin.class);
+        assertEquals(1, presencas.countDocuments());
+    }
+
+    @Test
+    void recusaDistanciaLogoAcimaDoRaioMesmoComPrecisaoAlta() throws Exception {
+        double distancia = Haversine.metros(SALA_LAT, SALA_LON, PERTO_LAT, SALA_LON);
+        MongoDeTeste.banco().getCollection("salas").updateOne(eq("_id", new ObjectId(salaId)),
+                new Document("$set", new Document("raioMetros", Math.nextDown(distancia))));
+        Sessao sessao = abrirQrcode();
+        ClienteTeste aluno = autenticado(ana, Papel.ALUNO);
+        aluno.enviar(new PedidoDeCheckin(sessao.id(), tokenAtual(sessao), OrigemPresenca.QRCODE,
+                "disp-fora", PERTO_LAT, SALA_LON, 1000.0));
+        aluno.proximoErro(CodigoErro.FORA_DO_RAIO);
+        assertEquals(0, presencas.countDocuments());
+    }
+
+    @Test
+    void doisCheckinsConcorrentesDoMesmoAlunoGravamUmaUnicaPresenca() throws Exception {
+        Sessao sessao = abrirQrcode();
+        ClienteTeste primeiro = autenticado(ana, Papel.ALUNO);
+        ClienteTeste segundo = autenticado(ana, Papel.ALUNO);
+        String token = tokenAtual(sessao);
+        conferirConcorrencia(primeiro, checkin(sessao, token, "disp-1", SALA_LAT, SALA_LON),
+                segundo, checkin(sessao, token, "disp-2", SALA_LAT, SALA_LON), CodigoErro.PRESENCA_DUPLICADA);
+    }
+
+    @Test
+    void doisAlunosConcorrentesNoMesmoDispositivoGravamUmaUnicaPresenca() throws Exception {
+        Sessao sessao = abrirSom();
+        ClienteTeste primeiro = autenticado(ana, Papel.ALUNO);
+        ClienteTeste segundo = autenticado(bruno, Papel.ALUNO);
+        String token = tokenAtual(sessao);
+        conferirConcorrencia(primeiro, checkinSom(sessao, token, "disp-unico", null, null, null),
+                segundo, checkinSom(sessao, token, "disp-unico", null, null, null), CodigoErro.DISPOSITIVO_JA_UTILIZADO);
+    }
+
+    private void conferirConcorrencia(ClienteTeste primeiro, PedidoDeCheckin pedido1,
+                                      ClienteTeste segundo, PedidoDeCheckin pedido2, CodigoErro esperado) throws Exception {
+        CountDownLatch prontos = new CountDownLatch(2);
+        CountDownLatch disparar = new CountDownLatch(1);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            var resposta1 = executor.submit(() -> {
+                prontos.countDown();
+                assertTrue(disparar.await(3, TimeUnit.SECONDS));
+                primeiro.enviar(pedido1);
+                return primeiro.proximo();
+            });
+            var resposta2 = executor.submit(() -> {
+                prontos.countDown();
+                assertTrue(disparar.await(3, TimeUnit.SECONDS));
+                segundo.enviar(pedido2);
+                return segundo.proximo();
+            });
+            assertTrue(prontos.await(3, TimeUnit.SECONDS));
+            disparar.countDown();
+            List<Comunicado> respostas = List.of(resposta1.get(5, TimeUnit.SECONDS), resposta2.get(5, TimeUnit.SECONDS));
+            assertEquals(1, respostas.stream().filter(RespostaDeCheckin.class::isInstance).count());
+            List<Erro> erros = respostas.stream().filter(Erro.class::isInstance).map(Erro.class::cast).toList();
+            assertEquals(1, erros.size());
+            assertEquals(esperado, erros.getFirst().getCodigo());
+            assertEquals(1, presencas.countDocuments());
+        }
+    }
+
+    /** Sessão aberta pelo professor, com o segredo TOTP da resposta {@code sessao.aberta}. */
     private record Sessao(String id, String segredo) {
     }
 
     private Sessao abrirQrcode() throws Exception {
-        return abrirSessao("QRCODE", ",\"salaId\":\"" + salaId + "\"");
+        return abrirSessao(ModoChamada.QRCODE, salaId);
     }
 
     private Sessao abrirSom() throws Exception {
-        return abrirSessao("SOM", "");
+        return abrirSessao(ModoChamada.SOM, null);
     }
 
-    /** Abre a sessão no modo indicado; {@code extra} acrescenta campos ao pedido (ex.: salaId). */
-    private Sessao abrirSessao(String modo, String extra) throws Exception {
+    private Sessao abrirSessao(ModoChamada modo, String salaIdOpcional) throws Exception {
         ClienteTeste professor = autenticado(professorId, Papel.PROFESSOR);
-        professor.enviar(mensagem("sessao.abrir", "s1",
-                "{\"turmaId\":\"%s\",\"modo\":\"%s\"%s}".formatted(turmaId, modo, extra)));
-        JsonNode resposta = ler(professor.proxima());
-        assertEquals("sessao.aberta", resposta.get("tipo").stringValue(), resposta.toString());
-        return new Sessao(resposta.get("dados").get("sessaoId").stringValue(),
-                resposta.get("dados").get("totp").get("segredo").stringValue());
+        professor.enviar(new PedidoDeAbrirSessao(turmaId, modo, salaIdOpcional));
+        RespostaDeAbrirSessao resposta = professor.proximo(RespostaDeAbrirSessao.class);
+        return new Sessao(resposta.getSessaoId(), resposta.getTotp().getSegredo());
     }
 
     private void encerrar(Sessao sessao) throws Exception {
         ClienteTeste professor = autenticado(professorId, Papel.PROFESSOR);
-        professor.enviar(mensagem("sessao.encerrar", "e1", "{\"sessaoId\":\"" + sessao.id() + "\"}"));
-        assertEquals("sessao.encerrada", ler(professor.proxima()).get("tipo").stringValue());
+        professor.enviar(new PedidoDeEncerrarSessao(sessao.id()));
+        professor.proximo(RespostaDeEncerrarSessao.class);
     }
 
     private static String tokenAtual(Sessao sessao) {
@@ -494,11 +569,11 @@ class CheckinTest {
     }
 
     private ClienteTeste autenticado(String usuarioId, Papel papel) throws Exception {
-        ClienteTeste cliente = new ClienteTeste(servidor.getPort());
+        ClienteTeste cliente = new ClienteTeste(servidor.porta());
         clientes.add(cliente);
         String token = jwt.emitir(usuarioId, "Usuário", papel).token();
-        cliente.enviar(mensagem("auth", "a", "{\"token\":\"" + token + "\"}"));
-        assertEquals("auth.ok", ler(cliente.proxima()).get("tipo").stringValue());
+        cliente.enviar(new PedidoDeAutenticacao(token));
+        cliente.proximo(RespostaDeAutenticacao.class);
         return cliente;
     }
 
@@ -512,36 +587,17 @@ class CheckinTest {
         return id.toHexString();
     }
 
-    private static String checkin(String id, Sessao sessao, String token, String dispositivo,
-                                  double latitude, double longitude) {
-        return mensagem("checkin", id, ("{\"sessaoId\":\"%s\",\"token\":\"%s\",\"canal\":\"QRCODE\","
-                + "\"dispositivoId\":\"%s\",\"latitude\":%s,\"longitude\":%s,\"precisaoMetros\":10}")
-                .formatted(sessao.id(), token, dispositivo, latitude, longitude));
+    /** Check-in pelo QR Code, com a precisão padrão de 10 m. */
+    private static PedidoDeCheckin checkin(Sessao sessao, String token, String dispositivo,
+                                           double latitude, double longitude) {
+        return new PedidoDeCheckin(sessao.id(), token, OrigemPresenca.QRCODE, dispositivo,
+                latitude, longitude, 10.0);
     }
 
-    /**
-     * Check-in pelo canal SOM. {@code extra} começa com vírgula e acrescenta campos (coordenadas, por
-     * exemplo) ao pedido; vazio quando não há campos extras.
-     */
-    private static String checkinSom(String id, Sessao sessao, String token, String dispositivo, String extra) {
-        return mensagem("checkin", id, ("{\"sessaoId\":\"%s\",\"token\":\"%s\",\"canal\":\"SOM\","
-                + "\"dispositivoId\":\"%s\"%s}")
-                .formatted(sessao.id(), token, dispositivo, extra));
-    }
-
-    private static String mensagem(String tipo, String id, String dados) {
-        return "{\"v\":1,\"tipo\":\"%s\",\"id\":\"%s\",\"ts\":%d,\"dados\":%s}"
-                .formatted(tipo, id, System.currentTimeMillis(), dados);
-    }
-
-    private static JsonNode ler(String texto) {
-        return JSON.readTree(texto);
-    }
-
-    private static JsonNode assertErro(String texto, String codigoEsperado) {
-        JsonNode resposta = ler(texto);
-        assertEquals("erro", resposta.get("tipo").stringValue(), texto);
-        assertEquals(codigoEsperado, resposta.get("dados").get("codigo").stringValue(), texto);
-        return resposta;
+    /** Check-in pelo canal SOM; coordenadas e precisão são opcionais (o servidor as ignora). */
+    private static PedidoDeCheckin checkinSom(Sessao sessao, String token, String dispositivo,
+                                              Double latitude, Double longitude, Double precisao) {
+        return new PedidoDeCheckin(sessao.id(), token, OrigemPresenca.SOM, dispositivo,
+                latitude, longitude, precisao);
     }
 }

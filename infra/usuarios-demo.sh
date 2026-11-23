@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Autores:
+# - João Pedro Panza Mainieri (RA 25006642)
 # Cria contas de demonstração pela API (POST /api/auth/registro).
 # Idempotente: contas já existentes (HTTP 409) são mantidas.
 #   ./infra/usuarios-demo.sh [URL_BASE]     (padrão: http://localhost:8088)

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Tipos do protocolo WebSocket com o servidor de sessão (docs/protocolo-v1.md), espelhando
 // common/.../protocolo. Só o que o app do professor usa.
 
@@ -87,15 +91,44 @@ export interface SessaoEncerrada {
   totalPresentes: number;
 }
 
+export type OrigemPresenca = "MANUAL" | "QRCODE" | "SOM";
+
 /** Resposta de presenca.marcar (seção 4.6), igual ao evento da seção 5.2. */
 export interface PresencaAtualizada {
   sessaoId: string;
   alunoId: string;
   nomeAluno: string;
   presente: boolean;
-  origem: "MANUAL" | "QRCODE" | "SOM";
+  origem: OrigemPresenca;
   registradoEm: number;
   totalPresentes: number;
+  totalMatriculados: number;
+}
+
+/** Item de `presentes` em sessao.estado: só quem está com presença confirmada. */
+export interface PresenteNaSessao {
+  alunoId: string;
+  nome: string;
+  origem: OrigemPresenca;
+  registradoEm: number;
+}
+
+/** Resposta de sessao.acompanhar (seções 4.5 e 5.1): o estado atual da sessão aberta. */
+/** Resposta e evento de sessao.trocar_modo (seções 4.9, 5.1 e 5.2). */
+export interface SessaoModoAlterado {
+  sessaoId: string;
+  modo: ModoChamada;
+  /** null quando a sessão não tem sala. */
+  salaId: string | null;
+  /** Última troca ou, sem troca, a abertura. */
+  alteradoEm: number;
+}
+
+export interface SessaoEstado {
+  sessaoId: string;
+  modo: ModoChamada;
+  abertaEm: number;
+  presentes: PresenteNaSessao[];
   totalMatriculados: number;
 }
 

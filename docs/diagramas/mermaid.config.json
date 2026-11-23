@@ -1,0 +1,43 @@
+{
+  "theme": "base",
+  "htmlLabels": false,
+  "deterministicIds": true,
+  "deterministicIDSeed": "fast-attendance-arquitetura-v1",
+  "themeVariables": {
+    "fontFamily": "Arial, sans-serif",
+    "fontSize": "16px",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#172554",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#475569",
+    "secondaryColor": "#f0fdf4",
+    "tertiaryColor": "#f8fafc",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#94a3b8",
+    "edgeLabelBackground": "#ffffff",
+    "actorBkg": "#eff6ff",
+    "actorBorder": "#2563eb",
+    "actorTextColor": "#172554",
+    "signalColor": "#334155",
+    "signalTextColor": "#0f172a",
+    "noteBkgColor": "#fefce8",
+    "noteBorderColor": "#a16207",
+    "noteTextColor": "#422006"
+  },
+  "flowchart": {
+    "htmlLabels": false,
+    "diagramPadding": 24,
+    "nodeSpacing": 32,
+    "rankSpacing": 48,
+    "curve": "basis"
+  },
+  "sequence": {
+    "diagramMarginX": 20,
+    "diagramMarginY": 20,
+    "actorMargin": 35,
+    "width": 145,
+    "messageMargin": 32,
+    "mirrorActors": false,
+    "wrap": true
+  }
+}

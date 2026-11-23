@@ -1,3 +1,6 @@
+// Guilherme Preventi Correia
+// RA: 25001694
+
 package br.edu.puccampinas.fastattendance.sessao.totp;
 
 import br.edu.puccampinas.fastattendance.sessao.totp.ValidadorTotp.Resultado;
@@ -98,5 +101,25 @@ class ValidadorTotpTest {
         long decorrido = System.nanoTime() - inicio;
 
         assertTrue(decorrido < 1_000_000_000L, "validação levou " + decorrido + " ns");
+    }
+
+    @Test
+    void tokenPassaDeAtualParaAnteriorEExpiradoNasFronteirasExatas() {
+        long inicioDaJanela = (AGORA / PERIODO) * PERIODO;
+        String token = ValidadorTotp.gerar(SEGREDO, inicioDaJanela);
+
+        assertEquals(Resultado.VALIDO, ValidadorTotp.validar(SEGREDO, token, inicioDaJanela));
+        assertEquals(Resultado.VALIDO, ValidadorTotp.validar(SEGREDO, token, inicioDaJanela + PERIODO));
+        assertEquals(Resultado.VALIDO, ValidadorTotp.validar(SEGREDO, token, inicioDaJanela + 2L * PERIODO - 1));
+        assertEquals(Resultado.TOKEN_EXPIRADO,
+                ValidadorTotp.validar(SEGREDO, token, inicioDaJanela + 2L * PERIODO));
+    }
+
+    @Test
+    void primeiraJanelaNaoAceitaUmTokenDoFuturo() {
+        String atual = ValidadorTotp.gerar(SEGREDO, 0);
+        String futuro = ValidadorTotp.gerar(SEGREDO, PERIODO);
+        assertEquals(Resultado.VALIDO, ValidadorTotp.validar(SEGREDO, atual, 0));
+        assertEquals(Resultado.TOKEN_INVALIDO, ValidadorTotp.validar(SEGREDO, futuro, 0));
     }
 }

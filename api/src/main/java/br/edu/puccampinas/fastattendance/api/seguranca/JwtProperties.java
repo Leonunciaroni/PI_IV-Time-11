@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 package br.edu.puccampinas.fastattendance.api.seguranca;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;

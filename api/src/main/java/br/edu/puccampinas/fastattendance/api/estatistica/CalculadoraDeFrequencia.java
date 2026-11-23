@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Leonardo Miranda Nunciaroni (RA 25002726)
+ */
 package br.edu.puccampinas.fastattendance.api.estatistica;
 
 import br.edu.puccampinas.fastattendance.api.dominio.Presenca;
@@ -55,19 +59,25 @@ public final class CalculadoraDeFrequencia {
                 .average()
                 .orElse(0));
 
-        List<AlunoEstatistica> abaixoDoMinimo = alunos.stream()
+        // Todos os matriculados, com qualquer percentual; sem aulas dadas, aulas = 0 indica "sem dados"
+        List<AlunoEstatistica> todos = alunos.stream()
                 .map(aluno -> {
                     long presencasDoAluno = presencasPorAluno.getOrDefault(aluno.id(), 0L);
                     return new AlunoEstatistica(aluno.id(), aluno.nome(), aluno.matricula(), presencasDoAluno,
                             ordenadas.size(), percentual(presencasDoAluno, ordenadas.size()));
                 })
+                .sorted(Comparator.comparing(AlunoEstatistica::nome, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(AlunoEstatistica::matricula, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        List<AlunoEstatistica> abaixoDoMinimo = todos.stream()
                 .filter(aluno -> aluno.aulas() > 0 && aluno.percentual() < MINIMO)
                 .sorted(Comparator.comparingDouble(AlunoEstatistica::percentual)
                         .thenComparing(AlunoEstatistica::nome, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
         return new EstatisticasResponse(ordenadas.size(), alunos.size(), frequenciaMedia, MINIMO,
-                estatisticasDasAulas, abaixoDoMinimo, usoPorModo(ordenadas));
+                estatisticasDasAulas, todos, abaixoDoMinimo, usoPorModo(ordenadas));
     }
 
     /** Todos os modos aparecem na resposta, mesmo os que nunca foram usados. */

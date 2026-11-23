@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import type { ButtonHTMLAttributes } from "react";
 import { botaoPerigo, botaoPerigoContorno, botaoPrincipal, botaoSecundario } from "./estilos";
 
