@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useEffect, useState } from "react";
 import type { ConfiguracaoTotp } from "./protocolo";
 import { ErroTotp, codigoTotp, janelaTotp, msAteProximaJanela, parametrosDaConfiguracao } from "./totp";

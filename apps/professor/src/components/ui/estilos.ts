@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Aparência compartilhada de botões e cartões, a partir dos tokens de globals.css. O tamanho
 // (padding) fica em cada tela; aqui ficam cor, borda, cantos e tipografia.
 

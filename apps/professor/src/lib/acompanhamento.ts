@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Acompanhamento de uma sessão aberta (sessao.acompanhar, seção 4.5), sem React, para dar para
 // testar com um cliente simulado. O hook useAcompanharSessao só liga isto à tela.
 

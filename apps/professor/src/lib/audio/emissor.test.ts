@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Mesmos casos de audio/emissor.test.mjs (#46), portados do node:test para o Vitest
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EmissorToken, type ContextoDeEmissao, type OpcoesEmissor } from "./emissor";

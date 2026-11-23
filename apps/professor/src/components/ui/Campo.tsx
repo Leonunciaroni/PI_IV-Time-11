@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useId, type InputHTMLAttributes } from "react";
 
 interface CampoProps extends InputHTMLAttributes<HTMLInputElement> {

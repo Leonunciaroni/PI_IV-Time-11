@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Horário padrão da turma, no mesmo formato que a API exige (docs/api-rest.md): "Dia HH:MM".
 
 export const MENSAGEM_HORARIO = "Use o formato Dia HH:MM, como Seg 19:00 (de segunda a domingo, hora de 00 a 23).";

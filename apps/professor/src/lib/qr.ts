@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { create } from "qrcode";
 
 export interface DesenhoQr {

@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 // Lógica da lista de presença, sem interface: a clássica (P6) e a lista ao vivo (P7 e contador).
 
 import type { OrigemPresenca, PresencaAtualizada, SessaoEstado } from "./protocolo";

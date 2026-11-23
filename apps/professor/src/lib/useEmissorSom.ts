@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EmissorToken, RAMPA_SEGUNDOS, VOLUME_REFERENCIA } from "./audio/emissor";
 import { criarModem } from "./audio/modem";

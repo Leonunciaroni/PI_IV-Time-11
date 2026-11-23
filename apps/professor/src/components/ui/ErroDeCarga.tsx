@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { Botao } from "./Botao";
 
 /** Falha ao carregar dados, com a mensagem da API e a opção de tentar de novo. */

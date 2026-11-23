@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - Lucas Leonel (RA 25015188)
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Envelope } from "./protocolo";
 import { ClienteSessao, ErroSessao, urlDaSessao, type EstadoConexao, type SocketSessao } from "./ws";
