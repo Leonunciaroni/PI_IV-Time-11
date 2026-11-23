@@ -152,8 +152,12 @@ microfone e localização funcionam como no túnel.
 - O professor continua em `http://localhost:8088/professor` no notebook.
 - Para encerrar: `docker compose --profile https-local stop nginx-https`.
 
-Este caminho foi testado **só a partir do próprio notebook** (rotas, login e WebSocket seguro,
-inclusive pelo IP da rede). Ainda **não** foi aberto num celular de verdade.
+**O que já foi testado (22/11/2026):** numa rede Wi-Fi doméstica, com um celular Android no Chrome,
+a página abriu depois de aceitar o aviso do certificado (navegador baseado em Chromium), câmera, microfone e localização foram
+liberados, e as chamadas clássica, por QR Code e por som funcionaram de ponta a ponta. **Não foi
+testado** em hotspot de outro celular nem na rede da faculdade: nelas é preciso confirmar, antes, que
+o celular consegue abrir `https://IP-DO-NOTEBOOK:8443/teste-celular/`. Em casa, o primeiro teste
+ficou carregando sem fim e depois passou; a causa não foi determinada.
 
 ## 5. Testar cada modo
 
@@ -168,11 +172,18 @@ aberta por turma:** se aparecer "Já existe uma chamada aberta para esta turma",
 
 Cuidados:
 
-- **QR e som dependem da sala.** O servidor valida se o celular está dentro do raio da sala. No local
-  da apresentação, cadastre uma sala com a localização real e um raio compatível (por exemplo, 50 m),
-  e não use coordenadas fictícias.
+- **O QR depende da sala e do raio.** O servidor valida se o celular está dentro do raio da sala. As
+  salas da seed têm as coordenadas do campus da PUC, então **fora do campus o check-in é recusado**.
+  No local, cadastre uma sala com a localização real e **raio de 100 m ou mais**. O raio padrão da
+  tela é 30 m, e isso é pouco: no ensaio em casa, com a sala criada por "Usar minha localização" no
+  notebook e raio de 30 m, o check-in foi recusado por estar fora do raio; a posição do celular, gravada
+  na presença aceita depois, ficou a 35 m dessa sala, e com raio de 300 m passou. O botão usa a
+  localização do notebook, que costuma ser imprecisa; outra opção é digitar a latitude e a longitude
+  vistas no mapa do celular. Não use coordenadas fictícias. A API não edita salas: para trocar o
+  raio, cadastre outra.
 - **Som:** mantenha as duas páginas em primeiro plano, com o volume do notebook alto e o celular
-  perto do alto-falante. O alcance e a resposta dos alto-falantes e microfones da sala não foram
+  perto do alto-falante. No ensaio em casa funcionou, mas **demorou** para confirmar: não conte com
+  uma resposta imediata. O alcance e a resposta dos alto-falantes e microfones da sala não foram
   comprovados por testes automáticos ([checkin-som.md](checkin-som.md)).
 - O aluno precisa estar **matriculado** na turma, senão a presença é recusada.
 - Presença duplicada e aparelho já usado são recusados de propósito.
@@ -194,7 +205,8 @@ pendente: o modo já existe na `develop`, então confira o que valer antes de us
 | URL do túnel responde `530` | O túnel não conectou à borda. Rode o pré-voo e veja `docker compose logs tunel`. Sem rede que passe no pré-voo, use o "Plano reserva" acima |
 | `nginx-https` não sobe: "Sem certificado" | Rode `node infra/https-local/gerar-certificado.mjs` antes |
 | Câmera ou microfone negados | Libere a permissão do site no navegador e do navegador no sistema. Abra no Safari ou Chrome, fora de navegador embutido de outro app |
-| Check-in recusado: fora do raio | Confira a localização do celular e o raio da sala |
+| Check-in recusado: fora do raio | O raio da sala é pequeno ou as coordenadas estão imprecisas (o padrão de 30 m costuma ser pouco). Cadastre outra sala com 100 m ou mais, ou com as coordenadas do celular. Fora do campus, as salas da seed nunca servem |
+| A lista de turmas do professor aparece vazia, mas o nome dele está no topo | O navegador tem uma sessão de antes de um `down -v`: o token ainda vale, mas aponta para o professor do banco antigo. Use **Sair** e entre de novo (vale também para o celular) |
 | Professor não mostra "Conectado ao servidor de chamada" | Abra o professor pelo mesmo domínio e confira `docker compose ps` (serviço `sessao` e `ponte`) |
 
 ## 7. Encerrar
