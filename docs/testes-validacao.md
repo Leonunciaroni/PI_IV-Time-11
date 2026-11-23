@@ -28,7 +28,25 @@ para produzir evidência de cobertura.
 O relatório considera todo o módulo de sessão, inclusive o console e os serviços
 auxiliares. A cobertura das regras não deve ser confundida com a cobertura global.
 
-Medição local em 10/11/2026: **103 testes de sessão aprovados**, além dos 9 do `common`.
+## Resultado da execução completa
+
+Medição local em 22/11/2026, com `./mvnw verify` na raiz, sobre `develop` em `4c3256c`
+(release `v1.0.0`), com Docker Desktop aberto: **BUILD SUCCESS**, em 3 min 38 s, **452 testes
+aprovados, 0 falhas, 0 erros e 0 ignorados**.
+
+| Módulo | Testes | Falhas / erros / ignorados |
+|---|---|---|
+| `common` | 14 | 0 / 0 / 0 |
+| `api` | 201 | 0 / 0 / 0 |
+| `sessao` | 132 | 0 / 0 / 0 |
+| `ponte` | 105 | 0 / 0 / 0 |
+| **Total** | **452** | **0 / 0 / 0** |
+
+A compilação usa `release 21`; nesta máquina o JDK instalado era o 26, o que não impediu o build.
+Os testes de frontend (`npm test` dos apps) e os de `audio/` rodam fora do Maven e não entram nesta
+tabela.
+
+### Cobertura das regras de validação (JaCoCo, módulo `sessao`)
 
 | Classe | Linhas cobertas / total | Ramos cobertos / total |
 |---|---|---|
@@ -36,12 +54,13 @@ Medição local em 10/11/2026: **103 testes de sessão aprovados**, além dos 9 
 | `Haversine` | 8 / 8 (100%) | Sem ramos |
 | `ServicoDeCheckin` | 92 / 98 (93,9%) | 56 / 75 (74,7%) |
 
-Os números são a fotografia dessa execução; o HTML/XML/CSV gerado pelo comando
-acima é a referência para medir mudanças futuras.
-Na compilação limpa completa dessa entrega, passaram 365 testes: 9 de `common`,
-165 da API, 103 de sessão e 88 da ponte. Os caminhos de disputa que chegam ao índice
-podem variar com o escalonamento; por isso a cobertura do serviço pode mudar entre
-execuções, mesmo com todos os casos aprovados.
+Testes que exercitam essas classes: `ValidadorTotpTest` (11), `HaversineTest` (7) e `CheckinTest`
+(32).
+
+Os números são a fotografia dessa execução; o HTML/XML/CSV gerado pelo comando acima é a
+referência para medir mudanças futuras. Os caminhos de disputa que chegam ao índice podem variar
+com o escalonamento; por isso a cobertura do serviço pode mudar entre execuções, mesmo com todos os
+casos aprovados.
 
 ## Cenários cobertos
 
