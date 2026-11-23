@@ -19,7 +19,7 @@ Os modos 2 e 3 usam a mesma lógica de segurança; muda só o canal que entrega 
 
 ## Estado atual
 
-Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `develop`.
+Este quadro deve ser atualizado a cada marco. Ele descreve o que está na versão `v1.0.0` (`main`).
 
 | Parte | Situação |
 |---|---|
@@ -27,7 +27,7 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 | **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
 | **Antifraude** (no servidor) | Pronto: token válido, matrícula e unicidade por aluno/aparelho nos canais QR Code e Som; raio até a sala (Haversine) somente no QR Code. Check-ins enviados pela ponte WebSocket/TCP. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
-| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo, emissão FSK por Som e painel ao vivo. |
+| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo, emissão FSK por Som, troca de modo durante a chamada e painel ao vivo. |
 | **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por Som com confirmação automática. |
 | **Modo Som ponta a ponta** | Emissão, recepção e check-in integrados. O fluxo digital foi conferido; o token também foi recebido a 3 m em sala silenciosa com notebook e Redmi Note 14/Chrome. Outras distâncias, ruído, aparelhos e volume de referência continuam no spike #13. Ver [docs/checkin-som.md](docs/checkin-som.md) e [docs/audio-modem.md](docs/audio-modem.md). |
 
@@ -76,10 +76,10 @@ mostra a validação, a persistência e a atualização do painel nos apps integ
 
 ### Subir o ambiente
 
-Em uma máquina de teste, clone a branch `develop` e entre no repositório:
+Clone a versão estável (branch `main`, tag `v1.0.0`) e entre no repositório:
 
 ```bash
-git clone --branch develop --single-branch https://github.com/Leonunciaroni/PI_IV-Time-11.git
+git clone --branch main --single-branch https://github.com/Leonunciaroni/PI_IV-Time-11.git
 cd PI_IV-Time-11
 ```
 
@@ -198,8 +198,11 @@ identifica o aparelho fora do sistema. A marcação manual não grava `dispositi
 id, o nome e o papel do usuário. O token é assinado, não cifrado: não deve ser exibido nem registrado
 em logs. Ele não vai na URL do WebSocket; é enviado na mensagem `auth`.
 
-**Limitações conhecidas (ambiente de desenvolvimento).** O MongoDB do Compose roda sem autenticação e
-só é acessível pela rede interna e pelo loopback do host. As contas de demonstração usam senha
+**Limitações conhecidas (ambiente de desenvolvimento).** O MongoDB do Compose roda com autenticação
+(usuário `root` só para iniciar o replica set e usuário da aplicação com `readWrite` apenas em
+`fast_attendance`), mas as senhas vêm do `infra/.env` local e o `mongo1` fica publicado em
+`127.0.0.1:27017`; esta configuração serve para desenvolvimento e demonstração, não para produção. O banco só é
+acessível pela rede interna e pelo loopback do host. As contas de demonstração usam senha
 conhecida e não devem existir em produção. Não há política de retenção nem rotina de exclusão de
 dados implementadas; a exclusão de uma conta ou de presenças ainda não tem endpoint.
 
@@ -220,6 +223,7 @@ Somente documentos que existem no repositório:
 | [docs/cadastro.md](docs/cadastro.md) | Cadastro docente e regras de autorização |
 | [docs/plano-teste-carga.md](docs/plano-teste-carga.md) | Cenário JMeter para 15 salas × 70 alunos e critérios de aprovação |
 | [docs/https-celulares.md](docs/https-celulares.md) | HTTPS e diagnóstico de permissões nos celulares |
+| [docs/guia-rodar-apresentacao.md](docs/guia-rodar-apresentacao.md) | Passo a passo para subir o sistema e testar os três modos, com túnel HTTPS, HTTPS local e ensaio |
 | [docs/wireframes.md](docs/wireframes.md) | Telas do professor e do aluno |
 | [docs/roteiro-demonstracao.md](docs/roteiro-demonstracao.md) | Roteiro cronometrado, preparação e plano B da demonstração |
 | [docs/inicio-aluno.md](docs/inicio-aluno.md) | Tela inicial do aluno, frequência e chamadas abertas |

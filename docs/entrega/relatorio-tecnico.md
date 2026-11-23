@@ -43,7 +43,7 @@ O detalhamento está em [arquitetura](../arquitetura.md), [API REST](../api-rest
 - Tokens TOTP são validados no servidor; o segredo TOTP não é devolvido pelas respostas da API.
 - O servidor confere token, matrícula e unicidade do check-in por aluno e sessão. A verificação geográfica é usada no modo QR.
 - O segredo JWT deve ser definido em `infra/.env`, que não é versionado.
-- O Compose atual serve para desenvolvimento e demonstração. O MongoDB desse ambiente não exige autenticação; não deve ser exposto como instalação de produção.
+- O Compose atual serve para desenvolvimento e demonstração. O MongoDB desse ambiente exige autenticação (usuário `root` só para iniciar o replica set e usuário da aplicação com `readWrite` apenas em `fast_attendance`), mas as senhas vêm do `infra/.env` local e o `mongo1` fica publicado em `127.0.0.1`; não deve ser tratado como instalação de produção.
 
 ## Instalação e validação
 

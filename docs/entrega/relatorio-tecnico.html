@@ -83,7 +83,7 @@
       <li>A validação geográfica é aplicada ao QR Code; o modo sonoro não usa localização para registrar a presença.</li>
       <li>O segredo JWT fica em <code>infra/.env</code>, arquivo ignorado pelo Git.</li>
     </ul>
-    <p>O Compose atual serve para desenvolvimento e demonstração. O MongoDB desse ambiente não exige autenticação e não deve ser exposto como instalação de produção.</p>
+    <p>O Compose atual serve para desenvolvimento e demonstração. O MongoDB desse ambiente exige autenticação (usuário <code>root</code> só para iniciar o replica set e usuário da aplicação com <code>readWrite</code> apenas em <code>fast_attendance</code>), mas as senhas vêm do <code>infra/.env</code> local e o <code>mongo1</code> fica publicado em <code>127.0.0.1</code>; não deve ser tratado como instalação de produção.</p>
     <h2 style="margin-top:10mm">4. Instalação e validação</h2>
     <p>Foi feito um clone novo da branch <code>develop</code> (<code>9946a94</code>) em pasta temporária, com `.env` novo e um projeto Compose isolado. `docker compose up -d --build` concluiu e construiu as cinco imagens de aplicação. MongoDB, API, sessão e ponte ficaram saudáveis; Professor, Aluno e Nginx iniciaram.</p>
     <p>O script `infra/usuarios-demo.sh` criou as contas de demonstração no banco descartável. `/nginx-health`, `/professor` e `/aluno` responderam HTTP 200. Os contêineres e volumes temporários foram removidos após a validação.</p>
