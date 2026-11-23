@@ -5,7 +5,7 @@
 | Frente | E — Áudio e Infraestrutura |
 | Semana | 2 (04/10 a 11/10/2026) |
 | Ferramenta | [`spikes/audio-ultrassom/`](../../spikes/audio-ultrassom/) |
-| Situação | **Ferramenta pronta; medições em sala pendentes** |
+| Situação | **Amostras registradas; validação ampla adiada como melhoria futura** |
 
 ## Objetivo
 
@@ -55,15 +55,71 @@ Autoteste no Chrome (macOS, taxa de 96 kHz), com tom digital a -40 dBFS e ruído
 detectado com SNR de 23 dB, e as outras frequências da faixa abaixo de 9 dB. Isso valida a
 análise, mas não o caminho acústico, que depende dos testes com alto-falante e microfone físicos.
 
-## Resultados
+## Resultados parciais
 
-Preencher após as medições.
+O primeiro arquivo, [spike-audio-medicoes.csv](../../spikes/audio-ultrassom/medicoes/spike-audio-medicoes.csv),
+tem 18 leituras em **sala silenciosa**, a 3, 6, 9 e 12 m, com os rótulos Redmi 14 e
+iPhone 12, 13, 14 e 15. O segundo,
+[spike-audio-medicoes-ambientes.csv](../../spikes/audio-ultrassom/medicoes/spike-audio-medicoes-ambientes.csv),
+tem 36 leituras em sala com conversa, sala vizinha e corredor. Nos dois arquivos,
+`audivel` está como `Não` em todas as linhas, mas não consta quantos integrantes
+avaliaram. Os CSVs não registram navegador, taxa de amostragem, tipo de emissor nem
+volume do sistema ou da página.
 
-| Receptor (modelo / navegador) | Taxa (Hz) | Autoteste | 1 m | 3 m | 6 m | 10–12 m | Sala vizinha | Melhor freq. |
-|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
+Nas células abaixo, cada leitura está no formato frequência : SNR (dB) : detecção.
 
-## Decisão
+| Receptor (rótulo do CSV) | 3 m | 6 m | 9 m | 12 m |
+|---|---|---|---|---|
+| Redmi 14 | 18 kHz: 51,0 dB, sim; 19,75 kHz: 47,8 dB, sim; 20 kHz: 45,1 dB, não | 18,5 kHz: 20,9 dB, sim | 18 kHz: 31,7 dB, sim; 18,75/19,25/20 kHz: não | 19,5 kHz: 37,1 dB, sim |
+| iPhone 12 | 18,75 kHz: 51,3 dB, não | — | — | — |
+| iPhone 13 | 19 kHz: 47,8 dB, sim | — | — | — |
+| iPhone 14 | 19,5 kHz: 54,3 dB, sim | 19,25 kHz: 30,5 dB, sim | 19,5 kHz: 36,3 dB, sim | 19,25 kHz: 34,0 dB, sim |
+| iPhone 15 | — | 18,75 kHz: 41,4 dB, sim | 18,5 kHz: 38,1 dB, sim | 18,5 kHz: 35,5 dB, sim |
 
-Pendente das medições. Registrar aqui a faixa escolhida para o modem v1 (Semana 3), o volume de
-referência e os modelos de celular que falharam.
+Resumo do segundo CSV:
+
+| Cenário | Leituras | Detecções estáveis | SNR registrado |
+|---|---:|---:|---:|
+| Sala com conversa | 17, a 3, 6, 9 e 12 m | 13/17 | 33,2–53,9 dB |
+| Sala vizinha, porta fechada | 14, a 3, 6, 9 e 12 m | 13/14 | 40,3–64,5 dB |
+| Corredor | 5, a 6, 9 e 12 m | 4/5 | 24,5–63,3 dB |
+
+Na sala vizinha, o responsável confirmou que o emissor permaneceu na sala de origem
+e os celulares foram levados para a sala ao lado, com a porta fechada. Portanto,
+13 detecções com SNR de 40,3–64,5 dB **não atendem** ao critério de isolamento
+(nenhuma detecção e SNR abaixo de 15 dB). A coleta atual também não atende à meta
+de recepção com conversa: a 12 m há quatro modelos, todos com SNR acima de 15 dB,
+mas somente três estão marcados como `detectou = sim`; o iPhone 15 está como `não`
+apesar de SNR 40,7 dB. Repetir esses pontos com volume registrado e investigar a
+diferença entre SNR alto e detecção estável antes de decidir a faixa.
+
+O usuário informou que o autoteste passou, mas o CSV não contém resultados do
+autoteste por aparelho/navegador. Em algumas linhas, o SNR está acima de 15 dB e
+`detectou` é `não` (por exemplo, iPhone 12 a 3 m e Redmi 14 a 9 m); como o detector
+exige 15 quadros consecutivos acima do limiar, essas leituras não contam como
+detecção estável.
+
+As amostras não completam o roteiro: falta 1 m; o volume não foi registrado; e a
+audibilidade não identifica quantos integrantes avaliaram. A medição na sala
+vizinha falhou no nível usado, confirmado pelo responsável. Repetir após registrar
+o volume e também medir a 10–12 m com conversa em pelo menos quatro modelos.
+
+## Decisão para esta entrega
+
+A validação ampla não foi aprovada: houve detecção em 13 de 14 leituras na sala
+vizinha, com a porta fechada. Para cumprir o prazo acadêmico atual, a issue #13 foi
+encerrada como não planejada nesta entrega, sem declarar que os critérios técnicos
+foram atingidos. O check-in por som permanece opcional; o QR Code continua como
+alternativa quando o alcance ou o isolamento acústico não forem adequados.
+
+## Melhorias futuras
+
+- Repetir os testes com volume do sistema e da página anotados e emissor
+  identificado; reduzir o volume e procurar um ponto que mantenha o alcance sem
+  detecção na sala vizinha.
+- Medir 1, 3, 6 e 10–12 m em silêncio e com conversa, incluindo quatro ou mais
+  celulares a 10–12 m, além da sala vizinha e do corredor.
+- Registrar taxa de amostragem, navegador e modelo por receptor, autoteste por
+  navegador e avaliação de audibilidade por integrante.
+- Investigar leituras com SNR acima de 15 dB marcadas como `detectou = não` e
+  escolher uma faixa de pelo menos 1 kHz somente após repetir os resultados.

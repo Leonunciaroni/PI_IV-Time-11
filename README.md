@@ -22,9 +22,9 @@ Este quadro deve ser atualizado a cada marco. Ele descreve o que está no `devel
 | **Servidor de sessão** (`sessao/`) e **ponte** (`ponte/`) | Prontos, no modelo cliente-servidor por sockets, com a ponte para os apps web: abrir e encerrar sessão, chamada clássica, check-in pelo canal QR Code e validação do canal sonoro, acompanhamento em tempo real. |
 | **Antifraude** (no servidor) | Pronto: token válido, matrícula e unicidade por aluno/aparelho nos canais QR Code e Som; raio até a sala (Haversine) somente no QR Code. Check-ins enviados pela ponte WebSocket/TCP. |
 | **Painel ao vivo** | Pronto: o professor vê as presenças chegarem por Change Streams do MongoDB. |
-| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo e painel ao vivo. A tela de emissão por Som está no PR #125. |
-| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por som com confirmação automática. |
-| **Modo Som ponta a ponta** | Captação e check-in integrados no aluno. A emissão na tela do professor está no PR #125 (dependente do #118). Fluxo digital conferido com as duas telas, ponte e banco reais; medições acústicas em sala continuam pendentes. Ver [docs/checkin-som.md](docs/checkin-som.md). |
+| **App do professor** | Turmas, matrículas, salas, chamada clássica, chamada por QR Code rotativo, emissão FSK por Som e painel ao vivo. |
+| **App do aluno** | Login, início (turmas, frequência, chamadas abertas), histórico, QR Code com geolocalização e captação por Som com confirmação automática. |
+| **Modo Som ponta a ponta** | Emissão, recepção e check-in integrados. O fluxo digital foi conferido; o token também foi recebido a 3 m em sala silenciosa com notebook e Redmi Note 14/Chrome. Outras distâncias, ruído, aparelhos e volume de referência continuam no spike #13. Ver [docs/checkin-som.md](docs/checkin-som.md) e [docs/audio-modem.md](docs/audio-modem.md). |
 
 ## Arquitetura
 
@@ -43,7 +43,7 @@ A API e o servidor de sessão compartilham o MongoDB e o segredo `JWT_SECRET`: o
 valida o mesmo JWT que a API emite, na mensagem `auth` (recebida pela ponte, no WebSocket). As regras de unicidade
 (uma presença por aluno e por sessão, uma sessão aberta por turma) ficam em índices do banco, porque
 as duas aplicações escrevem nas mesmas coleções. O [fluxo de check-in por QR Code e som](docs/arquitetura.md#fluxo-do-check-in)
-mostra a validação, a persistência e a atualização do painel, com as partes ainda pendentes nos apps.
+mostra a validação, a persistência e a atualização do painel nos apps integrados.
 
 ## Estrutura do repositório
 
@@ -167,7 +167,7 @@ docker compose down -v     # apaga também os volumes do MongoDB
 ./mvnw verify                              # common, api e sessao; os testes da API sobem MongoDB em contêiner
 cd apps/professor && npm test              # testes unitários do app do professor (Vitest)
 cd apps/aluno && npm test                  # leitura QR, localização e transporte de check-in (Vitest)
-node --test audio/emissor.test.mjs         # testes do emissor sonoro (Node)
+node --test audio/*.test.mjs               # codec FSK, receptor e emissor sonoro (Node)
 ```
 
 Os testes da API usam Testcontainers, então o Docker precisa estar rodando. Para lint e build dos

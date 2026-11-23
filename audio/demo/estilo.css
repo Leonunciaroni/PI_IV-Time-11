@@ -1,0 +1,22 @@
+:root { font-family: system-ui, sans-serif; color: #172554; background: #f8fafc; line-height: 1.5; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1050px; margin: auto; padding: 24px; }
+h1 { margin-top: 0; line-height: 1.2; }
+h2 { font-size: 1.2rem; }
+.marca { font-size: .85rem; color: #475569; }
+fieldset, section { min-width: 0; margin: 18px 0; padding: 20px; border: 1px solid #cbd5e1; border-radius: 12px; background: white; }
+legend { padding: 0 8px; font-weight: 650; }
+.campos, .painel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.painel section { margin: 0; }
+label { display: flex; flex-direction: column; gap: 6px; }
+input, select, button { font: inherit; min-height: 44px; }
+input, select { width: 100%; padding: 8px; border: 1px solid #94a3b8; border-radius: 6px; }
+button { cursor: pointer; padding: 8px 14px; margin: 4px 6px 4px 0; border: 1px solid #1d4ed8; border-radius: 6px; background: #1d4ed8; color: white; }
+button:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+#token-recebido { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+#erro, .falha { color: #b91c1c; overflow-wrap: anywhere; }
+#erro:empty { display: none; }
+.rodape { font-size: .9rem; color: #475569; }
+@media (max-width: 650px) { .campos, .painel { grid-template-columns: 1fr; } main { padding: 16px; } }
