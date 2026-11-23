@@ -1,3 +1,7 @@
+/*
+ * Autores:
+ * - João Pedro Panza Mainieri (RA 25006642)
+ */
 // Guilherme Preventi Correia
 // RA: 25001694
 

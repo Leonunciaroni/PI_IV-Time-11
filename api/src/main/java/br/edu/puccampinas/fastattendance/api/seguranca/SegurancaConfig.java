@@ -4,6 +4,7 @@
 /*
  * Autores:
  * - Leonardo Miranda Nunciaroni (RA 25002726)
+ * - João Pedro Panza Mainieri (RA 25006642)
  */
 package br.edu.puccampinas.fastattendance.api.seguranca;
 

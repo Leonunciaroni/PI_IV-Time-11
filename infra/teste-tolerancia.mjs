@@ -1,6 +1,7 @@
 /*
  * Autores:
  * - Leonardo Miranda Nunciaroni (RA 25002726)
+ * - João Pedro Panza Mainieri (RA 25006642)
  */
 // Cenários de tolerância a falha (infra/README.md, seção "Tolerância a falha").
 //
