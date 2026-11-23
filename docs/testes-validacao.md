@@ -86,6 +86,11 @@ Esses testes validam regras de servidor e o transporte TCP. Não medem alcance d
 têm verificações próprias, descritas na documentação do QR Code. A entrega do
 modem e os testes físicos em sala continuam separados.
 
+Fora do escopo desta execução, e sem resultados registrados neste repositório: as execuções
+completas do [plano de carga](plano-teste-carga.md) (15 salas × 70 alunos, issue #52) e o teste de
+duas salas emitindo ao mesmo tempo no modo som (issue #48). Os números de cobertura e de testes
+acima não substituem essas medições.
+
 Referências: [plugin Maven do JaCoCo](https://www.jacoco.org/jacoco/trunk/doc/maven.html),
 [histórico de versões](https://www.jacoco.org/jacoco/trunk/doc/changes.html) e
 [protocolo do projeto](protocolo-v1.md).
